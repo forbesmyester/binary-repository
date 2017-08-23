@@ -1,0 +1,6 @@
+#!/bin/bash
+
+echo "HI THERE"
+echo "HI ERROR" 1>&2
+
+exit 2

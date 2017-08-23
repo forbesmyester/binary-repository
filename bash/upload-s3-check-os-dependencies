@@ -1,0 +1,106 @@
+#!/bin/bash
+
+# [Bash safe mode](http://redsymbol.net/articles/unofficial-bash-strict-mode/)
+IFS=$'\n\t'
+
+# Known options
+# OPT_GPG_KEY
+# OPT_GPG_KEY_CREATE
+# OPT_S3_BUCKET
+# OPT_S3_BUCKET_CREATE
+
+###############################################################################
+# dd
+###############################################################################
+
+
+dd --help > /dev/null
+if [ $? -eq 127 ]; then
+    echo "the 'dd' command appears to be missng"
+    exit 1
+fi
+
+DD_TEST=$(echo '0123456789' | dd bs=1 skip=3 2> /dev/null)
+if [ $DD_TEST != "3456789" ]; then
+    echo "dd does not behave as expected"
+    exit 1
+fi
+
+###############################################################################
+# gpg
+###############################################################################
+
+gpg --help > /dev/null
+if [ $? -eq 127 ]; then
+    echo "Error EXT00008: the 'gpg' command appears to be missng"
+    exit 1
+fi
+
+GPG_OUT=$(gpg --list-keys "$OPT_GPG_KEY")
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+    if [ $EXIT_CODE -ne 2 ]; then
+        echo "GPG Output: \n\n"
+        echo $GPG_OUT
+        echo "Error EXT00002: GPG exited with exit code ${EXIT_CODE}"
+        exit $EXIT_CODE
+    fi
+    if [ -n "$OPT_GPG_KEY_CREATE" ]; then
+        GPG_OUT=$(gpg --quick-generate-key --yes "$OPT_GPG_KEY")
+        EXIT_CODE=$?
+        if [ $EXIT_CODE -ne 0 ]; then
+            echo "GPG Output: \n\n"
+            echo $GPG_OUT
+            echo "Error EXT00003: Error generating key ${EXIT_CODE}"
+            exit $EXIT_CODE
+        fi
+    else
+        echo "Error EXT00001: GPG exited with exit code 2 when looking for key '${OPT_GPG_KEY}'. Do you wish to create the required key?"
+        exit $EXIT_CODE
+    fi
+fi
+
+###############################################################################
+# aws s3
+###############################################################################
+
+O=$(aws --version 2> /dev/null)
+if [ $? -eq 127 ]; then
+    echo "Error EXT0004: The 'aws' command appears to be missing"
+    exit 127
+fi
+
+O=$(aws s3 ls > /dev/null)
+if [ $? -eq 1 ]; then
+    echo "Error EXT0005: The 'aws s3 ls' command appears not to be able to list buckets, is there an authentication problem?"
+    exit 1
+fi
+
+O=$(aws s3 ls > /dev/null)
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
+    echo "Error EXT0009: The 'aws s3 ls' command exited with error code $EXIT_CODE"
+    exit 1
+fi
+
+O=$(aws s3 ls "$OPT_S3_BUCKET" > /dev/null)
+if [ $? -eq 255 ]; then
+    if [ -n "$OPT_S3_BUCKET_CREATE" ]; then
+        OUT=$(aws s3 mb "s3://$OPT_S3_BUCKET")
+        EXIT_CODE=$?
+        if [ $EXIT_CODE -ne 0 ]; then
+            echo $OUT
+            echo "Error EXT0007: The 'aws s3 mb \"${OPT_S3_BUCKET}\"' command appears not to have worked. Exit code $EXIT_CODE."
+            exit $EXIT_CODE
+        fi
+    else
+        ${OPT_S3_BUCKET_CREATE}
+        echo "Error EXT0006: The 'aws s3 ls \"${OPT_S3_BUCKET}\"' command appears not return any results, does the bucket exist? do you wish to create it?"
+        exit 255
+    fi
+fi
+
+# [Bash safe mode](http://redsymbol.net/articles/unofficial-bash-strict-mode/)
+set -euo pipefail
+

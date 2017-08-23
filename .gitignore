@@ -1,0 +1,7 @@
+node_modules
+./dist
+*.map
+*/**/*.js
+*.dump
+npm-debug.log
+dist/
