@@ -11,6 +11,11 @@ export interface Callback2<R> {
 
 export type AbsoluteFilePath = string;
 
+/**
+ * The location of a repository stored on the local filesystem
+ */
+export type LocalRepositoryDirectoryPath = AbsoluteDirectoryPath;
+
 export type AbsoluteDirectoryPath = string;
 
 export type RelativeFilePath = string;
@@ -51,10 +56,7 @@ export interface Committed extends Commit {
  * UploadedCommitted.
  */
 export interface UploadedCommitted extends Committed {
-    readonly result: {
-        readonly exitStatus: ExitStatus,
-        readonly output: CmdOutput[]
-    };
+    readonly result: CmdResult;
 }
 
 /**
@@ -123,6 +125,11 @@ export type CommandName = string;
 export type S3BucketName = string;
 
 /**
+ * S3 Object name, without the s3:// or bucket name, may include "directory"
+ */
+export type S3Object = string;
+
+/**
  * The name of the GPG key
  */
 export type GpgKey = string;
@@ -130,6 +137,8 @@ export type GpgKey = string;
 export type ByteOffset = number;
 
 export type ModifiedDate = Date;
+
+export type RemoteUri = string;
 
 /**
  * The part number of the file, 1 based, followed by the total number of parts
@@ -143,6 +152,10 @@ export type FilePartIndex = [number, number];
 export type FilePart = string;
 
 export interface Filename { path: RelativeFilePath; }
+
+export interface CommitType  { commitType: string; }
+
+export type CommitFilename = Filename & CommitType;
 
 /**
  * Represents a commit which has not been applied locally
@@ -163,9 +176,9 @@ export interface Sha256FilePart extends Sha256File {
     readonly part: FilePartIndex;
 }
 
-export interface UploadedS3FilePart extends Sha256FilePart {
-    result: { exitStatus: ExitStatus, output: CmdOutput[] };
-}
+export interface CmdResult { readonly exitStatus: ExitStatus; readonly output: CmdOutput[]; }
+
+export interface UploadedS3FilePart extends Sha256FilePart { readonly result: CmdResult; }
 
 export const BASE_TLID_TIMESTAMP = new Date('2017-07-22T08:54:05.274Z').getTime();
 export const BASE_TLID_UNIQUENESS = 3;

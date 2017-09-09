@@ -17,9 +17,11 @@ export function getCommitToCommittedMapFuncDependencies(): Dependencies {
     return { atomicFileWrite, mkdirp };
 }
 
-export function getCommitToCommittedMapFunc({atomicFileWrite, mkdirp}: Dependencies, rootPath: AbsoluteDirectoryPath, tmpDir: AbsoluteDirectoryPath, commitDir: AbsoluteDirectoryPath): MapFunc<Commit, Committed> {
+export function getCommitToCommittedMapFunc({atomicFileWrite, mkdirp}: Dependencies, configDir: AbsoluteDirectoryPath): MapFunc<Commit, Committed> {
 
     let created = false;
+    let tmpDir = join(configDir, 'tmp');
+    let commitDir = join(configDir, 'commit');
 
     let createDir = (path) => {
         return new Promise((resolve, reject) => {

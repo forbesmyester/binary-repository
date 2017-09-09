@@ -1,0 +1,28 @@
+#!/bin/bash
+
+
+# OPT_DD_SKIP
+# OPT_DD_BS
+# OPT_DD_COUNT
+# OPT_DD_FILENAME
+
+# OPT_GPG_KEY
+
+# OPT_S3_BUCKET
+# OPT_S3_OBJECT
+
+# OPT_IS_LAST
+
+# [Bash safe mode](http://redsymbol.net/articles/unofficial-bash-strict-mode/)
+IFS=$'\n\t'
+set -euo pipefail
+
+mkdir -p ${OPT_S3_BUCKET}
+if [ $OPT_IS_LAST -eq 1 ]; then
+    dd if="${OPT_DD_FILENAME}" bs="${OPT_DD_BS}" skip="${OPT_DD_SKIP}" | gpg -e -r "${OPT_GPG_KEY}" | cat > "${OPT_S3_BUCKET}/${OPT_S3_OBJECT}"
+else
+    dd if="${OPT_DD_FILENAME}" bs="${OPT_DD_BS}" skip="${OPT_DD_SKIP}" count="${OPT_DD_COUNT}" | gpg -e -r "${OPT_GPG_KEY}" | cat > "${OPT_S3_BUCKET}/${OPT_S3_OBJECT}"
+fi
+
+
+

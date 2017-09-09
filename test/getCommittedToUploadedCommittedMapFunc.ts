@@ -49,7 +49,7 @@ test.cb("Generate Environment (base)", (tst) => {
                 exitStatus: 0,
                 output: [{
                     name: 'stdout',
-                    text: 'dd if="/tmp/x/.ebak/commits/zzz001-ClientId.commit" bs="1" skip="0" | gpg -e -r "ebak" | aws s3 cp - "s3://ebak-commit-bucket/c-001-ClientId.commit"'
+                    text: 'dd if="/tmp/x/.ebak/commit/zzz001-ClientId.commit" bs="1" skip="0" | gpg -e -r "ebak" | aws s3 cp - "s3://ebak-commit-bucket/c-001-ClientId.commit"'
                 }]
             }
         }
@@ -57,8 +57,7 @@ test.cb("Generate Environment (base)", (tst) => {
 
 
     let mapFunc = getCommittedToUploadedCommittedMapFunc(
-        '/tmp/x', // TODO: This appears to not be required!
-        '/tmp/x/.ebak/commits',
+        '/tmp/x/.ebak',
         'ebak-commit-bucket',
         'ebak',
         'bash/test-upload-commit-s3'
@@ -68,7 +67,5 @@ test.cb("Generate Environment (base)", (tst) => {
         tst.deepEqual(result, expected);
         tst.end();
     });
-
-
 
 });

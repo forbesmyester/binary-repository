@@ -30,7 +30,7 @@ function getForPath(oldResult: RemotePendingCommitLocalInfo, d: RelativeFilePath
     return null;
 }
 
-export default function(dependencies: {}): RightAfterLeftMapFunc<
+export default function getRemotePendingCommitToRemotePendingCommitLocalInfoRightAfterLeftMapFunc(dependencies: {}): RightAfterLeftMapFunc<
     RemotePendingCommit, /* Only the first */
     Commit, /* All local and processed remote */
     RemotePendingCommitLocalInfo> /* Only if it will not overwrite not non commited local files> */ {
@@ -43,6 +43,10 @@ export default function(dependencies: {}): RightAfterLeftMapFunc<
         commit: Commit
     ): RemotePendingCommitLocalInfo[]
     {
+
+        if (pendingCommit.length === 0) {
+            return [];
+        }
 
         // Only as validation
         pendingsReceived = reduce(

@@ -1,7 +1,7 @@
 import test from 'ava';
 import { MapFunc } from 'streamdash';
 import { Operation, Filename, BackupRecord, Commit } from '../src/Types';
-import getLocalCommitFileToCommitMapFunc from '../src/getLocalCommitFileToCommitMapFunc';
+import getLocalCommitFilenameToCommitMapFunc from '../src/getLocalCommitFilenameToCommitMapFunc';
 import { pipe, path, lensPath, map, assoc } from 'ramda';
 
 test.cb("Can map", (tst) => {
@@ -12,14 +12,14 @@ test.cb("Can map", (tst) => {
         'def;1;1816;1_1;2017-06-19T06:20:05.168Z;my-projects/getTLIdEncoderDecoder.md'
     ].join("\n");
 
-    let commitDir = '/home/fozz/Projects/ebak/test/data',
-        input = { path: '/rusdc000-fozz.commit' },
+    let commitDir = '/home/fozz/Projects/ebak/test',
+        input = { commitType: 'data', path: '/rusdc000-fozz.commit' },
         readFile = (filename, opts, cb) => {
             tst.is(filename, '/home/fozz/Projects/ebak/test/data/rusdc000-fozz.commit');
             tst.deepEqual(opts, { encoding: 'utf8' });
             cb(null, data);
         },
-        localCommitFileToCommitMapFunc = getLocalCommitFileToCommitMapFunc(
+        localCommitFileToCommitMapFunc = getLocalCommitFilenameToCommitMapFunc(
             { readFile },
             commitDir,
         );

@@ -7,19 +7,19 @@ import * as glob from 'glob';
 export interface GlobFunc {
     (root: AbsoluteDirectoryPath, pattern: string, ignore: string[], next: Callback<string[]>): void;
 }
+export interface Dependencies {glob: GlobFunc; }
 
 export class RootReadable extends Readable<Filename> {
 
     private files: string[];
-    private pendingCount = 0;
-    private readCount = 0;
+    private done = 0;
     private _readBeforeData = false;
     private _readAfterData = false;
 
     get readBeforeData() { return this._readBeforeData; }
     get readAfterData() { return this._readAfterData; }
 
-    constructor({glob}: {glob: GlobFunc}, private rootPath: AbsoluteDirectoryPath, private ignorePattern: string[], private globPattern: string = '/**/*', opts = {}) {
+    constructor({glob}: Dependencies, private rootPath: AbsoluteDirectoryPath, private ignorePattern: string[], private globPattern: string = '/**/*', opts = {}) {
         super(Object.assign({objectMode: true}, opts));
         this.postConstruct(glob);
     }
@@ -28,8 +28,7 @@ export class RootReadable extends Readable<Filename> {
         glob(this.rootPath, this.globPattern, this.ignorePattern, (err, files: string[]) => {
             if (err) { this.emit('error', err); }
             this.files = files ? files : [];
-            this.readCount = this.files.length;
-            this.readCount = -1;
+            this.done = 1;
             this.myRead();
         });
     }
@@ -40,7 +39,7 @@ export class RootReadable extends Readable<Filename> {
             nodir: true, follow: false };
 
         return (root, pattern, ignore, next) => {
-            let opts = Object.assign({ root, ignore }, globOpts);
+            let opts = Object.assign({ root, ignore, cwd: root }, globOpts);
             return glob(pattern, opts, next);
         };
     }
@@ -48,22 +47,23 @@ export class RootReadable extends Readable<Filename> {
     private t(s: string) { return { path: s }; }
 
     _read(count) {
-        this.pendingCount = this.pendingCount + count;
-        if (this.readCount == 0) { this._readBeforeData = true; }
-        if (this.readCount > 0) { this._readAfterData = true; }
+        if (this.done == 0) { this._readBeforeData = true; }
+        if (this.done > 0) { this._readAfterData = true; }
         return this.myRead();
     }
 
     myRead() {
 
-        while (this.readCount && this.files.length && this.pendingCount-- > 0) {
+        if (this.done != 1) { return; }
+
+        while (this.files.length) {
+            this.done = 2;
             this._readAfterData = true;
-            this.push(this.t(<string>this.files.shift()));
+            let v = (<string>this.files.shift()).replace(/\/+/, '');
+            this.push(this.t(v));
         }
 
-        if ((this.readCount == -1) && (this.files.length === 0)) {
-            this.push(null);
-        }
+        this.push(null);
     }
 }
 

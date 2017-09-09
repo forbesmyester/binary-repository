@@ -5,7 +5,7 @@ import * as mkdirp from 'mkdirp';
 import { pathOr } from 'ramda';
 import * as getTlidEncoderDecoder from 'get_tlid_encoder_decoder';
 import { ConfigFile, BASE_TLID_TIMESTAMP } from './Types';
-import { upload } from './process';
+import { fetch, download, upload } from './process';
 
 let tLIdEncoderDecoder = getTlidEncoderDecoder(BASE_TLID_TIMESTAMP, 1);
 
@@ -111,6 +111,20 @@ yargs.usage('$0 <cmd> [args]')
         describe: "Use a configuration directory different to [local].ebak",
         alias: "local-configuration"
     })
+    .command(
+        'fetch [local]', 'Syncronize with remote data',
+        {
+            local: {
+                require: true,
+                describe: 'Fetches commit files from the remote so they can be downloaded',
+                type: 'string'
+            },
+        },
+        function (args) {
+            let { local, localConfiguration } = resolve(args);
+            fetch(local, localConfiguration);
+        }
+    )
     .demandCommand(1, "You must specify a command")
     .check(o => resolve(o))
     .strict()

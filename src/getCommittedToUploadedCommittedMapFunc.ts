@@ -17,12 +17,12 @@ interface UploadS3Environment {
     OPT_S3_BUCKET: S3BucketName;
 }
 
-function getEnv(gpgKey: GpgKey, s3Bucket: S3BucketName, rootPath: AbsoluteDirectoryPath, commitPath: AbsoluteDirectoryPath,  a: Committed): UploadS3Environment {
+function getEnv(gpgKey: GpgKey, s3Bucket: S3BucketName, configDir: AbsoluteDirectoryPath,  a: Committed): UploadS3Environment {
 
     return {
         OPT_CLIENT_ID: a.clientId,
         OPT_COMMIT_ID: a.commitId,
-        OPT_DD_FILENAME: join(commitPath, a.relativeFilePath),
+        OPT_DD_FILENAME: join(configDir, 'commit', a.relativeFilePath),
         OPT_GPG_KEY: gpgKey,
         OPT_S3_BUCKET: s3Bucket
     };
@@ -30,8 +30,7 @@ function getEnv(gpgKey: GpgKey, s3Bucket: S3BucketName, rootPath: AbsoluteDirect
 }
 
 export default function getCommittedToUploadedCommittedMapFunc(
-    rootPath: AbsoluteDirectoryPath,
-    commitPath: AbsoluteDirectoryPath,
+    configDir: AbsoluteDirectoryPath,
     s3Bucket: S3BucketName,
     gpgKey: GpgKey,
     cmd: CommandName
@@ -43,7 +42,7 @@ export default function getCommittedToUploadedCommittedMapFunc(
 
         let cmdRunner = new CmdRunner(
             { cmdSpawner },
-            Object.assign({}, process.env, getEnv(gpgKey, s3Bucket, rootPath, commitPath, a)),
+            Object.assign({}, process.env, getEnv(gpgKey, s3Bucket, configDir, a)),
             ".",
             cmd,
             [],

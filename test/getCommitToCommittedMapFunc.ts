@@ -50,8 +50,8 @@ test.cb("Can map", (tst) => {
     ];
 
     let atomicFileWrite: (tmpPath: AbsoluteFilePath, finalPath: AbsoluteFilePath, contents: string[]) => Promise<AbsoluteFilePath> = (tmpPath, finalPath, contents) => {
-        tst.is(tmpPath, '/tmp/ebak:test/.ebak/tmp/001-ClientId.commit');
-        tst.is(finalPath, '/tmp/ebak:test/.ebak/commits/001-ClientId.commit');
+        tst.is(tmpPath, '/tmp/ebak:test/tmp/001-ClientId.commit');
+        tst.is(finalPath, '/tmp/ebak:test/commit/001-ClientId.commit');
         tst.deepEqual(contents, expectedContents);
         return Promise.resolve(finalPath);
     };
@@ -61,21 +61,17 @@ test.cb("Can map", (tst) => {
         dirsCreated.push(p);
         next(null);
     };
-    let rootPath = '/tmp/ebak:test',
-        tmpDir = join(rootPath, ".ebak", "tmp"),
-        commitDir = join(rootPath, '.ebak', 'commits');
+    let configDir = '/tmp/ebak:test';
 
     let commitToCommittedMapFunc = getCommitToCommittedMapFunc(
         { mkdirp, atomicFileWrite},
-        rootPath,
-        tmpDir,
-        commitDir
+        configDir
     );
 
     commitToCommittedMapFunc(input, (err, val) => {
         tst.deepEqual(
             dirsCreated,
-            ['/tmp/ebak:test/.ebak/tmp', '/tmp/ebak:test/.ebak/commits']
+            ['/tmp/ebak:test/tmp', '/tmp/ebak:test/commit']
         );
         tst.deepEqual(val, expected);
         tst.end();

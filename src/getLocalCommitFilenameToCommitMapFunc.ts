@@ -1,6 +1,6 @@
 import test from 'ava';
 import { MapFunc } from 'streamdash';
-import { BASE_TLID_TIMESTAMP, BASE_TLID_UNIQUENESS, BackupRecord, Operation, Callback2, Callback, Filename, ClientId, Commit, AbsoluteDirectoryPath } from '../src/Types';
+import { BASE_TLID_TIMESTAMP, BASE_TLID_UNIQUENESS, BackupRecord, Operation, Callback2, Callback, CommitFilename, ClientId, Commit, AbsoluteDirectoryPath } from '../src/Types';
 import { join } from 'path';
 import * as getTlIdEncoderDecoder from 'get_tlid_encoder_decoder';
 
@@ -29,11 +29,13 @@ function toRecord(str): BackupRecord|null {
     };
 }
 
-export default function({ readFile }: Dependencies, commitDir: AbsoluteDirectoryPath): MapFunc<Filename, Commit> {
+export default function({ readFile }: Dependencies, configDir: AbsoluteDirectoryPath): MapFunc<CommitFilename, Commit> {
 
 
-    return (a: Filename, next: Callback<Commit>): void => {
-        readFile(join(commitDir, a.path), { encoding: 'utf8' }, (err, contents) => {
+    return (a: CommitFilename, next: Callback<Commit>): void => {
+        readFile(join(configDir, a.commitType, a.path), { encoding: 'utf8' }, (err, contents) => {
+
+            if (err) { return next(err); }
 
             let filenameMatch = a.path.match(filenameRe);
 

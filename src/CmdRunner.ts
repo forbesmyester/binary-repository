@@ -30,8 +30,6 @@ export interface CmdSpawner {
 
 export class CmdRunner extends Readable<CmdOutput> {
 
-    private pendingCount = 0;
-
     private out: CmdOutput[] = [];
     private outForError: CmdOutput[] = [];
 
@@ -98,13 +96,13 @@ export class CmdRunner extends Readable<CmdOutput> {
     }
 
     _read(count) {
-        this.pendingCount = this.pendingCount + count;
         return this.myRead();
     }
 
     myRead() {
-        while (this.out.length && this.pendingCount-- > 0) {
-            this.push(<CmdOutput>this.out.shift());
+        while (this.out.length) {
+            let line = <CmdOutput>this.out.shift();
+            this.push(line);
         }
     }
 }

@@ -6,7 +6,6 @@ import {} from "./UploadedS3FilePartsToCommit";
 import { assoc } from 'ramda';
 
 export default function getCommittedToUploadedCommittedMapFunc(
-    rootPath: AbsoluteDirectoryPath,
     commitPath: AbsoluteDirectoryPath,
     s3Bucket: S3BucketName,
     gpgKey: GpgKey,
