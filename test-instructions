@@ -1,0 +1,40 @@
+#!/bin/bash
+
+gpg --delete-secret-keys ebak
+gpg --delete-keys ebak
+gpg --list-keys
+gpg --quick-generate-key 'ebak'
+
+rm -rf   /tmp/ebak-repo
+rm -rf   /tmp/ebak-data
+rm -rf   /tmp/ebak-config
+mkdir -p /tmp/ebak-data/matt_first
+mkdir -p /tmp/ebak-data/jim_leach
+
+node dist/src/index.js init --local-config=/tmp/ebak-config/matt_first mattfirst /tmp/ebak-data/matt_first ebak file:///tmp/ebak-repo
+
+node dist/src/index.js upload --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
+
+# Data should be empty
+find /tmp/ebak-data/matt_first
+# Only config file should exist
+find /tmp/ebak-config/matt_first
+
+cp -R test/data/my-projects /tmp/ebak-data/matt_first
+
+node dist/src/index.js upload --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
+
+# There should be files for each project (7) under my-projects
+find /tmp/ebak-data/matt_first
+# There should be one commit file and a tmp directory too
+find /tmp/ebak-config/matt_first
+# There should be a filepart for every project (7) as well a a commit file... all encrypted
+find /tmp/ebak-repo
+
+node dist/src/index.js init --local-config=/tmp/ebak-config/jim_leach jimleach /tmp/ebak-data/jim_leach ebak file:///tmp/ebak-repo
+
+node dist/src/index.js fetch --local-config=/tmp/ebak-config/jim_leach /tmp/ebak-data/jim_leach
+
+node dist/src/index.js download --local-config=/tmp/ebak-config/jim_leach /tmp/ebak-data/jim_leach
+
+node dist/src/index.js download --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first

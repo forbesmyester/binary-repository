@@ -5,9 +5,9 @@ import { reduce, assoc, pick, merge } from 'ramda';
 export interface Dependencies {
 }
 
-export default function({}: Dependencies): ScanFunc<Commit, BackupCheckDatabase> {
+export default function getCommitToBackupCheckDatabaseScanFunc(dependencies: Dependencies): ScanFunc<Commit, BackupCheckDatabase> {
 
-    return (acc: BackupCheckDatabase, a: Commit, next: Callback2<BackupCheckDatabase>): void => {
+    return function getCommitToBackupCheckDatabaseScanFunc(acc: BackupCheckDatabase, a: Commit, next: Callback2<BackupCheckDatabase>): void {
         let partDb: BackupCheckDatabase = reduce(
             (recordAcc, record): BackupCheckDatabase => {
                 if (record.part[0] == record.part[1]) {

@@ -88,7 +88,7 @@ export type ClientId = string;
 /**
  * The upload of a part of a file
  */
-export interface BackupRecord {
+export interface BackupRecord { // Rename CommitRecord
     readonly sha256: Sha256;
     readonly operation: Operation;
     readonly fileByteCount: ByteCount;
@@ -197,31 +197,47 @@ export interface ConfigFile {
 
 export interface RemotePendingCommit extends Commit {}
 
-
-export interface RemotePendingFileInfo {
-    localCommit: null|{ commitId: CommitId; clientId: ClientId; modifiedDate: Date; };
-    remoteModificationDate: Date;
+export interface RemotePendingCommitInfoRecord extends BackupRecord {
+    readonly local: BackupCheckDatabaseValue|null;
 }
 
-export interface RemotePendingCommitLocalInfo {
-    [k: string /* RelativePath */]: RemotePendingFileInfo;
+export interface RemotePendingCommitInfo extends Commit {
+    readonly record: RemotePendingCommitInfoRecord[];
 }
 
-export interface RemotePendingFileStats extends RemotePendingFileInfo {
-    localModificationDate: null|Date;
+export interface RemotePendingCommitStatRecord extends RemotePendingCommitInfoRecord {
+    readonly stat: null|{ sha256?: Sha256; fileByteCount: ByteCount; modifiedDate: Date; };
 }
 
-export interface RemotePendingCommitLocalStats {
-    [k: string /* RelativePath */]: RemotePendingFileStats;
+export interface RemotePendingCommitStat extends RemotePendingCommitInfo {
+    readonly record: RemotePendingCommitStatRecord[];
 }
 
-export interface RemotePendingCommitActionFile extends RemotePendingFileStats {
-    proceed: boolean;
-}
 
-export interface RemotePendingCommitAction {
-    proceed: boolean;
-    files: {
-        [k: string /* RelativePath */]: RemotePendingCommitActionFile;
-    };
-}
+// export interface RemotePendingFileInfo {
+//     localCommit: null|{ commitId: CommitId; clientId: ClientId; modifiedDate: Date; };
+//     remoteModificationDate: Date;
+// }
+
+// export interface RemotePendingCommitLocalInfo {
+//     [k: string /* RelativePath */]: RemotePendingFileInfo;
+// }
+
+// export interface RemotePendingFileStats extends RemotePendingFileInfo {
+//     localModificationDate: null|Date;
+// }
+
+// export interface RemotePendingCommitLocalStats {
+//     [k: string /* RelativePath */]: RemotePendingFileStats;
+// }
+
+// export interface RemotePendingCommitActionFile extends RemotePendingFileStats {
+//     proceed: boolean;
+// }
+
+// export interface RemotePendingCommitAction {
+//     proceed: boolean;
+//     files: {
+//         [k: string /* RelativePath */]: RemotePendingCommitActionFile;
+//     };
+// }

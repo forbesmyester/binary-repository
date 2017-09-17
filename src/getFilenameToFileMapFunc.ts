@@ -1,6 +1,11 @@
 import { Sha256File, AbsoluteDirectoryPath, AbsoluteFilePath, File, Filename } from '../src/Types';
 import { MapFunc } from 'streamdash';
+import { Stats } from 'fs';
 import { join } from 'path';
+
+export interface Dependencies {
+    stat: (f: string, cb: (err: NodeJS.ErrnoException, stats: Stats) => void) => void;
+}
 
 export function getFilenameToFileMapFunc({ stat }, rootPath: AbsoluteDirectoryPath): MapFunc<Filename, File> {
     return (f: Filename, next) => {

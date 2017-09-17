@@ -125,6 +125,21 @@ yargs.usage('$0 <cmd> [args]')
             fetch(local, localConfiguration);
         }
     )
+    .command(
+        'download [local]', 'Download remote data',
+        {
+            local: {
+                require: true,
+                describe: 'Fetches commit files from the remote so they can be downloaded',
+                type: 'string'
+            },
+        },
+        function (args) {
+            console.log(args);
+            let { local, localConfiguration } = resolve(args);
+            download(local, localConfiguration);
+        }
+    )
     .demandCommand(1, "You must specify a command")
     .check(o => resolve(o))
     .strict()

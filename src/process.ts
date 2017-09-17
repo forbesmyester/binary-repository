@@ -21,7 +21,8 @@ import getCommittedToUploadedS3CommittedMapFunc from './getCommittedToUploadedCo
 import getCommittedToUploadedS3CommittedFakeMapFunc from './getCommittedToUploadedCommittedFakeMapFunc';
 import { stat } from 'fs';
 import getFileNotBackedUpRightAfterLeftMapFunc from './getFileNotBackedUpRightAfterLeftMapFunc';
-import getRemotePendingCommitToRemotePendingCommitLocalInfoRightAfterLeftMapFunc from './getRemotePendingCommitToRemotePendingCommitLocalInfoRightAfterLeftMapFunc';
+// import getRemotePendingCommitToRemotePendingCommitLocalInfoRightAfterLeftMapFunc from './getRemotePendingCommitToRemotePendingCommitLocalInfoRightAfterLeftMapFunc';
+import getToRemotePendingCommitInfoRightAfterLeftMapFunc from './getToRemotePendingCommitInfoRightAfterLeftMapFunc';
 import { mapObjIndexed } from 'ramda';
 import getRepositoryCommitToRemoteCommitMapFunc from './getRepositoryCommitToRemoteCommitMapFunc';
 import * as mkdirp from 'mkdirp';
@@ -291,7 +292,9 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
         { objectMode: true }
     ));
 
-    let toDebugConsole = new ConsoleWritable({out: console.log}, "LogObj: ");
+    let toDebugConsole = preparePipe(
+        new ConsoleWritable({out: console.log}, "LogObj: ")
+    );
 
     repositoryCommitFiles.pipe(toRemoteCommit);
     toRemoteCommit.pipe(toDebugConsole);
@@ -299,16 +302,36 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
 
 }
 
+class Piper {
+    start<Join, Out>(src: Readable<Join>, dst: Transform<Join, Out>|Duplex<Join, Out>) {
+        throw new Error("Not Implemented");
+    }
+    add<In, Join, Out>(src: Readable<Join>|Transform<In, Join>|Duplex<In, Join>, dst: Transform<Join, Out>|Duplex<Join, Out>|Writable<Join>) {
+        throw new Error("Not Implemented");
+    }
+    finish<In, Join>(src: Readable<Join>|Transform<In, Join>|Duplex<In, Join>, dst: Writable<Join>) {
+        throw new Error("Not Implemented");
+    }
+}
+
 export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
 
     let stdPipeOptions = { objectMode: true, highWaterMark: 1};
 
+    let toDebugConsole = preparePipe(
+        new ConsoleWritable({out: console.log}, "LogObj: ")
+    );
+
+    toDebugConsole.on('finish', function() { console.log("FIN"); });
+    toDebugConsole.on('end', function() { console.log("END"); });
+
     function getCommitStream(configDir: AbsoluteDirectoryPath, subDirs: string[], onlyFirst: boolean) {
+
         let sortedPendingCommitFilenameStream = getSortedCommitFilenamePipe(
             configDir,
             subDirs
         );
-        let onlyFirstStream = preparePipe(new FirstDuplex({objectMode: true}));
+
         let toCommitStream = preparePipe(
             new MapTransform(
                 getLocalCommitFilenameToCommitMapFunc(
@@ -319,12 +342,6 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
             )
         );
 
-        if (onlyFirst) {
-            return sortedPendingCommitFilenameStream
-                .pipe(onlyFirstStream)
-                .pipe(toCommitStream);
-        }
-
         return sortedPendingCommitFilenameStream
             .pipe(toCommitStream);
     }
@@ -333,7 +350,7 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
     let remotePendingCommitStream = getCommitStream(
         configDir,
         ['remote-pending-commit'],
-        true
+        false
     );
 
     let processedCommitStream = getCommitStream(
@@ -342,27 +359,39 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
             false
         );
 
-    let remotePendingCommitLocalInfoStream = preparePipe(new RightAfterLeft(
-            getRemotePendingCommitToRemotePendingCommitLocalInfoRightAfterLeftMapFunc({}),
+    let toBackupCheckDatabaseScan = preparePipe(new ScanTransform(
+            getCommitToBackupCheckDatabaseScanFunc({}),
+            {},
             { objectMode: true }
         ));
 
-    let config: ConfigFile = readConfig(configDir);
+    let toBackupCheckDatabaseFinal = preparePipe(new FinalDuplex({objectMode: true}));
 
-    remotePendingCommitStream.pipe(remotePendingCommitLocalInfoStream.left);
-    processedCommitStream.pipe(remotePendingCommitLocalInfoStream.right);
+    processedCommitStream
+        .pipe(toBackupCheckDatabaseScan)
+        .pipe(toBackupCheckDatabaseFinal);
+
+    let remotePendingCommitLocalInfoStream = preparePipe(new RightAfterLeft(
+            getToRemotePendingCommitInfoRightAfterLeftMapFunc({}),
+            { objectMode: true }
+        ));
+
+
+    remotePendingCommitStream.pipe(remotePendingCommitLocalInfoStream.right);
+    processedCommitStream.pipe(remotePendingCommitLocalInfoStream.left);
+
+
+    remotePendingCommitLocalInfoStream.pipe(toDebugConsole);
+
+
 
 
     /**
-     * Download all remote commits not in .ebak/commit and .ebak/remote-commit
-     *   into .ebak/remote-commit-pending.
+     * For each remote-pending-commit sorted by timestamp:
      *
-     * For each sorted by commit timestamp:
-     *
-     *   If all local files within commit are committed:
-     *
-     *     For every file apply latest state. (copy over if remote newer than old)
-     *
+     *   // Comparing to local files...
+     *   If (all local files are unchanged since last commit):
+     *     For every file apply latest state.
      *     Move to .ebak/remote-commit.
      *
      *   Else:

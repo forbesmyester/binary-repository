@@ -94,7 +94,6 @@ export default function getRepositoryCommitToRemoteCommitMapFunc(
             })
             .then((r: RemotePendingCommitCmdResult) => {
                 let dest = join(configDir, 'remote-pending-commit', destFilename);
-                console.log(dest);
                 dependencies.rename(env.OPT_DESTINATION, dest, (err) => {
                     if (err) { return next(err); }
                     next(null, r);

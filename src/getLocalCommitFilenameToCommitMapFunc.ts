@@ -13,7 +13,7 @@ let tlIdEncoderDecoder = getTlIdEncoderDecoder(BASE_TLID_TIMESTAMP, BASE_TLID_UN
 class NotCommitFileError extends Error {}
 
 let lineRe = /^([0-9a-f]+);([0-9]);([0-9]+);([0-9]+_[0-9]+);([^;]+);(.*)/;
-let filenameRe = /.*\/(.*)\-(.*)\.commit$/;
+let filenameRe = /\/*([^\/]+)\-([^\/]+)\.commit$/;
 
 function toRecord(str): BackupRecord|null {
     let m = str.match(lineRe);
