@@ -8,6 +8,18 @@ export interface Callback2<R> {
     (e: Error|null|undefined, r: R): void;
 }
 
+export enum UserErrorCode {
+    BLOCKED_BY_FILE = 1,
+    FILE_MODIFIED_BEFORE_LOCAL_COMMIT = 2,
+    FILE_MODIFIED_AFTER_LOCAL_COMMIT_BUT_NO_SHA256 = 3,
+}
+
+
+export class UserError extends Error {
+   constructor(message: string, public code: UserErrorCode) {
+       super(message);
+   }
+}
 
 export type AbsoluteFilePath = string;
 
@@ -205,12 +217,22 @@ export interface RemotePendingCommitInfo extends Commit {
     readonly record: RemotePendingCommitInfoRecord[];
 }
 
+export interface RemotePendingCommitStatRecordStat { sha256?: Sha256; fileByteCount: ByteCount; modifiedDate: Date; }
+
 export interface RemotePendingCommitStatRecord extends RemotePendingCommitInfoRecord {
-    readonly stat: null|{ sha256?: Sha256; fileByteCount: ByteCount; modifiedDate: Date; };
+    readonly stat: null|RemotePendingCommitStatRecordStat;
 }
 
 export interface RemotePendingCommitStat extends RemotePendingCommitInfo {
     readonly record: RemotePendingCommitStatRecord[];
+}
+
+export interface RemotePendingCommitStatRecordDecided extends RemotePendingCommitStatRecord {
+    proceed: boolean;
+}
+
+export interface RemotePendingCommitStatDecided extends RemotePendingCommitStat {
+    readonly record: RemotePendingCommitStatRecordDecided[];
 }
 
 

@@ -1,4 +1,5 @@
 import { Cmd, CmdArgument, CmdRunner, CmdSpawner, CmdOutput } from './CmdRunner';
+import { Callback } from './Types';
 import { streamDataCollector, MapFunc } from 'streamdash';
 
 
@@ -17,8 +18,8 @@ export class CmdOutputDidNotMatchError extends Error {
 
 export type SingleLineCmdResult = string;
 
-export function singleLineCmdRunner({ cmdSpawner }: {cmdSpawner: CmdSpawner}, cmd: Cmd, re: RegExp): MapFunc<CmdArgument, SingleLineCmdResult> {
-    return (inArg: string, next) => {
+export function singleLineCmdRunner({ cmdSpawner }: {cmdSpawner: CmdSpawner}, cmd: Cmd, re: RegExp) {
+    return (inArg: CmdArgument, next: Callback<SingleLineCmdResult>) => {
         let c = new CmdRunner({ cmdSpawner }, {}, ".", cmd, [inArg], {});
         let sdc = streamDataCollector<CmdOutput>(c, (err, lines) => {
 

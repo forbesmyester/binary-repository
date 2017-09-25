@@ -1,5 +1,8 @@
 import { S3BucketName, RemoteUri, GpgKey, UploadedS3FilePart, Sha256FilePart, CommitType, ConfigFile, AbsoluteDirectoryPath, RelativeFilePath, Sha256, ByteCount, ModifiedDate, Callback, Sha256File, File, Filename, CommitFilename, Commit } from './Types';
 import { rename, readFileSync, readFile } from 'fs';
+import getToRemotePendingCommitStatsMapFunc from './getToRemotePendingCommitStatsMapFunc';
+import getToRemotePendingCommitDeciderMapFunc from './getToRemotePendingCommitDeciderMapFunc';
+import { getDependencies as getToRemotePendingCommitStatsDependencies } from './getToRemotePendingCommitStatsMapFunc';
 import getCommitToBackupCheckDatabaseScanFunc from './getCommitToBackupCheckDatabaseScanFunc';
 import RemoteCommitLocalFiles from './RemoteCommitLocalFiles';
 import { RootReadable } from './RootReadable';
@@ -338,7 +341,7 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
                     { readFile },
                     configDir
                 ),
-                {objectMode: true}
+                stdPipeOptions
             )
         );
 
@@ -362,10 +365,10 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
     let toBackupCheckDatabaseScan = preparePipe(new ScanTransform(
             getCommitToBackupCheckDatabaseScanFunc({}),
             {},
-            { objectMode: true }
+            stdPipeOptions
         ));
 
-    let toBackupCheckDatabaseFinal = preparePipe(new FinalDuplex({objectMode: true}));
+    let toBackupCheckDatabaseFinal = preparePipe(new FinalDuplex(stdPipeOptions));
 
     processedCommitStream
         .pipe(toBackupCheckDatabaseScan)
@@ -373,15 +376,35 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
 
     let remotePendingCommitLocalInfoStream = preparePipe(new RightAfterLeft(
             getToRemotePendingCommitInfoRightAfterLeftMapFunc({}),
-            { objectMode: true }
+            stdPipeOptions
         ));
 
+    let toRemotePendingCommitStatsMapFunc = getToRemotePendingCommitStatsMapFunc(
+            getToRemotePendingCommitStatsDependencies(),
+            rootDir
+        ),
+        toRemotePendingCommitStats = preparePipe(
+            new MapTransform(
+                toRemotePendingCommitStatsMapFunc,
+                stdPipeOptions
+            )
+        );
+
+    let toRemotePendingCommitDeciderMapFunc = preparePipe(
+        new MapTransform(
+            getToRemotePendingCommitDeciderMapFunc({}),
+            stdPipeOptions
+        )
+    );
 
     remotePendingCommitStream.pipe(remotePendingCommitLocalInfoStream.right);
     processedCommitStream.pipe(remotePendingCommitLocalInfoStream.left);
 
 
-    remotePendingCommitLocalInfoStream.pipe(toDebugConsole);
+    remotePendingCommitLocalInfoStream
+        .pipe(toRemotePendingCommitStats)
+        .pipe(toRemotePendingCommitDeciderMapFunc)
+        .pipe(toDebugConsole);
 
 
 

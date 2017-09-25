@@ -3,7 +3,7 @@
 gpg --delete-secret-keys ebak
 gpg --delete-keys ebak
 gpg --list-keys
-gpg --quick-generate-key 'ebak'
+gpg --quick-gen-key 'ebak'
 
 rm -rf   /tmp/ebak-repo
 rm -rf   /tmp/ebak-data
@@ -34,6 +34,13 @@ find /tmp/ebak-repo
 node dist/src/index.js init --local-config=/tmp/ebak-config/jim_leach jimleach /tmp/ebak-data/jim_leach ebak file:///tmp/ebak-repo
 
 node dist/src/index.js fetch --local-config=/tmp/ebak-config/jim_leach /tmp/ebak-data/jim_leach
+
+# There should be one remote-pending-commit
+find /tmp/ebak-config/jim_leach
+
+mkdir /tmp/ebak-data/jim_leach/my-projects/
+
+cp test/data/my-projects/t-fp-merge.md  /tmp/ebak-data/jim_leach/my-projects/
 
 node dist/src/index.js download --local-config=/tmp/ebak-config/jim_leach /tmp/ebak-data/jim_leach
 

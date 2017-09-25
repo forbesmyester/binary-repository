@@ -26,14 +26,14 @@ There is good test coverage.
  * Encrypting Data
  * Uploading Data
  * Storing a record (encrypted) of what and which data has been backed up
+ * Deciding which data to download
 
 ### In Progress
 
- * Deciding which data to download
+ * Downloading data
 
 ### To do
 
- * Downloading data
  * Restoring data
 
 ## Future Plans

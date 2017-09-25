@@ -1,34 +1,84 @@
-import {  Callback, RemotePendingCommitInfo, RemotePendingCommitInfoRecord, RemotePendingCommitStat, RemotePendingCommitStatRecord, AbsoluteFilePath, AbsoluteDirectoryPath } from '../src/Types';
+import { RemotePendingCommitStatRecordStat, ByteCount, Callback, RemotePendingCommitInfo, RemotePendingCommitInfoRecord, RemotePendingCommitStat, RemotePendingCommitStatRecord, AbsoluteFilePath, AbsoluteDirectoryPath } from '../src/Types';
 import { asyncMap, MapFunc } from 'streamdash';
 import { assoc } from 'ramda';
+import { CmdRunner } from './CmdRunner';
+import { getFileToSha256FileMapFunc, getRunner } from './getFileToSha256FileMapFunc';
+import { stat } from 'fs';
 import { Stats } from 'fs';
+import { singleLineCmdRunner } from './singleLineCmdRunner';
 import { join } from 'path';
-import {} from './Types';
+import { Sha256 } from './Types';
 
-export interface Dependencies {
-    stat: (f: string, cb: (err: NodeJS.ErrnoException, stats: Stats) => void) => void;
+
+// export function getRunner({ cmdSpawner }: {cmdSpawner: CmdSpawner}) {
+//     return singleLineCmdRunner({ cmdSpawner }, "sha256sum", /^([a-z0-9]{64})/);
+// }
+
+// export function getFileToSha256FileMapFunc({ runner }: { runner: MapFunc<AbsoluteFilePath, Sha256> }, rootPath: AbsoluteDirectoryPath): MapFunc<File, Sha256File> {
+
+function myStat(stat, f: string, cb: (err: null|NodeJS.ErrnoException, stats: null|Stats) => void): void {
+    stat(f, (e: null|NodeJS.ErrnoException, s: Stats) => {
+        if (e === null) { return cb(e, s); }
+        if (e.code == 'ENOENT') { return cb(null, null); }
+        cb(e, null);
+    });
 }
 
-export default function getToRemotePendingCommitStatsMapFunc({ stat }, rootPath: AbsoluteDirectoryPath): MapFunc<RemotePendingCommitInfo, RemotePendingCommitStat> {
+
+export interface Dependencies {
+    stat: (f: string, cb: (err: null|NodeJS.ErrnoException, stats: Stats) => void) => void;
+    runner: MapFunc<AbsoluteFilePath, Sha256>;
+}
+
+
+export function getDependencies(): Dependencies {
+
+    let cmdSpawner = CmdRunner.getCmdSpawner({}),
+    runner = getRunner({ cmdSpawner });
+
+    return { stat, runner };
+}
+
+export default function getToRemotePendingCommitStatsMapFunc({ stat, runner }: Dependencies, rootPath: AbsoluteDirectoryPath): MapFunc<RemotePendingCommitInfo, RemotePendingCommitStat> {
+
+    function addSha256(
+        rec: RemotePendingCommitInfoRecord,
+        statResult: RemotePendingCommitStatRecordStat,
+        next: Callback<RemotePendingCommitStatRecord>
+    ) {
+        let fullPath: AbsoluteFilePath = join(rootPath, rec.path);
+        runner(fullPath, (err, sha256) => {
+            if (err) { return next(err); }
+            let sr = assoc(
+                'sha256',
+                sha256,
+                statResult
+            );
+            next(null, assoc('stat', sr, rec));
+        });
+    }
 
     function worker(
         rec: RemotePendingCommitInfoRecord,
         next: Callback<RemotePendingCommitStatRecord>
     ) {
         let fullPath: AbsoluteFilePath = join(rootPath, rec.path);
-        stat(fullPath, (e, s) => {
+        myStat(stat, fullPath, (e, s) => {
             if (e) { return next(e); }
-            next(
-                null,
-                assoc(
-                    'stat',
-                    {
-                        fileByteCount: s.size,
-                        modifiedDate: s.mtime
-                    },
-                    rec
-                )
-            );
+            if (s === null) {
+                return next(null, assoc('stat', null, rec));
+            }
+            let result = {
+                fileByteCount: s.size,
+                modifiedDate: s.mtime
+            };
+            if (
+                (result.fileByteCount == rec.fileByteCount) &&
+                (result.modifiedDate != rec.modifiedDate)
+            ) {
+                return addSha256(rec, result, next);
+            }
+            next(null, assoc('stat', result, rec));
         });
     }
 

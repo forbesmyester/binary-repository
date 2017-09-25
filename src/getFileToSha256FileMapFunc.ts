@@ -1,7 +1,6 @@
-import { AbsoluteFilePath, AbsoluteDirectoryPath, Sha256, ByteCount, ModifiedDate, File, Sha256File } from  './Types';
+import { Callback, AbsoluteFilePath, AbsoluteDirectoryPath, Sha256, ByteCount, ModifiedDate, File, Sha256File } from  './Types';
 import { CmdSpawner, CmdRunner } from './CmdRunner';
 import { MapFunc } from 'streamdash';
-export { MapFunc } from 'streamdash';
 import { singleLineCmdRunner } from './singleLineCmdRunner';
 import { join } from 'path';
 import { stat } from 'fs';
