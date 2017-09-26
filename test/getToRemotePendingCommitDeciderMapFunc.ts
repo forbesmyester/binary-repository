@@ -4,7 +4,7 @@ import { RemotePendingCommitStatDecided, Sha256, UserErrorCode, Operation, Backu
 import { DeciderUserError, Dependencies } from '../src/getToRemotePendingCommitDeciderMapFunc';
 import getToRemotePendingCommitDeciderMapFunc from '../src/getToRemotePendingCommitDeciderMapFunc';
 
-function getInput(sha256: Sha256, modifiedDate: Date, local: null|BackupCheckDatabaseValue, stat: null|RemotePendingCommitStatRecordStat): RemotePendingCommitStat {
+function getInput(sha256: Sha256, modifiedDate: Date, local: null|BackupCheckDatabaseValue, stat: null|RemotePendingCommitStatRecordStat, part: number = 2): RemotePendingCommitStat {
     return {
         clientId: 'notme',
         createdAt: new Date('2017-07-22T17:02:48.966Z'),
@@ -15,7 +15,7 @@ function getInput(sha256: Sha256, modifiedDate: Date, local: null|BackupCheckDat
             fileByteCount: 200,
             modifiedDate: modifiedDate,
             path: 'def.txt',
-            part: [1, 1],
+            part: [part, 2],
             local: local,
             stat: stat
         }]
@@ -78,6 +78,38 @@ test.cb("If the stat is less thn the local commit then... filesystem/clock untru
         tst.true(err instanceof DeciderUserError);
         tst.regex((<Error>err).message, /^Local file modified before commit /);
         tst.end();
+    });
+});
+
+test.cb("If not the last part then skip", (tst) => {
+
+    let input2 = getInput(
+        'remoteSha',
+        new Date("2017-09-09T17:27:22.730Z"),
+        { modifiedDate:  new Date("2016-09-09T17:27:22.730Z"), fileByteCount: 3832, sha256: "sha" },
+        { modifiedDate: new Date("2016-10-09T17:27:22.730Z"), fileByteCount: 200, sha256: "edited-since"},
+        2
+    );
+
+    let input1 = getInput(
+        input2.record[0].sha256,
+        input2.record[0].modifiedDate,
+        input2.record[0].local,
+        input2.record[0].stat,
+        1
+    );
+
+    mapFunc(input1, (err, result) => {
+        tst.is(null, err);
+        tst.deepEqual(
+            result,
+            injectProceed(false, input1)
+        );
+        mapFunc(input2, (err: null|DeciderUserError) => {
+            tst.true(err instanceof DeciderUserError);
+            tst.is(err ? err.code : -1, UserErrorCode.BLOCKED_BY_FILE);
+            tst.end();
+        });
     });
 });
 

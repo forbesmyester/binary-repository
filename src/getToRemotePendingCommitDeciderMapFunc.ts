@@ -27,6 +27,16 @@ export default function getToRemotePendingCommitDeciderMapFunc(d: Dependencies):
         let work: RemotePendingCommitStatRecordDecidedX[] = map(
             (rec: RemotePendingCommitStatRecord) => {
 
+                if (rec.part[0] != rec.part[1]) {
+                    return merge(
+                        rec,
+                        {
+                            block: false,
+                            proceed: false
+                        }
+                    );
+                }
+
                 let proceed = !!(
                     (!rec.stat) ||
                     (!rec.local) ||
