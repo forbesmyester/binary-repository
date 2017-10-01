@@ -1,8 +1,8 @@
 import test from 'ava';
 import { Stats } from 'fs';
 import { MapFunc } from 'streamdash';
-import getToDownloadedParts from '../src/getToDownloadedParts';
-import { Dependencies } from '../src/getToDownloadedParts';
+import getToDownloadedParts from '../src/getToDownloadedPartsMapFunc';
+import { Dependencies } from '../src/getToDownloadedPartsMapFunc';
 import { FilePartIndex, RelativeFilePath, Operation, Sha256, RemotePendingCommitDownloaded, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, S3Object, ByteCount } from '../src/Types';
 
 function getInput(path: RelativeFilePath, part: FilePartIndex): RemotePendingCommitDownloaded {
@@ -60,14 +60,23 @@ test.cb("Can do everything inc. download", (tst) => {
 
     let deps: Dependencies = {
         stat: (f, next) => {
-            tst.is(`/store/.ebak/f-sha-${++statDone}.ebak`, f);
+            tst.is(`/store/.ebak/remote-encrypted-filepart/sha-${++statDone}.ebak`, f);
             next(null, getStatResult(statDone * 100));
         },
-        download: (f, next) => {
+        mkdirp: (dest, next) => {
+            tst.true([
+                "/store/.ebak/tmp",
+                "/store/.ebak/remote-encrypted-filepart"
+            ].indexOf(dest) > -1);
+            next(null);
+        },
+        download: (t, f, d, next) => {
+            tst.deepEqual(t, '/store/.ebak/tmp');
             tst.deepEqual(
                 f,
                 ['s3://mister-bucket', 'f-sha-1.ebak']
             );
+            tst.deepEqual(d, '/store/.ebak/remote-encrypted-filepart/sha-1.ebak');
             downloadDone = true;
             next(null);
         },
@@ -112,7 +121,10 @@ test.cb("Nothing is done when not last", (tst) => {
             statDone = true;
             next(null, getStatResult(200));
         },
-        download: (f, next) => {
+        mkdirp: (p, n) => {
+            throw new Error("Should not be here");
+        },
+        download: (t, d, f, next) => {
             throw new Error("Should not be here");
         },
         downloadSize: (loc, next) => {
@@ -149,6 +161,7 @@ test.cb("Nothing is done when not last", (tst) => {
     };
 
     let deps: Dependencies = {
+        mkdirp: e,
         stat: e,
         download: e,
         downloadSize: e

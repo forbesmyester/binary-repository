@@ -2,6 +2,8 @@ import { S3BucketName, RemoteUri, GpgKey, UploadedS3FilePart, Sha256FilePart, Co
 import { rename, readFileSync, readFile } from 'fs';
 import getToRemotePendingCommitStatsMapFunc from './getToRemotePendingCommitStatsMapFunc';
 import getToRemotePendingCommitDeciderMapFunc from './getToRemotePendingCommitDeciderMapFunc';
+import { Mode as GetToDownloadedPartsMode, getDependencies as getToDownloadedPartsMapFuncDependencies } from './getToDownloadedPartsMapFunc';
+import getToDownloadedPartsMapFunc from './getToDownloadedPartsMapFunc';
 import { getDependencies as getToRemotePendingCommitStatsDependencies } from './getToRemotePendingCommitStatsMapFunc';
 import getCommitToBackupCheckDatabaseScanFunc from './getCommitToBackupCheckDatabaseScanFunc';
 import RemoteCommitLocalFiles from './RemoteCommitLocalFiles';
@@ -277,12 +279,12 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
     let stdPipeOptions = { objectMode: true, highWaterMark: 1},
         cmdSpawner = CmdRunner.getCmdSpawner({}),
         config: ConfigFile = readConfig(configDir),
-            globber = RootReadable.getGlobFunc(),
-            repositoryCommitFiles = new RemoteCommitLocalFiles(
-                {glob: globber},
-                removeProtocol(config['remote']),
-                { objectMode: true }
-            );
+        globber = RootReadable.getGlobFunc(),
+        repositoryCommitFiles = new RemoteCommitLocalFiles(
+            {glob: globber},
+            removeProtocol(config['remote']),
+            { objectMode: true }
+        );
 
     let toRemoteCommit = preparePipe(new MapTransform(
         getRepositoryCommitToRemoteCommitMapFunc(
@@ -324,6 +326,8 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
     let toDebugConsole = preparePipe(
         new ConsoleWritable({out: console.log}, "LogObj: ")
     );
+
+    let config: ConfigFile = readConfig(configDir);
 
     toDebugConsole.on('finish', function() { console.log("FIN"); });
     toDebugConsole.on('end', function() { console.log("END"); });
@@ -390,12 +394,23 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
             )
         );
 
-    let toRemotePendingCommitDeciderMapFunc = preparePipe(
+    let toRemotePendingCommitDecider = preparePipe(
         new MapTransform(
             getToRemotePendingCommitDeciderMapFunc({}),
             stdPipeOptions
         )
     );
+
+    let toDownloadedParts = preparePipe(new MapTransform(
+        getToDownloadedPartsMapFunc(
+            getToDownloadedPartsMapFuncDependencies(
+                GetToDownloadedPartsMode.LOCAL_FILES
+            ),
+            configDir,
+            removeProtocol(config.remote)
+        ),
+        stdPipeOptions
+    ));
 
     remotePendingCommitStream.pipe(remotePendingCommitLocalInfoStream.right);
     processedCommitStream.pipe(remotePendingCommitLocalInfoStream.left);
@@ -403,7 +418,8 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
 
     remotePendingCommitLocalInfoStream
         .pipe(toRemotePendingCommitStats)
-        .pipe(toRemotePendingCommitDeciderMapFunc)
+        .pipe(toRemotePendingCommitDecider)
+        .pipe(toDownloadedParts)
         .pipe(toDebugConsole);
 
 

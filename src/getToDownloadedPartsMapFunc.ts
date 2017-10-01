@@ -1,21 +1,68 @@
 import myStat from './myStats';
-import { Stats, stat as realStat} from 'fs';
+import { rename, createReadStream, createWriteStream, Stats, stat as realStat} from 'fs';
 import { join } from 'path';
 import { MapFunc } from 'streamdash';
 import { pipe, range, assoc, dissoc, map } from 'ramda';
 import { FilePartIndex, S3Object, S3Location, RemotePendingCommitStatRecordDecided, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, ByteCount } from './Types';
+import * as mkdirp from 'mkdirp';
+
+
+export interface MkdirP {
+    (path: AbsoluteDirectoryPath, next: (e: Error|null) => void): void;
+}
 
 export interface Dependencies {
     stat: (f: AbsoluteFilePath, cb: (err: null|NodeJS.ErrnoException, stats: Stats) => void) => void;
-    download: (loc: S3Location, next: Callback<void>) => void;
+    download: (tmpDir: AbsoluteDirectoryPath, loc: S3Location, downloadTo: AbsoluteFilePath, next: Callback<void>) => void;
     downloadSize: (loc: S3Location, next: Callback<ByteCount>) => void;
+    mkdirp: MkdirP;
 }
 
 interface NeedsDownload extends RemotePendingCommitStatRecordDecided {
     perform: boolean;
 }
 
-export default function getToDownloadedParts({stat, downloadSize, download}: Dependencies, configDir: AbsoluteDirectoryPath, s3Bucket: S3BucketName): MapFunc<RemotePendingCommitStat, RemotePendingCommitStat> {
+export enum Mode {
+    LOCAL_FILES = 1,
+    S3 = 2,
+}
+
+export function getDependencies(mode: Mode): Dependencies {
+    if (mode != Mode.LOCAL_FILES) {
+        throw new Error("Unsupported");
+    }
+    return {
+        mkdirp,
+        stat: realStat,
+        downloadSize: (loc, next) => {
+            let absoluteFilepath: AbsoluteFilePath = join(loc[0], loc[1]);
+            realStat(absoluteFilepath, (e, s) => {
+                if (e) { return next(e); }
+                next(null, s.size);
+            });
+        },
+        download: (tmpDir, loc, downloadTo, next) => {
+            let nexted = false;
+            let tmp = join(tmpDir, loc[1]);
+            let read = createReadStream(join(loc[0], loc[1]));
+            let write = createWriteStream(tmp);
+            read.on('error', (e) => { nexted ? null : next(e); nexted = true; });
+            write.on('error', (e) => { nexted ? null : next(e); nexted = true; });
+            write.on('close', (e) => {
+                if (e) { return next(e); }
+                if (nexted) { return; }
+                rename(tmp, downloadTo, next);
+            });
+            read.pipe(write);
+        }
+    };
+
+}
+
+export default function getToDownloadedParts({mkdirp, stat, downloadSize, download}: Dependencies, configDir: AbsoluteDirectoryPath, s3Bucket: S3BucketName): MapFunc<RemotePendingCommitStat, RemotePendingCommitStat> {
+
+    let tmpDir = join(configDir, 'tmp'),
+        filepartDir = join(configDir, 'remote-encrypted-filepart');
 
     function pDownloadSize(l: S3Location): Promise<ByteCount|null> {
         return new Promise((resolve, reject) => {
@@ -37,23 +84,39 @@ export default function getToDownloadedParts({stat, downloadSize, download}: Dep
 
 
     function doDownloaded(a: NeedsDownload): Promise<NeedsDownload> {
+        // TODO: Yeh Yeh, it's a Christmas tree... do something about it!
         if (!a.perform) return Promise.resolve(a);
         return new Promise((resolve, reject) => {
-            download([s3Bucket, constructObject(a)] , (e, r) => {
+            mkdirp(tmpDir, (e) => {
                 if (e) { return reject(e); }
-                resolve(a);
+                mkdirp(filepartDir, (e) => {
+                    if (e) { return reject(e); }
+                    download(
+                        tmpDir,
+                        [s3Bucket, constructObject(a)],
+                        join(filepartDir, constructFilepart(a)),
+                        (e, r) => {
+                            if (e) { return reject(e); }
+                            resolve(a);
+                        }
+                    );
+                });
             });
         });
     }
 
+    function constructFilepart(a: NeedsDownload): S3Object {
+        return `${a.sha256}-${a.part[0]}.ebak`;
+    }
+
     function constructObject(a: NeedsDownload): S3Object {
-        return `f-${a.sha256}-${a.part[0]}.ebak`;
+        return 'f-' + constructFilepart(a);
     }
 
     function checkDownloaded(a: NeedsDownload): Promise<NeedsDownload> {
         if (!a.perform) return Promise.resolve(a);
         return Promise.all([
-            pMyStat(join(configDir, constructObject(a))),
+            pMyStat(join(filepartDir, constructFilepart(a))),
             pDownloadSize([s3Bucket, constructObject(a)])
         ]).then(([stats, downloadSize]) => {
             if (stats === null) { return a; }
