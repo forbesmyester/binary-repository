@@ -141,6 +141,8 @@ export type S3BucketName = string;
  */
 export type S3Object = string;
 
+export type S3Location = [S3BucketName, S3Object];
+
 /**
  * The name of the GPG key
  */
@@ -235,31 +237,5 @@ export interface RemotePendingCommitStatDecided extends RemotePendingCommitStat 
     readonly record: RemotePendingCommitStatRecordDecided[];
 }
 
+export interface RemotePendingCommitDownloaded extends RemotePendingCommitStatDecided {}
 
-// export interface RemotePendingFileInfo {
-//     localCommit: null|{ commitId: CommitId; clientId: ClientId; modifiedDate: Date; };
-//     remoteModificationDate: Date;
-// }
-
-// export interface RemotePendingCommitLocalInfo {
-//     [k: string /* RelativePath */]: RemotePendingFileInfo;
-// }
-
-// export interface RemotePendingFileStats extends RemotePendingFileInfo {
-//     localModificationDate: null|Date;
-// }
-
-// export interface RemotePendingCommitLocalStats {
-//     [k: string /* RelativePath */]: RemotePendingFileStats;
-// }
-
-// export interface RemotePendingCommitActionFile extends RemotePendingFileStats {
-//     proceed: boolean;
-// }
-
-// export interface RemotePendingCommitAction {
-//     proceed: boolean;
-//     files: {
-//         [k: string /* RelativePath */]: RemotePendingCommitActionFile;
-//     };
-// }

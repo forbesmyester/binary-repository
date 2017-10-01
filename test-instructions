@@ -38,10 +38,11 @@ node dist/src/index.js fetch --local-config=/tmp/ebak-config/jim_leach /tmp/ebak
 # There should be one remote-pending-commit
 find /tmp/ebak-config/jim_leach
 
-mkdir /tmp/ebak-data/jim_leach/my-projects/
-
-cp test/data/my-projects/t-fp-merge.md  /tmp/ebak-data/jim_leach/my-projects/
-
 node dist/src/index.js download --local-config=/tmp/ebak-config/jim_leach /tmp/ebak-data/jim_leach
 
-node dist/src/index.js download --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
+# node dist/src/index.js download --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
+#
+# mkdir /tmp/ebak-data/jim_leach/my-projects/
+#
+# cp test/data/my-projects/t-fp-merge.md  /tmp/ebak-data/jim_leach/my-projects/
+#

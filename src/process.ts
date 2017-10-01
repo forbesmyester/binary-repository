@@ -407,23 +407,17 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
         .pipe(toDebugConsole);
 
 
+    // toDownloadedParts:
+    //   For every part
+    //     Look at remote filesize
+    //     If same as local
+    //       Contine
+    //     Download
+    // toSynchedParts:
+    //   Cat all of them through GPG into new file
+    //   Do a move
+    //   RemoveParts
 
-
-    /**
-     * For each remote-pending-commit sorted by timestamp:
-     *
-     *   // Comparing to local files...
-     *   If (all local files are unchanged since last commit):
-     *     For every file apply latest state.
-     *     Move to .ebak/remote-commit.
-     *
-     *   Else:
-     *
-     *     Warn about not being able to apply commit and suggest upload.
-     *
-     *     Stop.
-     *
-     */
 }
 
 

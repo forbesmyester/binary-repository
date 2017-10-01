@@ -1,3 +1,4 @@
+import myStat from './myStats';
 import { RemotePendingCommitStatRecordStat, ByteCount, Callback, RemotePendingCommitInfo, RemotePendingCommitInfoRecord, RemotePendingCommitStat, RemotePendingCommitStatRecord, AbsoluteFilePath, AbsoluteDirectoryPath } from '../src/Types';
 import { asyncMap, MapFunc } from 'streamdash';
 import { assoc } from 'ramda';
@@ -15,14 +16,6 @@ import { Sha256 } from './Types';
 // }
 
 // export function getFileToSha256FileMapFunc({ runner }: { runner: MapFunc<AbsoluteFilePath, Sha256> }, rootPath: AbsoluteDirectoryPath): MapFunc<File, Sha256File> {
-
-function myStat(stat, f: string, cb: (err: null|NodeJS.ErrnoException, stats: null|Stats) => void): void {
-    stat(f, (e: null|NodeJS.ErrnoException, s: Stats) => {
-        if (e === null) { return cb(e, s); }
-        if (e.code == 'ENOENT') { return cb(null, null); }
-        cb(e, null);
-    });
-}
 
 
 export interface Dependencies {
