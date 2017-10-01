@@ -5,6 +5,7 @@ import { MapFunc } from 'streamdash';
 import { pipe, range, assoc, dissoc, map } from 'ramda';
 import { FilePartIndex, S3Object, S3Location, RemotePendingCommitStatRecordDecided, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, ByteCount } from './Types';
 import * as mkdirp from 'mkdirp';
+import RepositoryLocalfiles from './repository/RepositoryLocalfiles';
 
 
 export interface MkdirP {
@@ -34,27 +35,8 @@ export function getDependencies(mode: Mode): Dependencies {
     return {
         mkdirp,
         stat: realStat,
-        downloadSize: (loc, next) => {
-            let absoluteFilepath: AbsoluteFilePath = join(loc[0], loc[1]);
-            realStat(absoluteFilepath, (e, s) => {
-                if (e) { return next(e); }
-                next(null, s.size);
-            });
-        },
-        download: (tmpDir, loc, downloadTo, next) => {
-            let nexted = false;
-            let tmp = join(tmpDir, loc[1]);
-            let read = createReadStream(join(loc[0], loc[1]));
-            let write = createWriteStream(tmp);
-            read.on('error', (e) => { nexted ? null : next(e); nexted = true; });
-            write.on('error', (e) => { nexted ? null : next(e); nexted = true; });
-            write.on('close', (e) => {
-                if (e) { return next(e); }
-                if (nexted) { return; }
-                rename(tmp, downloadTo, next);
-            });
-            read.pipe(write);
-        }
+        download: RepositoryLocalfiles.download,
+        downloadSize: RepositoryLocalfiles.downloadSize
     };
 
 }

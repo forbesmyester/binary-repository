@@ -1,5 +1,7 @@
 #!/bin/bash
 
+npm test
+
 gpg --delete-secret-keys ebak
 gpg --delete-keys ebak
 gpg --list-keys
