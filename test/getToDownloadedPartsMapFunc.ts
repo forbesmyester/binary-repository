@@ -1,4 +1,5 @@
 import test from 'ava';
+import { assoc } from 'ramda';
 import { Stats } from 'fs';
 import { MapFunc } from 'streamdash';
 import getToDownloadedParts from '../src/getToDownloadedPartsMapFunc';
@@ -173,10 +174,10 @@ test.cb("Nothing is done when not last", (tst) => {
         's3://mister-bucket'
     );
 
-    let input = getInput(
+    let input = assoc('proceed', false, getInput(
         'a/file.txt',
         [1, 2]
-    );
+    ));
 
     mapFunc(input, (err, result) => {
         tst.is(null, err);
