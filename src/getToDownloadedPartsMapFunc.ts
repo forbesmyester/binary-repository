@@ -2,7 +2,7 @@ import myStat from './myStats';
 import { rename, createReadStream, createWriteStream, Stats, stat as realStat} from 'fs';
 import { join } from 'path';
 import { MapFunc } from 'streamdash';
-import { pipe, range, assoc, dissoc, map } from 'ramda';
+import { flatten, pipe, range, assoc, dissoc, map } from 'ramda';
 import { FilePartIndex, S3Object, S3Location, RemotePendingCommitStatRecordDecided, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, ByteCount } from './Types';
 import * as mkdirp from 'mkdirp';
 import RepositoryLocalfiles from './repository/RepositoryLocalfiles';
@@ -64,6 +64,7 @@ export default function getToDownloadedParts({mkdirp, stat, downloadSize, downlo
     function doDownloaded(a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
         // TODO: Yeh Yeh, it's a Christmas tree... do something about it!
         if (!a.proceed) return Promise.resolve(a);
+        console.log("PPP", a);
         return new Promise((resolve, reject) => {
             mkdirp(tmpDir, (e) => {
                 if (e) { return reject(e); }
@@ -92,6 +93,7 @@ export default function getToDownloadedParts({mkdirp, stat, downloadSize, downlo
     }
 
     function checkDownloaded(a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
+        console.log(">", a);
         if (!a.proceed) return Promise.resolve(a);
         return Promise.all([
             pMyStat(join(filepartDir, constructFilepart(a))),
@@ -106,8 +108,8 @@ export default function getToDownloadedParts({mkdirp, stat, downloadSize, downlo
     }
 
     function checkNotLast(a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided[]> {
-        if (a.part[0] < a.part[1]) {
-            return Promise.resolve([assoc('proceed', false, a)]);
+        if (!a.proceed) {
+            return Promise.resolve([a]);
         }
         let r = map(part0 => {
             return assoc('part', [part0, a.part[1]], a);
@@ -123,12 +125,18 @@ export default function getToDownloadedParts({mkdirp, stat, downloadSize, downlo
         };
     }
 
-    function process(a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
+    function process(a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided[]> {
         return checkNotLast(a)
             .then(multi(checkDownloaded))
             .then(multi(doDownloaded))
-            .then((_: RemotePendingCommitStatRecordDecided[]) => {
-                return a;
+            .then((aa: RemotePendingCommitStatRecordDecided[]) => {
+                return map(
+                    x => {
+                        x.proceed = a.proceed;
+                        return x;
+                    },
+                    aa
+                );
             });
     }
 
@@ -137,7 +145,7 @@ export default function getToDownloadedParts({mkdirp, stat, downloadSize, downlo
             .then(record => {
                 next(
                     null,
-                    assoc('record', record, input)
+                    assoc('record', flatten(record), input)
                 );
             })
             .catch(e => { next(e); });

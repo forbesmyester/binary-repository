@@ -1,0 +1,4 @@
+IFS=$'\n\t'
+set -euo pipefail
+
+cat "${OPT_SRC}" | gpg -d -r "${OPT_GPG_KEY}" > "${OPT_DST}"

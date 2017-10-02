@@ -6,7 +6,7 @@ import getToDownloadedParts from '../src/getToDownloadedPartsMapFunc';
 import { Dependencies } from '../src/getToDownloadedPartsMapFunc';
 import { FilePartIndex, RelativeFilePath, Operation, Sha256, RemotePendingCommitDownloaded, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, S3Object, ByteCount } from '../src/Types';
 
-function getInput(path: RelativeFilePath, part: FilePartIndex): RemotePendingCommitDownloaded {
+function getInput(path: RelativeFilePath, part: FilePartIndex, proceed: boolean = true): RemotePendingCommitDownloaded {
     let d = new Date('2017-07-22T17:02:48.966Z');
     return {
         clientId: 'notme',
@@ -21,7 +21,7 @@ function getInput(path: RelativeFilePath, part: FilePartIndex): RemotePendingCom
             part: part,
             local: null,
             stat: null,
-            proceed: true
+            proceed
         }]
     };
 
@@ -57,7 +57,7 @@ test.cb("Can do everything inc. download", (tst) => {
 
     let statDone = 0,
         downloadSizeDone = 0,
-        downloadDone = false;
+        downloadDone = 0;
 
     let deps: Dependencies = {
         stat: (f, next) => {
@@ -78,7 +78,7 @@ test.cb("Can do everything inc. download", (tst) => {
                 ['s3://mister-bucket', 'f-sha-1.ebak']
             );
             tst.deepEqual(d, '/store/.ebak/remote-encrypted-filepart/sha-1.ebak');
-            downloadDone = true;
+            downloadDone = downloadDone + 1;
             next(null);
         },
         downloadSize: (loc, next) => {
@@ -101,61 +101,32 @@ test.cb("Can do everything inc. download", (tst) => {
         [2, 2]
     );
 
+    let input0 = getInput(
+        'a/code.txt',
+        [1, 2]
+    );
+
+    let expected = assoc(
+        'record',
+        input0.record.concat(input.record),
+        input
+    );
+
+
     mapFunc(input, (err, result) => {
         tst.is(2, statDone);
         tst.is(2, downloadSizeDone);
+        tst.is(1, downloadDone);
         tst.is(null, err);
-        tst.deepEqual(result, input);
+        tst.deepEqual(result, expected);
         tst.end();
     });
 
 });
 
 
-test.cb("Nothing is done when not last", (tst) => {
 
-    let statDone = false,
-        downloadSizeDone = false;
-
-    let deps: Dependencies = {
-        stat: (f, next) => {
-            statDone = true;
-            next(null, getStatResult(200));
-        },
-        mkdirp: (p, n) => {
-            throw new Error("Should not be here");
-        },
-        download: (t, d, f, next) => {
-            throw new Error("Should not be here");
-        },
-        downloadSize: (loc, next) => {
-            downloadSizeDone = true;
-            next(null, 200);
-        }
-    };
-
-    let mapFunc = getToDownloadedParts(
-        deps,
-        '/store/.ebak',
-        's3://mister-bucket'
-    );
-
-    let input = getInput(
-        'a/file.txt',
-        [1, 1]
-    );
-
-    mapFunc(input, (err, result) => {
-        tst.is(true, statDone);
-        tst.is(true, downloadSizeDone);
-        tst.is(null, err);
-        tst.deepEqual(result, input);
-        tst.end();
-    });
-
-});
-
-test.cb("Nothing is done when not last", (tst) => {
+test.cb("Nothing is done when not proceed", (tst) => {
 
     let e = (f, next) => {
         throw new Error("Should not be here");
@@ -174,10 +145,11 @@ test.cb("Nothing is done when not last", (tst) => {
         's3://mister-bucket'
     );
 
-    let input = assoc('proceed', false, getInput(
+    let input = getInput(
         'a/file.txt',
-        [1, 2]
-    ));
+        [1, 2],
+        false
+    );
 
     mapFunc(input, (err, result) => {
         tst.is(null, err);
