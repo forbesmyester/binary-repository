@@ -123,18 +123,12 @@ export default function getToDownloadedParts({mkdirp, stat, downloadSize, downlo
         };
     }
 
-    function process(a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided[]> {
+    function process(a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
         return checkNotLast(a)
             .then(multi(checkDownloaded))
             .then(multi(doDownloaded))
             .then((aa: RemotePendingCommitStatRecordDecided[]) => {
-                return map(
-                    x => {
-                        x.proceed = a.proceed;
-                        return x;
-                    },
-                    aa
-                );
+                return a;
             });
     }
 
@@ -143,7 +137,7 @@ export default function getToDownloadedParts({mkdirp, stat, downloadSize, downlo
             .then(record => {
                 next(
                     null,
-                    assoc('record', flatten(record), input)
+                    assoc('record', record, input)
                 );
             })
             .catch(e => { next(e); });

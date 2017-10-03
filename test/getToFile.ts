@@ -33,12 +33,14 @@ test.cb('Can unencrypt local FilePart', (tst) => {
         rename: 0,
         decrypt: 0,
         mkdirp: 0,
-        unlink: 0,
-        joinFiles: 0
+        unlink: 0
     };
 
     let deps = {
         rename: (oldFn: AbsoluteFilePath, newFn: AbsoluteFilePath, next: Callback<void>) => {
+            tst.is(oldFn, '/store/.ebak/tmp/sha.ebak.dec');
+            tst.is(newFn, '/store/Docs/a.txt');
+            done.rename = done.rename + 1;
             next(null);
         },
         mkdirp: (p, n) => {
@@ -46,21 +48,22 @@ test.cb('Can unencrypt local FilePart', (tst) => {
             done.mkdirp = done.mkdirp + 1;
             n(null);
         },
-        joinFiles: (srcs: AbsoluteFilePath[], dst: AbsoluteFilePath, next: Callback<void>) => {
-            tst.deepEqual(srcs, [
-                '/store/.ebak/tmp/sha-2.ebak.dec'
-            ]);
-            tst.is(dst, '/store/.ebak/tmp/sha.ebak.dec');
-            done.joinFiles = done.joinFiles + 1;
-            next(null);
-        },
         unlink: (path: AbsoluteFilePath, next: Callback<void>) => {
+            let expected = [
+                '/store/.ebak/remote-encrypted-filepart/sha-1.ebak',
+                '/store/.ebak/remote-encrypted-filepart/sha-2.ebak'
+            ];
+            tst.deepEqual(path, expected[done.unlink]);
+            done.unlink = done.unlink + 1;
             next(null);
         },
-        decrypt: (gpgKey: GpgKey, src: AbsoluteFilePath, dst: AbsoluteFilePath, next: Callback<void>) => {
+        decrypt: (gpgKey: GpgKey, src: AbsoluteFilePath[], dst: AbsoluteFilePath, next: Callback<void>) => {
             tst.is(gpgKey, 'gpgKey');
-            tst.is(dst, '/store/.ebak/tmp/sha-2.ebak.dec');
-            tst.is(src, '/store/.ebak/remote-encrypted-filepart/sha-2.ebak');
+            tst.is(dst, '/store/.ebak/tmp/sha.ebak.dec');
+            tst.deepEqual(src, [
+                '/store/.ebak/remote-encrypted-filepart/sha-1.ebak',
+                '/store/.ebak/remote-encrypted-filepart/sha-2.ebak'
+            ]);
             done['decrypt'] = done['decrypt'] + 1;
             next(null);
         }
@@ -70,8 +73,9 @@ test.cb('Can unencrypt local FilePart', (tst) => {
 
     mf(getInput('Docs/a.txt', [2, 2]), (e, r) => {
         tst.is(done.decrypt, 1);
-        tst.is(done.joinFiles, 1);
         tst.is(done.mkdirp, 1);
+        tst.is(done.rename, 1);
+        tst.is(done.unlink, 2);
         tst.is(null, e);
         tst.deepEqual(r, getInput('Docs/a.txt', [2, 2]));
         tst.end();

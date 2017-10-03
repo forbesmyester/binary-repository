@@ -106,7 +106,7 @@ test.cb("Can do everything inc. download", (tst) => {
         [1, 2]
     );
 
-    let expected = assoc(
+    let wasExpected = assoc(
         'record',
         input0.record.concat(input.record),
         input
@@ -118,7 +118,7 @@ test.cb("Can do everything inc. download", (tst) => {
         tst.is(2, downloadSizeDone);
         tst.is(1, downloadDone);
         tst.is(null, err);
-        tst.deepEqual(result, expected);
+        tst.deepEqual(result, input);
         tst.end();
     });
 
