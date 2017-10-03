@@ -64,7 +64,6 @@ export default function getToDownloadedParts({mkdirp, stat, downloadSize, downlo
     function doDownloaded(a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
         // TODO: Yeh Yeh, it's a Christmas tree... do something about it!
         if (!a.proceed) return Promise.resolve(a);
-        console.log("PPP", a);
         return new Promise((resolve, reject) => {
             mkdirp(tmpDir, (e) => {
                 if (e) { return reject(e); }
@@ -93,7 +92,6 @@ export default function getToDownloadedParts({mkdirp, stat, downloadSize, downlo
     }
 
     function checkDownloaded(a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
-        console.log(">", a);
         if (!a.proceed) return Promise.resolve(a);
         return Promise.all([
             pMyStat(join(filepartDir, constructFilepart(a))),

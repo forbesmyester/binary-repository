@@ -64,7 +64,6 @@ test("Can break parts", (tst) => {
             tst.deepEqual(parts, expected);
         })
         .catch(e => {
-            console.log(e);
             tst.fail(e.message);
         });
 

@@ -170,7 +170,6 @@ test("Will output at filesize threshold and flush", (tst) => {
             return true;
         })
         .catch(e => {
-            console.log(e);
             tst.fail(e.message);
         });
 });
@@ -230,7 +229,6 @@ test("Will output at time threshold and flush", (tst) => {
             return true;
         })
         .catch(e => {
-            console.log(e);
             tst.fail(e.message);
         });
 });

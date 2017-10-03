@@ -135,7 +135,6 @@ yargs.usage('$0 <cmd> [args]')
             },
         },
         function (args) {
-            console.log(args);
             let { local, localConfiguration } = resolve(args);
             download(local, localConfiguration);
         }
