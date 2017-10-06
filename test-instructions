@@ -40,7 +40,16 @@ node dist/src/index.js fetch --local-config=/tmp/ebak-config/jim_leach /tmp/ebak
 # There should be one remote-pending-commit
 find /tmp/ebak-config/jim_leach
 
+# And no files in here
+find /tmp/ebak-data/jim_leach
+
 node dist/src/index.js download --local-config=/tmp/ebak-config/jim_leach /tmp/ebak-data/jim_leach
+
+# There should now be files in here
+find /tmp/ebak-data/jim_leach
+
+# And the remote-pending-commit should have become remote-commit
+find /tmp/ebak-config/jim_leach
 
 # node dist/src/index.js download --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
 #

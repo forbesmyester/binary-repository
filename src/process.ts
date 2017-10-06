@@ -2,6 +2,10 @@ import { S3BucketName, RemoteUri, GpgKey, UploadedS3FilePart, Sha256FilePart, Co
 import { rename, readFileSync, readFile } from 'fs';
 import getToRemotePendingCommitStatsMapFunc from './getToRemotePendingCommitStatsMapFunc';
 import getToRemotePendingCommitDeciderMapFunc from './getToRemotePendingCommitDeciderMapFunc';
+
+import { getDependencies as getToFileMapFuncDependencies } from './getToFileMapFunc';
+import getToFileMapFunc from './getToFileMapFunc';
+
 import { Mode as GetToDownloadedPartsMode, getDependencies as getToDownloadedPartsMapFuncDependencies } from './getToDownloadedPartsMapFunc';
 import getToDownloadedPartsMapFunc from './getToDownloadedPartsMapFunc';
 import { getDependencies as getToRemotePendingCommitStatsDependencies } from './getToRemotePendingCommitStatsMapFunc';
@@ -412,6 +416,17 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
         stdPipeOptions
     ));
 
+    let toFile = preparePipe(new MapTransform(
+        getToFileMapFunc(
+            getToFileMapFuncDependencies(),
+            config['gpg-encryption-key'],
+            configDir,
+            rootDir
+        ),
+        stdPipeOptions
+    ));
+
+
     remotePendingCommitStream.pipe(remotePendingCommitLocalInfoStream.right);
     processedCommitStream.pipe(remotePendingCommitLocalInfoStream.left);
 
@@ -420,6 +435,7 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
         .pipe(toRemotePendingCommitStats)
         .pipe(toRemotePendingCommitDecider)
         .pipe(toDownloadedParts)
+        .pipe(toFile)
         .pipe(toDebugConsole);
 
 

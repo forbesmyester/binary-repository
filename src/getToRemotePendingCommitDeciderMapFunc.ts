@@ -51,8 +51,14 @@ export default function getToRemotePendingCommitDeciderMapFunc(d: Dependencies):
                     );
                 }
 
-                // If there is stat, but it is not local (commit), stop.
+                // If there is stat, but it is not local (commit), if different from repo.
                 if (rec.local === null) {
+                    if (rec.sha256 == rec.stat.sha256) {
+                        return merge(
+                            rec,
+                            { block: false, proceed: false }
+                        );
+                    }
                     return merge(
                         rec,
                         { block: true, proceed }

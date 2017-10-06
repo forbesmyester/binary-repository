@@ -33,13 +33,13 @@ function injectProceed(proceed: boolean, rpcs: RemotePendingCommitStat): RemoteP
 
 let mapFunc = getToRemotePendingCommitDeciderMapFunc({});
 
-test.cb("If there is stat, but it is not local (commit), stop.", (tst) => {
+test.cb("If there is stat, but it is not local (commit), stop and different to repo version.", (tst) => {
 
     let input = getInput(
         'remoteSha',
         new Date("2017-09-09T17:27:22.730Z"),
         null,
-        { modifiedDate: new Date("2018-09-09T17:27:22.730Z"), fileByteCount: 200 }
+        { sha256: 'localSha', modifiedDate: new Date("2018-09-09T17:27:22.730Z"), fileByteCount: 200 }
     );
 
     mapFunc(input, (err: null|DeciderUserError) => {
@@ -48,6 +48,7 @@ test.cb("If there is stat, but it is not local (commit), stop.", (tst) => {
         tst.end();
     });
 });
+
 
 test.cb("If the stat is modified later the stat SHA must exist", (tst) => {
 
@@ -143,6 +144,25 @@ test.cb("If there is no stat file, no damage can be done so copy over", (tst) =>
         tst.deepEqual(
             result,
             injectProceed(true, input)
+        );
+        tst.end();
+    });
+});
+
+test.cb("If there is stat, but it is not local (commit), though same as repo", (tst) => {
+
+    let input = getInput(
+        'remoteSha',
+        new Date("2017-09-09T17:27:22.730Z"),
+        null,
+        { sha256: 'remoteSha', modifiedDate: new Date("2018-09-09T17:27:22.730Z"), fileByteCount: 200 }
+    );
+
+    mapFunc(input, (err: null|DeciderUserError, result) => {
+        tst.is(err, null);
+        tst.deepEqual(
+            result,
+            injectProceed(false, input)
         );
         tst.end();
     });

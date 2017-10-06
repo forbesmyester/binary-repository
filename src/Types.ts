@@ -237,5 +237,8 @@ export interface RemotePendingCommitStatDecided extends RemotePendingCommitStat 
     readonly record: RemotePendingCommitStatRecordDecided[];
 }
 
-export interface RemotePendingCommitDownloaded extends RemotePendingCommitStatDecided {}
+export interface RemotePendingCommitDownloadedRecord extends RemotePendingCommitStatRecordDecided {}
+export interface RemotePendingCommitDownloaded extends RemotePendingCommitStatDecided {
+    readonly record: RemotePendingCommitDownloadedRecord[];
+}
 

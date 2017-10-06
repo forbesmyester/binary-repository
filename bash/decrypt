@@ -1,4 +1,10 @@
+#!/bin/bash
+
 IFS=$'\n\t'
 set -euo pipefail
 
-cat "${OPT_SRC}" | gpg -d -r "${OPT_GPG_KEY}" > "${OPT_DST}"
+if [ $OPT_IS_FIRST -eq 1 ]; then
+    cat "${OPT_SRC}" | gpg -d -r "${OPT_GPG_KEY}" > "${OPT_DST}"
+else
+    cat "${OPT_SRC}" | gpg -d -r "${OPT_GPG_KEY}" >> "${OPT_DST}"
+fi
