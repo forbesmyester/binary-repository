@@ -54,6 +54,11 @@ export interface Commit {
     readonly clientId: ClientId;
 }
 
+export enum RemoteType {
+    LOCAL_FILES = 1,
+    S3 = 2,
+}
+
 /**
  * After all the Sha256FilePart are uploaded a commit file is wrote and the
  * Commit becomes Comitted.

@@ -1,4 +1,4 @@
-import { S3BucketName, RemoteUri, GpgKey, UploadedS3FilePart, Sha256FilePart, CommitType, ConfigFile, AbsoluteDirectoryPath, RelativeFilePath, Sha256, ByteCount, ModifiedDate, Callback, Sha256File, File, Filename, CommitFilename, Commit } from './Types';
+import { RemoteType, S3BucketName, RemoteUri, GpgKey, UploadedS3FilePart, Sha256FilePart, CommitType, ConfigFile, AbsoluteDirectoryPath, RelativeFilePath, Sha256, ByteCount, ModifiedDate, Callback, Sha256File, File, Filename, CommitFilename, Commit } from './Types';
 import { rename, readFileSync, readFile } from 'fs';
 import getToRemotePendingCommitStatsMapFunc from './getToRemotePendingCommitStatsMapFunc';
 import getToRemotePendingCommitDeciderMapFunc from './getToRemotePendingCommitDeciderMapFunc';
@@ -6,11 +6,13 @@ import getToRemotePendingCommitDeciderMapFunc from './getToRemotePendingCommitDe
 import { getDependencies as getToFileMapFuncDependencies } from './getToFileMapFunc';
 import getToFileMapFunc from './getToFileMapFunc';
 
-import { Mode as GetToDownloadedPartsMode, getDependencies as getToDownloadedPartsMapFuncDependencies } from './getToDownloadedPartsMapFunc';
+
+import { getDependencies as getToDownloadedPartsMapFuncDependencies } from './getToDownloadedPartsMapFunc';
 import getToDownloadedPartsMapFunc from './getToDownloadedPartsMapFunc';
 import { getDependencies as getToRemotePendingCommitStatsDependencies } from './getToRemotePendingCommitStatsMapFunc';
 import getCommitToBackupCheckDatabaseScanFunc from './getCommitToBackupCheckDatabaseScanFunc';
-import RemoteCommitLocalFiles from './RemoteCommitLocalFiles';
+import CommitFilenameLocalFiles from './CommitFilenameLocalFiles';
+import CommitFilenameS3 from './CommitFilenameS3';
 import { RootReadable } from './RootReadable';
 import { join } from 'path';
 import commitSortFunction from './commitFilenameSorter';
@@ -20,7 +22,6 @@ import getLocalCommitFilenameToCommitMapFunc from './getLocalCommitFilenameToCom
 import { getFilenameToFileMapFunc } from './getFilenameToFileMapFunc';
 import { getFileToSha256FileMapFunc, getRunner } from './getFileToSha256FileMapFunc';
 import { Sha256FileToSha256FilePart } from './Sha256FileToSha256FilePart';
-import getSha256FilePartToUploadedS3FilePartFakeMapFunc from './getSha256FilePartToUploadedS3FilePartFakeMapFunc';
 import getSha256FilePartToUploadedS3FilePartMapFunc from './getSha256FilePartToUploadedS3FilePartMapFunc';
 import { getCommitToCommittedMapFuncDependencies, getCommitToCommittedMapFunc } from './getCommitToCommittedMapFunc';
 import { UploadedS3FilePartsToCommit } from './UploadedS3FilePartsToCommit';
@@ -35,6 +36,7 @@ import getToRemotePendingCommitInfoRightAfterLeftMapFunc from './getToRemotePend
 import { mapObjIndexed } from 'ramda';
 import getRepositoryCommitToRemoteCommitMapFunc from './getRepositoryCommitToRemoteCommitMapFunc';
 import * as mkdirp from 'mkdirp';
+import { S3 } from 'aws-sdk';
 
 class ConsoleWritable extends Writable<Object> {
 
@@ -104,16 +106,19 @@ function removeProtocol(s: RemoteUri): S3BucketName {
     return s.replace(/^[a-z0-9]+\:\/\//, '');
 }
 
-function getSha256FilePartToUploadedFilePart(rootDir: AbsoluteDirectoryPath, remote: RemoteUri, gpgKey: GpgKey): MapFunc<Sha256FilePart, UploadedS3FilePart> {
-
-    if (remote.match(/^fake\:\/\//)) {
-        return getSha256FilePartToUploadedS3FilePartFakeMapFunc(
-            rootDir,
-            removeProtocol(remote),
-            gpgKey,
-            './bash/upload-filepart-s3'
-        );
+function getRemoteType(remote: RemoteUri) {
+    if (remote.match(/^s3\:\/\//)) {
+        return RemoteType.S3;
     }
+
+    if (remote.match(/^file\:\/\//)) {
+        return RemoteType.LOCAL_FILES;
+    }
+
+    throw new Error("Cannot figure out remote type from RemoteUri: " + remote);
+}
+
+function getSha256FilePartToUploadedFilePart(rootDir: AbsoluteDirectoryPath, remote: RemoteUri, gpgKey: GpgKey): MapFunc<Sha256FilePart, UploadedS3FilePart> {
 
     if (remote.match(/^s3\:\/\//)) {
         return getSha256FilePartToUploadedS3FilePartMapFunc(
@@ -138,15 +143,6 @@ function getSha256FilePartToUploadedFilePart(rootDir: AbsoluteDirectoryPath, rem
 
 
 function getCommittedToUploadedCommittedMapFunc(configDir: AbsoluteDirectoryPath, remote: RemoteUri, gpgKey: GpgKey) {
-
-    if (remote.match(/^fake\:\/\//)) {
-        return getCommittedToUploadedS3CommittedFakeMapFunc(
-            configDir,
-            removeProtocol(remote),
-            gpgKey,
-            './bash/upload-commit-s3'
-        );
-    }
 
     if (remote.match(/^s3\:\/\//)) {
         return getCommittedToUploadedS3CommittedMapFunc(
@@ -181,6 +177,8 @@ function readConfig(configDir: AbsoluteDirectoryPath) {
 }
 
 export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
+
+    // TODO: Should compare SHA's if the timestamps have changed...
 
     let stdPipeOptions = { objectMode: true, highWaterMark: 1},
         tmpDir = join(configDir, "tmp"),
@@ -268,7 +266,6 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
 
     let backup = fileNotBackedUpRightAfterLeft
         .pipe(preparePipe(fileToSha256File))
-        // TODO: Filter files where name == name and sha = sha
         .pipe(preparePipe(fileToSha256FilePart))
         .pipe(preparePipe(sha256FilePartToUploadedS3FilePart)) // TODO: Loses 0 length files
         .pipe(preparePipe(uploadedS3FilePartsToCommit))
@@ -280,15 +277,38 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
 }
 
 export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
+
+
     let stdPipeOptions = { objectMode: true, highWaterMark: 1},
         cmdSpawner = CmdRunner.getCmdSpawner({}),
         config: ConfigFile = readConfig(configDir),
+        remoteType = getRemoteType(config.remote),
         globber = RootReadable.getGlobFunc(),
-        repositoryCommitFiles = new RemoteCommitLocalFiles(
+        repositoryCommitFiles: null|Readable<Filename> = null,
+        cmd: string = '';
+
+    if (remoteType == RemoteType.LOCAL_FILES) {
+        cmd = 'bash/download-cat'
+        repositoryCommitFiles = preparePipe(new CommitFilenameLocalFiles(
             {glob: globber},
             removeProtocol(config['remote']),
             { objectMode: true }
-        );
+        ));
+    }
+
+
+    if (remoteType == RemoteType.S3) {
+        cmd = 'bash/download-s3'
+        repositoryCommitFiles = preparePipe(new CommitFilenameS3(
+            new S3(),
+            removeProtocol(config['remote']),
+            { objectMode: true }
+        ));
+    }
+
+    if (repositoryCommitFiles === null) {
+        throw new Error("Could not identify repository type");
+    }
 
     let toRemoteCommit = preparePipe(new MapTransform(
         getRepositoryCommitToRemoteCommitMapFunc(
@@ -296,7 +316,7 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
             configDir,
             removeProtocol(config['remote']),
             config['gpg-encryption-key'],
-            'bash/download-cat'
+            cmd
         ),
         { objectMode: true }
     ));
@@ -304,23 +324,15 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
     let toDebugConsole = preparePipe(
         new ConsoleWritable({out: console.log}, "LogObj: ")
     );
+    toDebugConsole.on('finish', function() { console.log("FIN"); });
+    toDebugConsole.on('end', function() { console.log("END"); });
+    toDebugConsole.on('error', function() { console.log("ERR"); });
 
+    // repositoryCommitFiles.pipe(toDebugConsole);
     repositoryCommitFiles.pipe(toRemoteCommit);
     toRemoteCommit.pipe(toDebugConsole);
 
 
-}
-
-class Piper {
-    start<Join, Out>(src: Readable<Join>, dst: Transform<Join, Out>|Duplex<Join, Out>) {
-        throw new Error("Not Implemented");
-    }
-    add<In, Join, Out>(src: Readable<Join>|Transform<In, Join>|Duplex<In, Join>, dst: Transform<Join, Out>|Duplex<Join, Out>|Writable<Join>) {
-        throw new Error("Not Implemented");
-    }
-    finish<In, Join>(src: Readable<Join>|Transform<In, Join>|Duplex<In, Join>, dst: Writable<Join>) {
-        throw new Error("Not Implemented");
-    }
 }
 
 export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
@@ -333,10 +345,13 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
 
     let config: ConfigFile = readConfig(configDir);
 
+    let remoteType = getRemoteType(config.remote);
+
     toDebugConsole.on('finish', function() { console.log("FIN"); });
     toDebugConsole.on('end', function() { console.log("END"); });
 
     function getCommitStream(configDir: AbsoluteDirectoryPath, subDirs: string[], onlyFirst: boolean) {
+
 
         let sortedPendingCommitFilenameStream = getSortedCommitFilenamePipe(
             configDir,
@@ -407,9 +422,7 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
 
     let toDownloadedParts = preparePipe(new MapTransform(
         getToDownloadedPartsMapFunc(
-            getToDownloadedPartsMapFuncDependencies(
-                GetToDownloadedPartsMode.LOCAL_FILES
-            ),
+            getToDownloadedPartsMapFuncDependencies(remoteType),
             configDir,
             removeProtocol(config.remote)
         ),

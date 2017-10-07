@@ -1,12 +1,15 @@
 import myStat from './myStats';
+import Client from './Client';
 import { rename, createReadStream, createWriteStream, Stats, stat as realStat} from 'fs';
+import { mapLimit } from 'async';
 import { join } from 'path';
 import { MapFunc } from 'streamdash';
+import throat = require('throat');
 import { flatten, pipe, range, assoc, dissoc, map } from 'ramda';
-import { FilePartIndex, S3Object, S3Location, RemotePendingCommitStatRecordDecided, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, ByteCount } from './Types';
+import { RemoteType, FilePartIndex, S3Object, S3Location, RemotePendingCommitStatRecordDecided, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, ByteCount } from './Types';
 import * as mkdirp from 'mkdirp';
 import RepositoryLocalfiles from './repository/RepositoryLocalfiles';
-
+import RepositoryS3 from './repository/RepositoryS3';
 
 export interface MkdirP {
     (path: AbsoluteDirectoryPath, next: (e: Error|null) => void): void;
@@ -17,27 +20,39 @@ export interface Dependencies {
     download: (tmpDir: AbsoluteDirectoryPath, loc: S3Location, downloadTo: AbsoluteFilePath, next: Callback<void>) => void;
     downloadSize: (loc: S3Location, next: Callback<ByteCount>) => void;
     mkdirp: MkdirP;
+    constructFilepartS3Location: (s3Bucket: S3BucketName, maxFilepart: number, rec: RemotePendingCommitStatRecordDecided) => S3Location;
+    constructFilepartLocalLocation: (configDir: AbsoluteDirectoryPath, maxFilepart: number, rec: RemotePendingCommitStatRecordDecided) => AbsoluteFilePath;
 }
 
-export enum Mode {
-    LOCAL_FILES = 1,
-    S3 = 2,
-}
+export function getDependencies(mode: RemoteType): Dependencies {
 
-export function getDependencies(mode: Mode): Dependencies {
-    if (mode != Mode.LOCAL_FILES) {
-        throw new Error("Unsupported");
+    if (mode == RemoteType.S3) {
+        return {
+            mkdirp,
+            stat: realStat,
+            download: RepositoryS3.download,
+            downloadSize: RepositoryS3.downloadSize,
+            constructFilepartS3Location: RepositoryS3.constructFilepartS3Location,
+            constructFilepartLocalLocation: Client.constructFilepartLocalLocation
+        };
     }
-    return {
-        mkdirp,
-        stat: realStat,
-        download: RepositoryLocalfiles.download,
-        downloadSize: RepositoryLocalfiles.downloadSize
-    };
+
+    if (mode == RemoteType.LOCAL_FILES) {
+        return {
+            mkdirp,
+            stat: realStat,
+            download: RepositoryLocalfiles.download,
+            downloadSize: RepositoryLocalfiles.downloadSize,
+            constructFilepartS3Location: RepositoryLocalfiles.constructFilepartS3Location,
+            constructFilepartLocalLocation: Client.constructFilepartLocalLocation
+        };
+    }
+
+    throw new Error("Unsupported");
 
 }
 
-export default function getToDownloadedParts({mkdirp, stat, downloadSize, download}: Dependencies, configDir: AbsoluteDirectoryPath, s3Bucket: S3BucketName): MapFunc<RemotePendingCommitStat, RemotePendingCommitStat> {
+export default function getToDownloadedParts({ constructFilepartLocalLocation, constructFilepartS3Location, mkdirp, stat, downloadSize, download }: Dependencies, configDir: AbsoluteDirectoryPath, s3Bucket: S3BucketName): MapFunc<RemotePendingCommitStat, RemotePendingCommitStat> {
 
     let tmpDir = join(configDir, 'tmp'),
         filepartDir = join(configDir, 'remote-encrypted-filepart');
@@ -61,7 +76,7 @@ export default function getToDownloadedParts({mkdirp, stat, downloadSize, downlo
     }
 
 
-    function doDownloaded(a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
+    function doDownloaded(maxPartNumber: number, a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
         // TODO: Yeh Yeh, it's a Christmas tree... do something about it!
         if (!a.proceed) return Promise.resolve(a);
         return new Promise((resolve, reject) => {
@@ -71,8 +86,8 @@ export default function getToDownloadedParts({mkdirp, stat, downloadSize, downlo
                     if (e) { return reject(e); }
                     download(
                         tmpDir,
-                        [s3Bucket, constructObject(a)],
-                        join(filepartDir, constructFilepart(a)),
+                        constructFilepartS3Location(s3Bucket, maxPartNumber, a),
+                        constructFilepartLocalLocation(configDir, a.part[1], a),
                         (e, r) => {
                             if (e) { return reject(e); }
                             resolve(a);
@@ -87,15 +102,14 @@ export default function getToDownloadedParts({mkdirp, stat, downloadSize, downlo
         return `${a.sha256}-${a.part[0]}.ebak`;
     }
 
-    function constructObject(a: RemotePendingCommitStatRecordDecided): S3Object {
-        return 'f-' + constructFilepart(a);
-    }
-
-    function checkDownloaded(a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
+    function checkDownloaded(maxPartNumber: number, a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
+        // TODO: Derive arg for pDonwloadSize from Driver
         if (!a.proceed) return Promise.resolve(a);
         return Promise.all([
             pMyStat(join(filepartDir, constructFilepart(a))),
-            pDownloadSize([s3Bucket, constructObject(a)])
+            pDownloadSize(
+                constructFilepartS3Location(s3Bucket, maxPartNumber, a)
+            )
         ]).then(([stats, downloadSize]) => {
             if (stats === null) { return a; }
             if (stats.size == downloadSize) {
@@ -105,7 +119,7 @@ export default function getToDownloadedParts({mkdirp, stat, downloadSize, downlo
         });
     }
 
-    function checkNotLast(a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided[]> {
+    function spawnPartsIfLast(a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided[]> {
         if (!a.proceed) {
             return Promise.resolve([a]);
         }
@@ -116,31 +130,32 @@ export default function getToDownloadedParts({mkdirp, stat, downloadSize, downlo
     }
 
     function multi(f: (a: RemotePendingCommitStatRecordDecided) => Promise<RemotePendingCommitStatRecordDecided>) {
+        let ff = throat(3, f);
         return function(inputs: RemotePendingCommitStatRecordDecided[]) {
             return Promise.all(
-                map(f, inputs)
+                map(ff, inputs)
             );
         };
     }
 
-    function process(a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
-        return checkNotLast(a)
-            .then(multi(checkDownloaded))
-            .then(multi(doDownloaded))
+    function process(a: RemotePendingCommitStatRecordDecided, next: Callback<RemotePendingCommitStatRecordDecided>) {
+        let max = a.part[1];
+        spawnPartsIfLast(a)
+            .then(multi(checkDownloaded.bind(null, max)))
+            .then(multi(doDownloaded.bind(null, max)))
             .then((aa: RemotePendingCommitStatRecordDecided[]) => {
-                return a;
-            });
+                next(null, a);
+            })
+            .catch((e) => { next(e); });
     }
 
     return function(input, next) {
-        Promise.all(map(process, input.record))
-            .then(record => {
-                next(
-                    null,
-                    assoc('record', record, input)
-                );
-            })
-            .catch(e => { next(e); });
+        mapLimit(
+            input.record,
+            2,
+            process,
+            (e: Error|null) => { next(e, input); }
+        );
     };
 }
 

@@ -4,6 +4,7 @@ import { join } from 'path';
 import { ExitStatus, CmdOutput, CmdSpawner, CmdRunner } from './CmdRunner';
 import { streamDataCollector } from 'streamdash';
 import { assoc } from 'ramda';
+import padLeadingZero from './padLeadingZero';
 
 // TODO: Ensure we generate good bs= flags for `dd`... bs=1k/1M at least.
 // TODO: Ensure in outer program that S3BucketName does not include s3://
@@ -37,19 +38,9 @@ export default function getSha256FilePartToUploadedS3FilePartMapFunc(rootPath: A
 
     function getEnv(a: Sha256FilePart): Sha256FilePartUploadS3Environment {
 
-        let pad = (len: number, n: number) => {
-            let r = "" + n;
-
-            while (r.length < len) {
-                r = "0" + r;
-            }
-
-            return r;
-        };
-
         return {
             OPT_SHA: a.sha256,
-            OPT_PART: pad(("" + a.part[1]).length, a.part[0]),
+            OPT_PART: padLeadingZero(("" + a.part[1]).length, a.part[0]),
             OPT_DD_SKIP: a.offset,
             OPT_DD_BS: 1,
             OPT_DD_COUNT: a.length,

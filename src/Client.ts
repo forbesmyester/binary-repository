@@ -1,7 +1,8 @@
-import { GpgKey, Callback, AbsoluteDirectoryPath, AbsoluteFilePath } from './Types';
+import { RemotePendingCommitStatRecordDecided, GpgKey, Callback, AbsoluteDirectoryPath, AbsoluteFilePath } from './Types';
 import { ExitStatus, CmdOutput, CmdSpawner, CmdRunner } from './CmdRunner';
 import { dirname, join } from 'path';
 import { streamDataCollector } from 'streamdash';
+import padLeadingZero from './padLeadingZero';
 
 
 function getEnv(gpgKey: GpgKey, src: AbsoluteFilePath, dst: AbsoluteFilePath) {
@@ -19,6 +20,13 @@ function getBashRoot(d: AbsoluteFilePath): AbsoluteDirectoryPath {
 }
 
 export default {
+    constructFilepartLocalLocation: (configDir: AbsoluteDirectoryPath, maxFilepart: number, rec: RemotePendingCommitStatRecordDecided): AbsoluteFilePath => {
+        let p = padLeadingZero(("" + rec.part[1]).length, rec.part[0]);
+        return join(
+            join(configDir, 'remote-encrypted-filepart'),
+            `${rec.sha256}-${p}.ebak`
+        );
+    },
     decrypt: (gpgKey: GpgKey, tmpfile: AbsoluteFilePath, src: AbsoluteFilePath, dst: AbsoluteFilePath, next: Callback<void>): void => {
 
         let cmdSpawner = CmdRunner.getCmdSpawner();

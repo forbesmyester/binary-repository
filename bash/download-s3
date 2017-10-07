@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# OPT_DESTINATION
+
+# OPT_GPG_KEY
+
+# OPT_S3_BUCKET
+# OPT_S3_OBJECT
+
+# OPT_IS_FIRST
+
+# [Bash safe mode](http://redsymbol.net/articles/unofficial-bash-strict-mode/)
+IFS=$'\n\t'
+set -euo pipefail
+
+mkdir -p $(dirname "${OPT_DESTINATION}")
+if [ $OPT_IS_FIRST -eq 1 ]; then
+    aws s3 cp "s3://${OPT_S3_BUCKET}/${OPT_S3_OBJECT}" - | gpg -d -r "${OPT_GPG_KEY}" > "${OPT_DESTINATION}"
+else
+    aws s3 cp "s3://${OPT_S3_BUCKET}/${OPT_S3_OBJECT}" - | gpg -d -r "${OPT_GPG_KEY}" >> "${OPT_DESTINATION}"
+fi
+
+
+

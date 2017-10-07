@@ -1,10 +1,12 @@
 import test from 'ava';
 import { assoc } from 'ramda';
+import Client from '../src/Client';
 import { Stats } from 'fs';
 import { MapFunc } from 'streamdash';
 import getToDownloadedParts from '../src/getToDownloadedPartsMapFunc';
 import { Dependencies } from '../src/getToDownloadedPartsMapFunc';
 import { FilePartIndex, RelativeFilePath, Operation, Sha256, RemotePendingCommitDownloaded, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, S3Object, ByteCount } from '../src/Types';
+import RepositoryLocalfiles from '../src/repository/RepositoryLocalfiles';
 
 function getInput(path: RelativeFilePath, part: FilePartIndex, proceed: boolean = true): RemotePendingCommitDownloaded {
     let d = new Date('2017-07-22T17:02:48.966Z');
@@ -87,7 +89,9 @@ test.cb("Can do everything inc. download", (tst) => {
                 ['s3://mister-bucket', `f-sha-${++downloadSizeDone}.ebak`]
             );
             next(null, 200);
-        }
+        },
+        constructFilepartS3Location: RepositoryLocalfiles.constructFilepartS3Location,
+        constructFilepartLocalLocation: Client.constructFilepartLocalLocation
     };
 
     let mapFunc = getToDownloadedParts(
@@ -136,7 +140,9 @@ test.cb("Nothing is done when not proceed", (tst) => {
         mkdirp: e,
         stat: e,
         download: e,
-        downloadSize: e
+        downloadSize: e,
+        constructFilepartS3Location: e,
+        constructFilepartLocalLocation: e
     };
 
     let mapFunc = getToDownloadedParts(
