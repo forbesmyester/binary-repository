@@ -2,9 +2,9 @@
 
 ## What is this?
 
-This code is for synchronization of data to multiple computers via Amazon S3, encrypted via GPG. It stores a full history of all data and it is possible to go back to any previous version.
+This code is for data synchronization / backup of files via encrypted via GPG. It currently supports either AWS S3 or local files for storage of the repository.
 
-It is best used for large collections of binary data that change slowly over time, such as an MP3 or digital photo collections.
+It stores full versions of all files along with a SHA256 checksum and other metadata. It is technically possible to retrieve any version of the data from the repository and the files commit files themselves are in (encrypted) plain text files, ensuring that your data will always be accessible (as long as you have your encryption keys).
 
 ## Why?
 
@@ -39,3 +39,9 @@ There is good test coverage.
 ## Future Plans
 
 I would like to have some form of slick user interface which would make it accessible to people who don't live at the command line.
+
+## GPG in this context
+
+In the main normal usecase of PGP you publicise your public PGP key which is for encryption (others creating emails to you) and keep your private (secret) key private, so only you can read what others wrote to you.
+
+In the context of this software, you should put your public key onto servers you want to back up and keep your private (secret) key where you want to restore it. Your backups can be stored on an untrusted storage mechanism, such as AWS S3.
