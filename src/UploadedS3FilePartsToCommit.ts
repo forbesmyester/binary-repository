@@ -54,6 +54,10 @@ export class UploadedS3FilePartsToCommit extends Transform<UploadedS3FilePart, C
 
     _transform(input: UploadedS3FilePart, encoding, cb) {
 
+        if (input.uploadAlreadyExists) {
+            return cb();
+        }
+
         if (!this.cancelTimer) {
             this.cancelTimer = this.interval(() => {
                 let t = this.getDate();

@@ -51,7 +51,7 @@ find /tmp/ebak-config/matt_first
 if [ $(echo "$REMOTE" | grep '^s3' | wc -c) -gt 0 ]; then
     aws s3 ls "$REMOTE"
 else
-    find $( echo "$REMOTE" | sed 's%^[a-z0-9]\+\://%%' )
+    ls $( echo "$REMOTE" | sed 's%^[a-z0-9]\+\://%%' )
 fi
 
 node dist/src/index.js init --local-config=/tmp/ebak-config/jim_leach jimleach /tmp/ebak-data/jim_leach ebak "$REMOTE"

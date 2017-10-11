@@ -197,7 +197,10 @@ export interface Sha256FilePart extends Sha256File {
 
 export interface CmdResult { readonly exitStatus: ExitStatus; readonly output: CmdOutput[]; }
 
-export interface UploadedS3FilePart extends Sha256FilePart { readonly result: CmdResult; }
+export interface UploadedS3FilePart extends Sha256FilePart {
+    readonly uploadAlreadyExists: boolean;
+    readonly result: CmdResult;
+}
 
 export const BASE_TLID_TIMESTAMP = new Date('2017-07-22T08:54:05.274Z').getTime();
 export const BASE_TLID_UNIQUENESS = 3;

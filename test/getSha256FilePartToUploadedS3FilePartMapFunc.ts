@@ -1,7 +1,8 @@
 import test from 'ava';
-import { Sha256FilePartUploadS3Environment } from '../src/getSha256FilePartToUploadedS3FilePartMapFunc';
+import { assoc } from 'ramda';
+import { Dependencies, getDependencies, Sha256FilePartUploadS3Environment } from '../src/getSha256FilePartToUploadedS3FilePartMapFunc';
 import getSha256FilePartToUploadedS3FilePartMapFunc from '../src/getSha256FilePartToUploadedS3FilePartMapFunc';
-import { Sha256FilePart, UploadedS3FilePart } from '../src/Types';
+import { Sha256FilePart, UploadedS3FilePart, RemoteType } from '../src/Types';
 
 test("Generate Environment (base)", (tst) => {
 
@@ -32,7 +33,13 @@ test("Generate Environment (base)", (tst) => {
         };
 
 
-    let inst = getSha256FilePartToUploadedS3FilePartMapFunc('/tmp/x', 'ebak-bucket', 'ebak', 'bash/test-upload-filepart-s3');
+    let inst = getSha256FilePartToUploadedS3FilePartMapFunc(
+        getDependencies(RemoteType.LOCAL_FILES),
+        '/tmp/x',
+        'ebak-bucket',
+        'ebak',
+        'bash/test-upload-filepart-s3'
+    );
 
     tst.deepEqual(inst.getEnv(input), expected);
 
@@ -66,7 +73,13 @@ test("Generate Environment (last)", (tst) => {
                 OPT_S3_BUCKET: "ebak-bucket"
         };
 
-    let inst = getSha256FilePartToUploadedS3FilePartMapFunc('/tmp/x', 'ebak-bucket', 'ebak', 'bash/test-upload-filepart-s3');
+    let inst = getSha256FilePartToUploadedS3FilePartMapFunc(
+        getDependencies(RemoteType.LOCAL_FILES),
+        '/tmp/x',
+        'ebak-bucket',
+        'ebak',
+        'bash/test-upload-filepart-s3'
+    );
     tst.deepEqual(inst.getEnv(input), expected);
 
 });
@@ -96,6 +109,7 @@ test.cb("Can run a command", (tst) => {
         modifiedDate,
         path: "//error_command",
         isLast: true,
+        uploadAlreadyExists: false,
         result: {
             exitStatus: 0,
             output: [{
@@ -107,10 +121,94 @@ test.cb("Can run a command", (tst) => {
         }
     };
 
-    let trn = getSha256FilePartToUploadedS3FilePartMapFunc('/tmp/x', 'ebak-bucket', 'ebak',  'bash/test-upload-filepart-s3');
+    let calledExists = false;
+
+    let dependencies = assoc(
+        'exists',
+        (f, n) => {
+            calledExists = true;
+            tst.deepEqual(
+                f,
+                ['ebak-bucket', "f-def8c702e06f7f6ac6576e0d4bbd830303aaa7d6857ee6c81c6d6a1b0a6c3bdf-022.ebak"]
+            );
+            n(null, false);
+        },
+        getDependencies(RemoteType.LOCAL_FILES)
+    );
+
+    let trn = getSha256FilePartToUploadedS3FilePartMapFunc(
+        dependencies,
+        '/tmp/x',
+        'ebak-bucket',
+        'ebak',
+        'bash/test-upload-filepart-s3'
+    );
 
     trn(input, (err, output) => {
         tst.is(err, null);
+        tst.is(calledExists, true);
+        tst.deepEqual(output, expected);
+        tst.end();
+    });
+
+});
+
+test.cb("Will not run a command if already exists", (tst) => {
+    let modifiedDate = new Date("2017-06-19T06:20:05.168Z");
+
+    let input: Sha256FilePart = {
+        sha256: "def8c702e06f7f6ac6576e0d4bbd830303aaa7d6857ee6c81c6d6a1b0a6c3bdf",
+        fileByteCount: 1222,
+        part: [22, 152],
+        offset: 1111,
+        length: 100,
+        modifiedDate,
+        path: "//error_command",
+        isLast: true
+    };
+
+
+    let expected: UploadedS3FilePart = {
+        sha256: "def8c702e06f7f6ac6576e0d4bbd830303aaa7d6857ee6c81c6d6a1b0a6c3bdf",
+        fileByteCount: 1222,
+        length: 100,
+        part: [22, 152],
+        offset: 1111,
+        modifiedDate,
+        path: "//error_command",
+        isLast: true,
+        uploadAlreadyExists: true,
+        result: {
+            exitStatus: 0,
+            output: []
+        }
+    };
+
+    let calledExists = false;
+
+    let dependencies: Dependencies = {
+        exists: (f, n) => {
+            calledExists = true;
+            tst.deepEqual(
+                f,
+                ['ebak-bucket', "f-def8c702e06f7f6ac6576e0d4bbd830303aaa7d6857ee6c81c6d6a1b0a6c3bdf-022.ebak"]
+            );
+            n(null, true);
+        },
+        cmdSpawner: () => { throw new Error("Not here"); }
+    };
+
+    let trn = getSha256FilePartToUploadedS3FilePartMapFunc(
+        dependencies,
+        '/tmp/x',
+        'ebak-bucket',
+        'ebak',
+        'bash/test-upload-filepart-s3'
+    );
+
+    trn(input, (err, output) => {
+        tst.is(err, null);
+        tst.is(calledExists, true);
         tst.deepEqual(output, expected);
         tst.end();
     });

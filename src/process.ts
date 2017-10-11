@@ -22,6 +22,7 @@ import getLocalCommitFilenameToCommitMapFunc from './getLocalCommitFilenameToCom
 import { getFilenameToFileMapFunc } from './getFilenameToFileMapFunc';
 import { getFileToSha256FileMapFunc, getRunner } from './getFileToSha256FileMapFunc';
 import { Sha256FileToSha256FilePart } from './Sha256FileToSha256FilePart';
+import { getDependencies as getSha256FilePartToUploadedS3FilePartDependencies } from './getSha256FilePartToUploadedS3FilePartMapFunc';
 import getSha256FilePartToUploadedS3FilePartMapFunc from './getSha256FilePartToUploadedS3FilePartMapFunc';
 import { getCommitToCommittedMapFuncDependencies, getCommitToCommittedMapFunc } from './getCommitToCommittedMapFunc';
 import { UploadedS3FilePartsToCommit } from './UploadedS3FilePartsToCommit';
@@ -122,6 +123,7 @@ function getSha256FilePartToUploadedFilePart(rootDir: AbsoluteDirectoryPath, rem
 
     if (remote.match(/^s3\:\/\//)) {
         return getSha256FilePartToUploadedS3FilePartMapFunc(
+            getSha256FilePartToUploadedS3FilePartDependencies(RemoteType.S3),
             rootDir,
             removeProtocol(remote),
             gpgKey,
@@ -131,6 +133,7 @@ function getSha256FilePartToUploadedFilePart(rootDir: AbsoluteDirectoryPath, rem
 
     if (remote.match(/^file\:\/\//)) {
         return getSha256FilePartToUploadedS3FilePartMapFunc(
+            getSha256FilePartToUploadedS3FilePartDependencies(RemoteType.LOCAL_FILES),
             rootDir,
             removeProtocol(remote),
             gpgKey,

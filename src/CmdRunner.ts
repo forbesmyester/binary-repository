@@ -72,11 +72,6 @@ export class CmdRunner extends Readable<CmdOutput> {
     }
 
     static getCmdSpawner(baseEnvironment: Environment = {}): CmdSpawner {
-        let nt = (f) => (...args) => {
-            process.nextTick(() => {
-                f.apply(this, args);
-            });
-        };
         return (
             env: Environment,
             cwd: WorkingDirectory,

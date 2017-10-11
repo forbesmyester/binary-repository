@@ -1,4 +1,4 @@
-import { RemotePendingCommitStatRecordDecided, GpgKey, Callback, AbsoluteDirectoryPath, AbsoluteFilePath } from './Types';
+import { FilePartIndex, Sha256, RemotePendingCommitStatRecordDecided, GpgKey, Callback, AbsoluteDirectoryPath, AbsoluteFilePath } from './Types';
 import { ExitStatus, CmdOutput, CmdSpawner, CmdRunner } from './CmdRunner';
 import { dirname, join } from 'path';
 import { streamDataCollector } from 'streamdash';
@@ -19,12 +19,20 @@ function getBashRoot(d: AbsoluteFilePath): AbsoluteDirectoryPath {
     return join(dirname(dirname(d)), 'bash');
 }
 
+function constructFilepartFilename(sha256: Sha256, filePartIndex: FilePartIndex): string {
+    let p = padLeadingZero(("" + filePartIndex[1]).length, filePartIndex[0]);
+    return `f-${sha256}-${p}.ebak`
+}
+
 export default {
+    constructFilepartFilename,
     constructFilepartLocalLocation: (configDir: AbsoluteDirectoryPath, maxFilepart: number, rec: RemotePendingCommitStatRecordDecided): AbsoluteFilePath => {
-        let p = padLeadingZero(("" + rec.part[1]).length, rec.part[0]);
         return join(
             join(configDir, 'remote-encrypted-filepart'),
-            `${rec.sha256}-${p}.ebak`
+            constructFilepartFilename(
+                rec.sha256,
+                rec.part
+            )
         );
     },
     decrypt: (gpgKey: GpgKey, tmpfile: AbsoluteFilePath, src: AbsoluteFilePath, dst: AbsoluteFilePath, next: Callback<void>): void => {

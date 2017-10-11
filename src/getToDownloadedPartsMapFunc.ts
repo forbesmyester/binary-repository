@@ -99,7 +99,10 @@ export default function getToDownloadedParts({ constructFilepartLocalLocation, c
     }
 
     function constructFilepart(a: RemotePendingCommitStatRecordDecided): S3Object {
-        return `${a.sha256}-${a.part[0]}.ebak`;
+        return Client.constructFilepartFilename(
+            a.sha256,
+            a.part
+        );
     }
 
     function checkDownloaded(maxPartNumber: number, a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
