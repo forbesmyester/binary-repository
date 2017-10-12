@@ -1,22 +1,29 @@
 #!/bin/bash
+set -euo pipefail
+IFS=$'\n\t'
 
-npm test
+GPGKEY_COMMIT='ebak'
+# For S3
+export REMOTE="s3://${GPGKEY_COMMIT}-$(date +%F)"
+# For Files
+export REMOTE='file:///tmp/${GPGKEY_COMMIT}-repo'
 
-gpg --delete-secret-keys ebak
-gpg --delete-keys ebak
-gpg --list-keys
-gpg --quick-gen-key 'ebak'
+# npm test
 
+# PUBLIC_KEY_COUNT=$(gpg --list-keys | grep "$GPGKEY_COMMIT\$")
+SECRET_KEY_COUNT=$(gpg --list-keys | grep "$GPGKEY_COMMIT\$" | wc -l)
+
+if [ $SECRET_KEY_COUNT -ne "1" ]; then
+    gpg --delete-secret-keys "$GPGKEY_COMMIT"
+    gpg --delete-keys "$GPGKEY_COMMIT"
+    gpg --quick-gen-key "$GPGKEY_COMMIT"
+fi
 
 rm -rf   /tmp/ebak-data
 rm -rf   /tmp/ebak-config
 mkdir -p /tmp/ebak-data/matt_first
 mkdir -p /tmp/ebak-data/jim_leach
 
-# For S3
-export REMOTE="s3://ebak-$(date +%F)"
-# For Files
-export REMOTE='file:///tmp/ebak-repo'
 
 if [ $(echo "$REMOTE" | grep '^s3' | wc -c) -gt 0 ]; then
     aws s3 rb --force "$REMOTE"
@@ -28,52 +35,80 @@ fi
 
 # For Local
 
-node dist/src/index.js init --local-config=/tmp/ebak-config/matt_first mattfirst /tmp/ebak-data/matt_first ebak "$REMOTE"
+node dist/src/index.js init --local-config=/tmp/ebak-config/matt_first mattfirst /tmp/ebak-data/matt_first "$GPGKEY_COMMIT" "$REMOTE"
 
 node dist/src/index.js upload --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
 
 # Data should be empty
-find /tmp/ebak-data/matt_first
+if [ $(find /tmp/ebak-data/matt_first -type f | wc -l) -ne 0 ]; then
+    echo "There should be no files in matt_first data directory"
+    exit 1
+fi
 # Only config file should exist
-find /tmp/ebak-config/matt_first
+
+if [ $(find /tmp/ebak-config/matt_first -type f | grep "\/config$" | wc -l) -ne 1 ] ; then
+    echo "$MATTS_CONFIG should have been one line"
+    exit 1
+fi
 
 cp -R test/data/my-projects /tmp/ebak-data/matt_first
 
-# There should be files for each project (7) under my-projects
-find /tmp/ebak-data/matt_first
-
 node dist/src/index.js upload --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
 
-# There should be one or more commit file and a tmp directory too
-find /tmp/ebak-config/matt_first
-
-# There should be a filepart for every project (7) as well a a commit file... all encrypted
-if [ $(echo "$REMOTE" | grep '^s3' | wc -c) -gt 0 ]; then
-    aws s3 ls "$REMOTE"
-else
-    ls $( echo "$REMOTE" | sed 's%^[a-z0-9]\+\://%%' )
+if [ $(find /tmp/ebak-config/matt_first/commit -type f | wc -l) -ne 1 ]; then
+    echo "Was expecting one matt_first commit"
+    exit 1
 fi
 
-node dist/src/index.js init --local-config=/tmp/ebak-config/jim_leach jimleach /tmp/ebak-data/jim_leach ebak "$REMOTE"
+# TODO: Reinstate?
+# if [ $(echo "$REMOTE" | grep '^s3' | wc -c) -gt 0 ]; then
+#     aws s3 ls "$REMOTE"
+# else
+#     ls $( echo "$REMOTE" | sed 's%^[a-z0-9]\+\://%%' )
+# fi
+
+node dist/src/index.js init --local-config=/tmp/ebak-config/jim_leach jimleach /tmp/ebak-data/jim_leach "$GPGKEY_COMMIT" "$REMOTE"
+
+if [ $(find /tmp/ebak-config/jim_leach -type f | wc -l) -ne 1 ]; then
+    echo "There should be one files in jim_leach config directory"
+    exit 1
+fi
 
 node dist/src/index.js fetch --local-config=/tmp/ebak-config/jim_leach /tmp/ebak-data/jim_leach
 
+if [ $(find /tmp/ebak-config/jim_leach/remote-pending-commit -type f | wc -l) -ne 1 ]; then
+    echo "There should be one remote-pending-commit in jim_leach directory"
+    exit 1
+fi
+
 # They should have the same contents...
-ls -alh /tmp/ebak-config/jim_leach/remote-pending-commit/ /tmp/ebak-config/matt_first/commit/
-
-# There should be one remote-pending-commit
-find /tmp/ebak-config/jim_leach
-
-# And no files in here
-find /tmp/ebak-data/jim_leach
+if [ $(diff /tmp/ebak-config/jim_leach/remote-pending-commit/* /tmp/ebak-config/matt_first/commit/* | wc -l) -ne 0 ]; then
+    echo "The remote-pending-commit did not match the commit"
+    exit 1
+fi
 
 node dist/src/index.js download --local-config=/tmp/ebak-config/jim_leach /tmp/ebak-data/jim_leach
 
-# There should now be files in here
-find /tmp/ebak-data/jim_leach
-
 # And the remote-pending-commit should have become remote-commit
-find /tmp/ebak-config/jim_leach
+if [ $(diff /tmp/ebak-config/jim_leach/remote-commit/* /tmp/ebak-config/matt_first/commit/* | wc -l) -ne 0 ]; then
+    echo "The remote-pending-commit should now be in remote-commit"
+    exit 1
+fi
+
+if [ $(diff -bur /tmp/ebak-data/jim_leach /tmp/ebak-data/matt_first | wc -l) -ne 0 ]; then
+    echo "The contents of the data should be identical"
+    exit 1
+fi
+
+ls -l /tmp/ebak-data/matt_first/my-projects/ | sort | sed 's/^[^ ]* //' > /tmp/ebak-config/matt_first/ls
+ls -l /tmp/ebak-data/jim_leach/my-projects/ | sort | sed 's/^[^ ]* //' > /tmp/ebak-config/jim_leach/ls
+
+if [ $(diff /tmp/ebak-config/jim_leach/ls /tmp/ebak-config/matt_first/ls | wc -l) -ne 0 ]; then
+    echo "Timestamps or something of synched files (but not permissions) is not the same"
+    exit 1
+fi
+
+echo "Tests Passed."
 
 # node dist/src/index.js download --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
 #
