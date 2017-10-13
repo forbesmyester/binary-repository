@@ -1,4 +1,5 @@
 import { RemotePendingCommitDownloadedRecord, RemotePendingCommitDownloaded, GpgKey, Callback, AbsoluteDirectoryPath, AbsoluteFilePath } from './Types';
+import Client from './Client';
 import { MapFunc } from 'streamdash';
 import { streamDataCollector } from 'streamdash';
 import { dirname, join } from 'path';
@@ -90,7 +91,11 @@ export default function getToFile({utimes, rename, mkdirp, unlink, decrypt}: Dep
     function generateOriginalEncryptedFilename(rec: RemotePendingCommitDownloadedRecord) {
         return join(
             configDir,
-            'remote-encrypted-filepart', rec.sha256 + '-' + rec.part[0] + '.ebak'
+            'remote-encrypted-filepart',
+            Client.constructFilepartFilename(
+                rec.sha256,
+                rec.part
+            )
         );
     };
 

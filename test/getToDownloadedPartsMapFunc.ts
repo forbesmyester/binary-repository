@@ -63,7 +63,7 @@ test.cb("Can do everything inc. download", (tst) => {
 
     let deps: Dependencies = {
         stat: (f, next) => {
-            tst.is(`/store/.ebak/remote-encrypted-filepart/sha-${++statDone}.ebak`, f);
+            tst.is(`/store/.ebak/remote-encrypted-filepart/f-sha-${++statDone}.ebak`, f);
             next(null, getStatResult(statDone * 100));
         },
         mkdirp: (dest, next) => {
@@ -79,7 +79,7 @@ test.cb("Can do everything inc. download", (tst) => {
                 f,
                 ['s3://mister-bucket', 'f-sha-1.ebak']
             );
-            tst.deepEqual(d, '/store/.ebak/remote-encrypted-filepart/sha-1.ebak');
+            tst.deepEqual(d, '/store/.ebak/remote-encrypted-filepart/f-sha-1.ebak');
             downloadDone = downloadDone + 1;
             next(null);
         },

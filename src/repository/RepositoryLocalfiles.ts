@@ -15,6 +15,17 @@ let RepositoryLocalfiles: RepositoryAbstract = {
         return [s3Bucket, constructObject(maxFilepart, rec)];
     },
 
+    exists: (loc: S3Location, next: Callback<boolean>) => {
+        let absoluteFilepath: AbsoluteFilePath = join(loc[0], loc[1]);
+        stat(absoluteFilepath, (e) => {
+            if (e && (e.code == 'ENOENT')) {
+                return next(null, false);
+            }
+            if (e) { return next(e); }
+            next(null, true);
+        });
+    },
+
     downloadSize: (loc: S3Location, next: Callback<ByteCount>) => {
         let absoluteFilepath: AbsoluteFilePath = join(loc[0], loc[1]);
         stat(absoluteFilepath, (e, s) => {

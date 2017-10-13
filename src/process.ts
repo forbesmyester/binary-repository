@@ -22,6 +22,7 @@ import getLocalCommitFilenameToCommitMapFunc from './getLocalCommitFilenameToCom
 import { getFilenameToFileMapFunc } from './getFilenameToFileMapFunc';
 import { getFileToSha256FileMapFunc, getRunner } from './getFileToSha256FileMapFunc';
 import { Sha256FileToSha256FilePart } from './Sha256FileToSha256FilePart';
+import { getDependencies as getSha256FilePartToUploadedS3FilePartDependencies } from './getSha256FilePartToUploadedS3FilePartMapFunc';
 import getSha256FilePartToUploadedS3FilePartMapFunc from './getSha256FilePartToUploadedS3FilePartMapFunc';
 import { getCommitToCommittedMapFuncDependencies, getCommitToCommittedMapFunc } from './getCommitToCommittedMapFunc';
 import { UploadedS3FilePartsToCommit } from './UploadedS3FilePartsToCommit';
@@ -122,6 +123,7 @@ function getSha256FilePartToUploadedFilePart(rootDir: AbsoluteDirectoryPath, rem
 
     if (remote.match(/^s3\:\/\//)) {
         return getSha256FilePartToUploadedS3FilePartMapFunc(
+            getSha256FilePartToUploadedS3FilePartDependencies(RemoteType.S3),
             rootDir,
             removeProtocol(remote),
             gpgKey,
@@ -131,6 +133,7 @@ function getSha256FilePartToUploadedFilePart(rootDir: AbsoluteDirectoryPath, rem
 
     if (remote.match(/^file\:\/\//)) {
         return getSha256FilePartToUploadedS3FilePartMapFunc(
+            getSha256FilePartToUploadedS3FilePartDependencies(RemoteType.LOCAL_FILES),
             rootDir,
             removeProtocol(remote),
             gpgKey,
@@ -188,16 +191,22 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
         clientId = config['client-id'],
         filePartByteCountThreshold = 1024 * 1024 * 64, // 64MB
         commitFileByteCountThreshold = 1024 * 1024 * 256, // 256MB
-        commitMaxDelay = 10000,
+        commitMaxDelay = 1000 * 60 * 5,
         s3Bucket = config.remote,
         gpgKey = config['gpg-encryption-key'],
-        globber = RootReadable.getGlobFunc(),
-        rootReader = new RootReadable({glob: globber}, rootDir, []),
-        filenameToFileMapFunc = getFilenameToFileMapFunc({ stat }, rootDir),
-        filenameToFile = new MapTransform(filenameToFileMapFunc, stdPipeOptions),
-        cmdSpawner = CmdRunner.getCmdSpawner({}),
-        runner = getRunner({ cmdSpawner }),
-        fileToSha256FileMapFunc = getFileToSha256FileMapFunc({ runner }, rootDir),
+        rootReader = new RootReadable(
+            {glob: RootReadable.getGlobFunc()},
+            rootDir,
+            []
+        ),
+        filenameToFile = new MapTransform(
+            getFilenameToFileMapFunc({ stat }, rootDir),
+            stdPipeOptions
+        ),
+        fileToSha256FileMapFunc = getFileToSha256FileMapFunc(
+            { runner: getRunner({ cmdSpawner: CmdRunner.getCmdSpawner({}) }) },
+            rootDir
+        ),
         fileToSha256File = new MapTransform(fileToSha256FileMapFunc, stdPipeOptions),
         fileToSha256FilePart = new Sha256FileToSha256FilePart(
             rootDir,
@@ -211,43 +220,45 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
             commitMaxDelay,
             {}
         ),
-        sha256FilePartToUploadedS3FilePartMapFunc = getSha256FilePartToUploadedFilePart(
-            rootDir,
-            config.remote,
-            gpgKey
-        ),
         sha256FilePartToUploadedS3FilePart = new MapTransform(
-            sha256FilePartToUploadedS3FilePartMapFunc,
+            getSha256FilePartToUploadedFilePart(
+                rootDir,
+                config.remote,
+                gpgKey
+            ),
             stdPipeOptions
         ),
-        commitToCommittedMapFunc = getCommitToCommittedMapFunc(
-            getCommitToCommittedMapFuncDependencies(),
-            configDir
+        commitToCommitted = new MapTransform(
+            getCommitToCommittedMapFunc(
+                getCommitToCommittedMapFuncDependencies(),
+                configDir
+            ),
+            stdPipeOptions
         ),
-        commitToCommitted = new MapTransform(commitToCommittedMapFunc, stdPipeOptions),
-        commitedToUploadedCommittedMapFunc = getCommittedToUploadedCommittedMapFunc(
-            configDir,
-            s3Bucket,
-            gpgKey,
+        commitedToUploadedCommitted = new MapTransform(
+            getCommittedToUploadedCommittedMapFunc(
+                configDir,
+                s3Bucket,
+                gpgKey,
+            ),
+            {objectMode: true}
         ),
-        commitedToUploadedCommitted = new MapTransform(commitedToUploadedCommittedMapFunc, {objectMode: true});
-
-    let localCommitFileToCommitMapFunc = getLocalCommitFilenameToCommitMapFunc(
-            { readFile },
-            configDir
+        localCommitFileToCommit = new MapTransform(
+            getLocalCommitFilenameToCommitMapFunc(
+                { readFile },
+                configDir
+            ),
+            stdPipeOptions
         ),
-        localCommitFileToCommit = new MapTransform(localCommitFileToCommitMapFunc, stdPipeOptions),
-        commitToBackupCheckDatabaseScanFunc = getCommitToBackupCheckDatabaseScanFunc({}),
         commitToBackupCheckDatabase = new ScanTransform(
-            commitToBackupCheckDatabaseScanFunc,
+            getCommitToBackupCheckDatabaseScanFunc({}),
             {},
             { objectMode: true }
         ),
         backupCheckDatabaseFinal = new FinalDuplex({objectMode: true});
 
-    let fileNotBackedUpRightAfterLeftMapFunc = getFileNotBackedUpRightAfterLeftMapFunc({}),
-        fileNotBackedUpRightAfterLeft = new RightAfterLeft(
-            fileNotBackedUpRightAfterLeftMapFunc,
+    let fileNotBackedUpRightAfterLeft = new RightAfterLeft(
+            getFileNotBackedUpRightAfterLeftMapFunc({}),
             { objectMode: true }
         );
 

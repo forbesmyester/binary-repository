@@ -20,6 +20,25 @@ let RepositoryS3: RepositoryAbstract = {
         return [s3Bucket, constructObject(maxFilepart, rec)];
     },
 
+    exists: (loc: S3Location, next: Callback<boolean>) => {
+        let params = { Bucket: loc[0], Key: loc[1] };
+        s3.headObject(params, (e, data) => {
+            if (e) {
+                console.log("E: ");
+                if (e.code == 'NotFound') {
+                    console.log("E:+ " + e.code);
+                    return next(null, false);
+                }
+                return next(e);
+            }
+            console.log("E:- ");
+            if (data && (<number>data.ContentLength > 0)) {
+                return next(null, true);
+            }
+            next(null, false);
+        });
+    },
+
     downloadSize: (loc: S3Location, next: Callback<ByteCount>) => {
         let params = { Bucket: loc[0], Prefix: loc[1] };
         s3.listObjects(params, (err, data) => {

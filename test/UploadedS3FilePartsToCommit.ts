@@ -29,6 +29,7 @@ function getFileParts(low, high, count) {
         fileByteCount: 600,
         length: 100,
         part: [22, 152],
+        uploadAlreadyExists: false,
         offset: 1111,
         modifiedDate,
         path: "//error_command",
@@ -107,7 +108,12 @@ test("Will output at filesize threshold and flush", (tst) => {
         return () => commitDates[i++];
     };
 
-    let input = getFileParts(22, 24, 152);
+    let input = getFileParts(21, 24, 152);
+    input[0] = assoc(
+        'uploadAlreadyExists',
+        true,
+        input[0]
+    );
     let src = new ArrayReadable(input);
     let trn = new UploadedS3FilePartsToCommit(
         {

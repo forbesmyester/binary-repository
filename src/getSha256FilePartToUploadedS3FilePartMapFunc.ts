@@ -1,10 +1,13 @@
-import { Sha256, FilePart, AbsoluteFilePath, AbsoluteDirectoryPath, GpgKey, Sha256FilePart, DdBs, S3BucketName, CommandName, UploadedS3FilePart } from  './Types';
+import { FilePartIndex, RemoteType, S3Location, Callback, ByteCount, Sha256, FilePart, AbsoluteFilePath, AbsoluteDirectoryPath, GpgKey, Sha256FilePart, DdBs, S3BucketName, CommandName, UploadedS3FilePart } from  './Types';
+import Client from './Client';
 import { MapFunc } from 'streamdash';
 import { join } from 'path';
 import { ExitStatus, CmdOutput, CmdSpawner, CmdRunner } from './CmdRunner';
 import { streamDataCollector } from 'streamdash';
-import { assoc } from 'ramda';
+import { merge, assoc } from 'ramda';
 import padLeadingZero from './padLeadingZero';
+import RepositoryLocalfiles from './repository/RepositoryLocalfiles';
+import RepositoryS3 from './repository/RepositoryS3';
 
 // TODO: Ensure we generate good bs= flags for `dd`... bs=1k/1M at least.
 // TODO: Ensure in outer program that S3BucketName does not include s3://
@@ -32,9 +35,37 @@ export interface MapFuncWithGetEnv<I, O> extends MapFunc<I, O> {
     getEnv(a: Sha256FilePart): Sha256FilePartUploadS3Environment;
 }
 
-export default function getSha256FilePartToUploadedS3FilePartMapFunc(rootPath: AbsoluteDirectoryPath, s3Bucket: S3BucketName, gpgKey: GpgKey, cmd: CommandName): MapFuncWithGetEnv<Sha256FilePart, UploadedS3FilePart> {
+export interface Dependencies {
+    cmdSpawner: CmdSpawner;
+    exists: (loc: S3Location, next: Callback<boolean>) => void;
+}
 
-    let cmdSpawner: CmdSpawner = CmdRunner.getCmdSpawner();
+export function getDependencies(rt: RemoteType): Dependencies {
+
+    let d = {
+        cmdSpawner: CmdRunner.getCmdSpawner(),
+    };
+
+    if (rt == RemoteType.S3) {
+        return assoc(
+            'exists',
+            RepositoryS3.exists,
+            d
+        );
+    }
+
+    if (rt == RemoteType.LOCAL_FILES) {
+        return assoc(
+            'exists',
+            RepositoryLocalfiles.exists,
+            d
+        );
+    }
+
+    throw new Error("Unsupported");
+}
+
+export default function getSha256FilePartToUploadedS3FilePartMapFunc({cmdSpawner, exists}: Dependencies, rootPath: AbsoluteDirectoryPath, s3Bucket: S3BucketName, gpgKey: GpgKey, cmd: CommandName): MapFuncWithGetEnv<Sha256FilePart, UploadedS3FilePart> {
 
     function getEnv(a: Sha256FilePart): Sha256FilePartUploadS3Environment {
 
@@ -54,22 +85,61 @@ export default function getSha256FilePartToUploadedS3FilePartMapFunc(rootPath: A
 
     let ret: MapFuncWithGetEnv<Sha256FilePart, UploadedS3FilePart> | MapFunc<Sha256FilePart, UploadedS3FilePart> = (a: Sha256FilePart, cb) => {
 
-        let cmdRunner = new CmdRunner(
-            { cmdSpawner: cmdSpawner },
-            Object.assign({}, process.env, getEnv(a)),
-            ".",
-            cmd,
-            [],
-            {}
-        );
-        let sdc = streamDataCollector(cmdRunner)
-            .then((lines) => {
-                cb(null, assoc('result', { exitStatus: 0, output: lines }, a));
-            })
-            .catch((err) => {
-                cb(err); // TODO: What do we need to do here to make sure that
-                         // errors are readable by an end user?
-            });
+        let expectedLoc: S3Location = [
+            s3Bucket,
+            Client.constructFilepartFilename(
+                a.sha256,
+                a.part
+            )
+        ];
+
+        exists(expectedLoc, (e, isThere) => {
+            if (e) { return cb(e); }
+
+            if (isThere) {
+                return cb(
+                    null,
+                    merge(
+                        {
+                            result: { exitStatus: 0, output: [] },
+                            uploadAlreadyExists: true
+                        },
+                        a
+                    )
+                );
+            }
+
+            let cmdRunner = new CmdRunner(
+                { cmdSpawner: cmdSpawner },
+                Object.assign({}, process.env, getEnv(a)),
+                ".",
+                cmd,
+                [],
+                {}
+            );
+
+            let sdc = streamDataCollector(cmdRunner)
+                .then((lines) => {
+                    cb(
+                        null,
+                        merge(
+                            {
+                                result: {
+                                    exitStatus: 0,
+                                    output: lines
+                                },
+                                uploadAlreadyExists: false
+                            },
+                            a
+                        )
+                    );
+                })
+                .catch((err) => {
+                    cb(err);
+                });
+
+        })
+
     };
 
     (<MapFuncWithGetEnv<Sha256FilePart, UploadedS3FilePart>>ret).getEnv = getEnv;
