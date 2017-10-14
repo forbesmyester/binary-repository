@@ -27,14 +27,19 @@ There is good test coverage.
  * Uploading Data
  * Storing a record (encrypted) of what and which data has been backed up
  * Deciding which data to download
+ * Downloading data
+ * Restoring data
 
 ### In Progress
 
- * Downloading data
+ * Add total count of Fileparts to S3 filename (RepositoryS3.constructFilepartS3Location & getSha256FilePartToUploadedS3FilePartMapFunc - to use plain upload-cat / upload-s3)
 
 ### To do
 
- * Restoring data
+ * Allow different GPG Key for Commit files.
+ * Add the ability to remove files
+ * Allow purge of old FilePart from S3
+ * Allow restoration / download of individual files
 
 ## Future Plans
 
