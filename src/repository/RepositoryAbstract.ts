@@ -10,4 +10,6 @@ export default interface RepositoryLocalfiles {
 
     download(tmpDir: AbsoluteDirectoryPath, loc: S3Location, downloadTo: AbsoluteFilePath, next: Callback<void>): void;
 
+    upload(tmpDir: AbsoluteDirectoryPath, src: AbsoluteFilePath, loc: S3Location, next: Callback<void>): void;
+
 }

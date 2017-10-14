@@ -8,6 +8,20 @@ function constructObject(maxFilepart: number, a: RemotePendingCommitStatRecordDe
     let p = padLeadingZero(("" + a.part[1]).length, a.part[0]);
     return `f-${a.sha256}-${p}.ebak`;
 }
+function copyFile(tmpDir: AbsoluteDirectoryPath, src: AbsoluteFilePath, dest: AbsoluteFilePath, next: Callback<void>) {
+        let nexted = false;
+        let tmpFile = join(tmpDir, dest.replace(/[^a-zA-Z0-9]/g, '_'));
+        let read = createReadStream(src);
+        let write = createWriteStream(tmpFile);
+        read.on('error', (e) => { nexted ? null : next(e); nexted = true; });
+        write.on('error', (e) => { nexted ? null : next(e); nexted = true; });
+        write.on('close', (e) => {
+            if (e) { return next(e); }
+            if (nexted) { return; }
+            rename(tmpFile, dest, next);
+        });
+        read.pipe(write);
+}
 
 let RepositoryLocalfiles: RepositoryAbstract = {
 
@@ -35,16 +49,20 @@ let RepositoryLocalfiles: RepositoryAbstract = {
     },
 
     download: (tmpDir: AbsoluteDirectoryPath, loc: S3Location, downloadTo: AbsoluteFilePath, next: Callback<void>) => {
+        copyFile(tmpDir, join(loc[0], loc[1]), downloadTo, next);
+    },
+
+    upload: (tmpDir: AbsoluteDirectoryPath, src: AbsoluteFilePath, loc: S3Location, next: Callback<void>) => {
         let nexted = false;
-        let tmp = join(tmpDir, loc[1]);
-        let read = createReadStream(join(loc[0], loc[1]));
+        let tmp = join(tmpDir, src.replace(/[^a-zA-Z0-9]/, '_'));
+        let read = createReadStream(src);
         let write = createWriteStream(tmp);
         read.on('error', (e) => { nexted ? null : next(e); nexted = true; });
         write.on('error', (e) => { nexted ? null : next(e); nexted = true; });
         write.on('close', (e) => {
             if (e) { return next(e); }
             if (nexted) { return; }
-            rename(tmp, downloadTo, next);
+            rename(tmp, join(loc[0], loc[1]), next);
         });
         read.pipe(write);
     }

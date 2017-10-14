@@ -24,14 +24,11 @@ let RepositoryS3: RepositoryAbstract = {
         let params = { Bucket: loc[0], Key: loc[1] };
         s3.headObject(params, (e, data) => {
             if (e) {
-                console.log("E: ");
                 if (e.code == 'NotFound') {
-                    console.log("E:+ " + e.code);
                     return next(null, false);
                 }
                 return next(e);
             }
-            console.log("E:- ");
             if (data && (<number>data.ContentLength > 0)) {
                 return next(null, true);
             }
@@ -76,20 +73,13 @@ let RepositoryS3: RepositoryAbstract = {
             });
             read.pipe(write);
         });
-        // let nexted = false;
-        // let tmp = join(tmpDir, loc[1]);
-        // let read = createReadStream(join(loc[0], loc[1]));
-        // let write = createWriteStream(tmp);
-        // read.on('error', (e) => { nexted ? null : next(e); nexted = true; });
-        // write.on('error', (e) => { nexted ? null : next(e); nexted = true; });
-        // write.on('close', (e) => {
-        //     if (e) { return next(e); }
-        //     if (nexted) { return; }
-        //     rename(tmp, downloadTo, next);
-        // });
-        // read.pipe(write);
-    }
+    },
 
+    upload: (tmpDir: AbsoluteDirectoryPath, src: AbsoluteFilePath, loc: S3Location, next: Callback<void>) => {
+        s3.upload({ Bucket: loc[0], Key: loc[1], Body: createReadStream(src) }, (e) => {
+            next(e);
+        });
+    }
 };
 
 export default RepositoryS3;

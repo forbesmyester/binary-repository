@@ -179,7 +179,10 @@ function readConfig(configDir: AbsoluteDirectoryPath) {
     }
 }
 
-export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
+export function push(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
+}
+
+export function commit(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
 
     // TODO: Should compare SHA's if the timestamps have changed...
 
@@ -203,11 +206,13 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
             getFilenameToFileMapFunc({ stat }, rootDir),
             stdPipeOptions
         ),
-        fileToSha256FileMapFunc = getFileToSha256FileMapFunc(
-            { runner: getRunner({ cmdSpawner: CmdRunner.getCmdSpawner({}) }) },
-            rootDir
+        fileToSha256File = new MapTransform(
+            getFileToSha256FileMapFunc(
+                { runner: getRunner({ cmdSpawner: CmdRunner.getCmdSpawner({}) }) },
+                rootDir
+            ),
+            stdPipeOptions
         ),
-        fileToSha256File = new MapTransform(fileToSha256FileMapFunc, stdPipeOptions),
         fileToSha256FilePart = new Sha256FileToSha256FilePart(
             rootDir,
             filePartByteCountThreshold,

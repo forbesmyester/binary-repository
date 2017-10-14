@@ -5,7 +5,7 @@ import * as mkdirp from 'mkdirp';
 import { pathOr } from 'ramda';
 import * as getTlidEncoderDecoder from 'get_tlid_encoder_decoder';
 import { ConfigFile, BASE_TLID_TIMESTAMP } from './Types';
-import { fetch, download, upload } from './process';
+import { commit, download, fetch, push } from './process';
 
 let tLIdEncoderDecoder = getTlidEncoderDecoder(BASE_TLID_TIMESTAMP, 1);
 
@@ -37,7 +37,7 @@ yargs.usage('$0 <cmd> [args]')
         {
             local: {
                 require: true,
-                describe: 'The directory you wish to upload',
+                describe: 'The directory you wish to push (upload)',
                 type: 'string'
             },
             'client-id': {
@@ -52,7 +52,7 @@ yargs.usage('$0 <cmd> [args]')
             },
             remote: {
                 require: true,
-                describe: 'The destination you wish to upload to (s3)',
+                describe: 'The destination you wish to push (upload)',
                 type: 'string'
             },
         },
@@ -91,17 +91,31 @@ yargs.usage('$0 <cmd> [args]')
         }
     )
     .command(
-        'upload [local]', 'Syncronize local data to remote',
+        'commit [local]', 'Syncronize local data to remote',
         {
             local: {
                 require: true,
-                describe: 'The directory you wish to upload',
+                describe: 'The directory you wish to commit',
                 type: 'string'
             },
         },
         function (args) {
             let { local, localConfiguration } = resolve(args);
-            upload(local, localConfiguration);
+            commit(local, localConfiguration);
+        }
+    )
+    .command(
+        'push [local]', 'Syncronize local data to remote',
+        {
+            local: {
+                require: true,
+                describe: 'The repository you wish to pus (upload)',
+                type: 'string'
+            },
+        },
+        function (args) {
+            let { local, localConfiguration } = resolve(args);
+            push(local, localConfiguration);
         }
     )
     .option('force-sha1', {

@@ -8,7 +8,7 @@ export REMOTE="s3://${GPGKEY_COMMIT}-$(date +%F)"
 # For Files
 export REMOTE='file:///tmp/${GPGKEY_COMMIT}-repo'
 
-# npm test
+npm test
 
 # PUBLIC_KEY_COUNT=$(gpg --list-keys | grep "$GPGKEY_COMMIT\$")
 SECRET_KEY_COUNT=$(gpg --list-keys | grep "$GPGKEY_COMMIT\$" | wc -l)
@@ -26,7 +26,9 @@ mkdir -p /tmp/ebak-data/jim_leach
 
 
 if [ $(echo "$REMOTE" | grep '^s3' | wc -c) -gt 0 ]; then
-    aws s3 rb --force "$REMOTE"
+    set +e
+    aws s3 ls "$REMOTE" && aws s3 rb --force "$REMOTE" # Delete bucket if does exist
+    set -e
     aws s3 mb "$REMOTE"
     # You need to empty the bucket...
 else
@@ -37,7 +39,7 @@ fi
 
 node dist/src/index.js init --local-config=/tmp/ebak-config/matt_first mattfirst /tmp/ebak-data/matt_first "$GPGKEY_COMMIT" "$REMOTE"
 
-node dist/src/index.js upload --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
+node dist/src/index.js commit --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
 
 # Data should be empty
 if [ $(find /tmp/ebak-data/matt_first -type f | wc -l) -ne 0 ]; then
@@ -53,7 +55,7 @@ fi
 
 cp -R test/data/my-projects /tmp/ebak-data/matt_first
 
-node dist/src/index.js upload --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
+node dist/src/index.js commit --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
 
 if [ $(find /tmp/ebak-config/matt_first/commit -type f | wc -l) -ne 1 ]; then
     echo "Was expecting one matt_first commit"
@@ -66,6 +68,8 @@ fi
 # else
 #     ls $( echo "$REMOTE" | sed 's%^[a-z0-9]\+\://%%' )
 # fi
+
+node dist/src/index.js push --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
 
 node dist/src/index.js init --local-config=/tmp/ebak-config/jim_leach jimleach /tmp/ebak-data/jim_leach "$GPGKEY_COMMIT" "$REMOTE"
 
