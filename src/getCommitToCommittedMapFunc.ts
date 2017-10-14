@@ -1,8 +1,9 @@
 import { Commit, Committed, AbsoluteDirectoryPath, RelativeFilePath } from './Types';
 import atomicFileWrite, { AtomicFileWrite } from './atomicFileWrite';
 import * as mkdirp from 'mkdirp';
+import Client from './Client';
 import { MapFunc } from 'streamdash';
-import { join } from 'path';
+import { basename, dirname, join } from 'path';
 
 export interface MkdirP {
     (path: AbsoluteDirectoryPath, next: (e: Error|null) => void): void;
@@ -21,7 +22,6 @@ export function getCommitToCommittedMapFunc({atomicFileWrite, mkdirp}: Dependenc
 
     let created = false;
     let tmpDir = join(configDir, 'tmp');
-    let commitDir = join(configDir, 'commit');
 
     let createDir = (path) => {
         return new Promise((resolve, reject) => {
@@ -41,19 +41,22 @@ export function getCommitToCommittedMapFunc({atomicFileWrite, mkdirp}: Dependenc
                 `${r.path}`;
         });
 
-        let filename = commit.commitId + '-' + commit.clientId + '.commit';
-        let tmpFile = join(tmpDir, filename);
-        let commitFile = join(commitDir, filename);
+        let commitFile = Client.constructLocalPendingCommitFilename(
+            configDir,
+            commit.commitId,
+            commit.clientId
+        );
+        let tmpFile = join(tmpDir, commitFile.replace(/[^a-zA-Z0-9]/g, '_'));
 
         let p1 = created ? noop() : createDir(tmpDir);
         p1
-            .then(() => { return created ? noop() : createDir(commitDir); })
+            .then(() => { return created ? noop() : createDir(dirname(commitFile)); })
             .then(() => atomicFileWrite(tmpFile, commitFile, lines))
             .then(
                 () => next(
                     null,
                     Object.assign({}, commit, {
-                        relativeFilePath: join(filename)
+                        relativeFilePath: join(basename(commitFile))
                     })
                 ),
                 (e) => { next(e); }

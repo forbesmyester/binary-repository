@@ -16,4 +16,4 @@ IFS=$'\n\t'
 set -euo pipefail
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-OPT_DD_SKIP=0 OPT_DD_BS=1 OPT_IS_LAST=1 OPT_S3_OBJECT="c-${OPT_COMMIT_ID}-${OPT_CLIENT_ID}.commit" ${DIR}/test-upload-s3
+OPT_DD_SKIP=0 OPT_DD_BS=1 OPT_IS_LAST=1 ${DIR}/test-upload-s3

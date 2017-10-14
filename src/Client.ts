@@ -1,4 +1,4 @@
-import { FilePartIndex, Sha256, RemotePendingCommitStatRecordDecided, GpgKey, Callback, AbsoluteDirectoryPath, AbsoluteFilePath } from './Types';
+import { FilePartIndex, Sha256, CommitId, RemotePendingCommitStatRecordDecided, GpgKey, Callback, AbsoluteDirectoryPath, AbsoluteFilePath } from './Types';
 import { ExitStatus, CmdOutput, CmdSpawner, CmdRunner } from './CmdRunner';
 import { dirname, join } from 'path';
 import { streamDataCollector } from 'streamdash';
@@ -34,6 +34,11 @@ export default {
                 rec.part
             )
         );
+    },
+    constructLocalPendingCommitFilename: (configDir: AbsoluteDirectoryPath, commitId: CommitId, commitGpgKey: GpgKey) => {
+        let dir = join(configDir, 'pending-commit');
+        let filename = 'c-' + commitId + '-' + commitGpgKey + '.commit';
+        return join(dir, filename);
     },
     decrypt: (gpgKey: GpgKey, tmpfile: AbsoluteFilePath, src: AbsoluteFilePath, dst: AbsoluteFilePath, next: Callback<void>): void => {
 

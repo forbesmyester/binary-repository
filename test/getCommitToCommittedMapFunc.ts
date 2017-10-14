@@ -1,5 +1,5 @@
 import test from 'ava';
-import { join } from 'path';
+import { basename, dirname, join } from 'path';
 import { MkdirP, getCommitToCommittedMapFunc } from '../src/getCommitToCommittedMapFunc';
 import { AtomicFileWrite } from '../src/atomicFileWrite';
 import { Operation, AbsoluteDirectoryPath, AbsoluteFilePath, Committed, Commit } from '../src/Types';
@@ -40,7 +40,7 @@ test.cb("Can map", (tst) => {
     };
 
     let expected: Committed = Object.assign({}, input, {
-        relativeFilePath: '001-ClientId.commit'
+        relativeFilePath: 'c-001-ClientId.commit'
     });
 
     let expectedContents = [
@@ -50,8 +50,9 @@ test.cb("Can map", (tst) => {
     ];
 
     let atomicFileWrite: (tmpPath: AbsoluteFilePath, finalPath: AbsoluteFilePath, contents: string[]) => Promise<AbsoluteFilePath> = (tmpPath, finalPath, contents) => {
-        tst.is(tmpPath, '/tmp/ebak:test/tmp/001-ClientId.commit');
-        tst.is(finalPath, '/tmp/ebak:test/commit/001-ClientId.commit');
+        tst.is(dirname(tmpPath), '/tmp/ebak:test/tmp');
+        tst.true(basename(tmpPath).length > 0);
+        tst.is(finalPath, '/tmp/ebak:test/pending-commit/c-001-ClientId.commit');
         tst.deepEqual(contents, expectedContents);
         return Promise.resolve(finalPath);
     };
@@ -71,7 +72,7 @@ test.cb("Can map", (tst) => {
     commitToCommittedMapFunc(input, (err, val) => {
         tst.deepEqual(
             dirsCreated,
-            ['/tmp/ebak:test/tmp', '/tmp/ebak:test/commit']
+            ['/tmp/ebak:test/tmp', '/tmp/ebak:test/pending-commit']
         );
         tst.deepEqual(val, expected);
         tst.end();

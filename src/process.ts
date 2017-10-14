@@ -145,29 +145,6 @@ function getSha256FilePartToUploadedFilePart(rootDir: AbsoluteDirectoryPath, rem
 }
 
 
-function getCommittedToUploadedCommittedMapFunc(configDir: AbsoluteDirectoryPath, remote: RemoteUri, gpgKey: GpgKey) {
-
-    if (remote.match(/^s3\:\/\//)) {
-        return getCommittedToUploadedS3CommittedMapFunc(
-            configDir,
-            removeProtocol(remote),
-            gpgKey,
-            './bash/upload-commit-s3'
-        );
-    }
-
-    if (remote.match(/^file\:\/\//)) {
-        return getCommittedToUploadedS3CommittedMapFunc(
-            configDir,
-            removeProtocol(remote),
-            gpgKey,
-            './bash/upload-commit-cat'
-        );
-    }
-
-    throw new Error("NO_REMOTE_PROTOCOL: Cannot figure out where to copy file parts");
-}
-
 function readConfig(configDir: AbsoluteDirectoryPath) {
     let cf = join(configDir, 'config');
     try {
@@ -180,6 +157,56 @@ function readConfig(configDir: AbsoluteDirectoryPath) {
 }
 
 export function push(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
+
+    function getCommittedToUploadedCommittedMapFunc(configDir: AbsoluteDirectoryPath, remote: RemoteUri, gpgKey: GpgKey) {
+
+        if (remote.match(/^s3\:\/\//)) {
+            return getCommittedToUploadedS3CommittedMapFunc(
+                { mkdirp, cmdSpawner: CmdRunner.getCmdSpawner({}), rename },
+                configDir,
+                removeProtocol(remote),
+                gpgKey,
+                './bash/upload-commit-s3'
+            );
+        }
+
+        if (remote.match(/^file\:\/\//)) {
+            return getCommittedToUploadedS3CommittedMapFunc(
+                { mkdirp, cmdSpawner: CmdRunner.getCmdSpawner({}), rename },
+                configDir,
+                removeProtocol(remote),
+                gpgKey,
+                './bash/upload-commit-cat'
+            );
+        }
+
+        throw new Error("NO_REMOTE_PROTOCOL: Cannot figure out where to copy file parts");
+    }
+
+    let stdPipeOptions = { objectMode: true, highWaterMark: 1},
+        config: ConfigFile = readConfig(configDir),
+        gpgKey = config['gpg-encryption-key'],
+        pendingCommitDir = 'pending-commit',
+        s3Bucket = config.remote;
+
+    let commitedToUploadedCommitted = new MapTransform(
+            getCommittedToUploadedCommittedMapFunc(
+                configDir,
+                s3Bucket,
+                gpgKey,
+            ),
+            {objectMode: true}
+        ),
+        localCommitFileToCommit = new MapTransform(
+            getLocalCommitFilenameToCommitMapFunc(
+                { readFile },
+                configDir
+            ),
+            stdPipeOptions
+        );
+
+    getSortedCommitFilenamePipe(configDir, [pendingCommitDir])
+        .pipe(preparePipe(commitedToUploadedCommitted));
 }
 
 export function commit(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
@@ -240,14 +267,6 @@ export function commit(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
             ),
             stdPipeOptions
         ),
-        commitedToUploadedCommitted = new MapTransform(
-            getCommittedToUploadedCommittedMapFunc(
-                configDir,
-                s3Bucket,
-                gpgKey,
-            ),
-            {objectMode: true}
-        ),
         localCommitFileToCommit = new MapTransform(
             getLocalCommitFilenameToCommitMapFunc(
                 { readFile },
@@ -285,8 +304,7 @@ export function commit(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
         .pipe(preparePipe(fileToSha256FilePart))
         .pipe(preparePipe(sha256FilePartToUploadedS3FilePart)) // TODO: Loses 0 length files
         .pipe(preparePipe(uploadedS3FilePartsToCommit))
-        .pipe(preparePipe(commitToCommitted))
-        .pipe(preparePipe(commitedToUploadedCommitted));
+        .pipe(preparePipe(commitToCommitted));
 
     backup.pipe(new ConsoleWritable({out: console.log}, "LogObj: "));
 

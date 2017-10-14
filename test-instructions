@@ -6,7 +6,7 @@ GPGKEY_COMMIT='ebak'
 # For S3
 export REMOTE="s3://${GPGKEY_COMMIT}-$(date +%F)"
 # For Files
-export REMOTE='file:///tmp/${GPGKEY_COMMIT}-repo'
+# export REMOTE="file:///tmp/${GPGKEY_COMMIT}-repo"
 
 npm test
 
@@ -57,6 +57,18 @@ cp -R test/data/my-projects /tmp/ebak-data/matt_first
 
 node dist/src/index.js commit --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
 
+if [ $(find /tmp/ebak-config/matt_first/pending-commit -type f | wc -l) -ne 1 ]; then
+    echo "Was expecting one matt_first pending-commit"
+    exit 1
+fi
+
+node dist/src/index.js push --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
+
+if [ $(find /tmp/ebak-config/matt_first/pending-commit -type f | wc -l) -ne 0 ]; then
+    echo "Was expecting zero matt_first pending-commit"
+    exit 1
+fi
+
 if [ $(find /tmp/ebak-config/matt_first/commit -type f | wc -l) -ne 1 ]; then
     echo "Was expecting one matt_first commit"
     exit 1
@@ -66,10 +78,8 @@ fi
 # if [ $(echo "$REMOTE" | grep '^s3' | wc -c) -gt 0 ]; then
 #     aws s3 ls "$REMOTE"
 # else
-#     ls $( echo "$REMOTE" | sed 's%^[a-z0-9]\+\://%%' )
+    # ls $( echo "$REMOTE" | sed 's%^[a-z0-9]\+\://%%' )
 # fi
-
-node dist/src/index.js push --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
 
 node dist/src/index.js init --local-config=/tmp/ebak-config/jim_leach jimleach /tmp/ebak-data/jim_leach "$GPGKEY_COMMIT" "$REMOTE"
 
