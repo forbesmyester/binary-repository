@@ -3,16 +3,13 @@ set -euo pipefail
 IFS=$'\n\t'
 
 GPGKEY_COMMIT='ebak'
-# For S3
 REMOTE="s3://${GPGKEY_COMMIT}-$(date +%F)"
-# For Files
-REMOTE="file:///tmp/${GPGKEY_COMMIT}-repo"
+REMOTE="file:///tmp/${GPGKEY_COMMIT}-repo" # Comment this line for AWS testing
 
 GPGKEY_FILEPART1='ebak-fp1'
 
 npm test
 
-# PUBLIC_KEY_COUNT=$(gpg --list-keys | grep "$GPGKEY_COMMIT\$")
 set +e
 COMMIT_SECRET_KEY_COUNT=$(gpg --list-keys | grep "$GPGKEY_COMMIT\$" | wc -l)
 set -e
@@ -44,23 +41,18 @@ if [ $(echo "$REMOTE" | grep '^s3' | wc -c) -gt 0 ]; then
     aws s3 ls "$REMOTE" && aws s3 rb --force "$REMOTE" # Delete bucket if does exist
     set -e
     aws s3 mb "$REMOTE"
-    # You need to empty the bucket...
 else
     rm -rf $( echo "$REMOTE" | sed 's%^[a-z0-9]\+\://%%' )
 fi
-
-# For Local
 
 node dist/src/index.js init --filepart-gpg-encryption-key "$GPGKEY_FILEPART1" --local-config=/tmp/ebak-config/matt_first mattfirst "$GPGKEY_COMMIT" /tmp/ebak-data/matt_first "$REMOTE"
 
 node dist/src/index.js commit --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
 
-# Data should be empty
 if [ $(find /tmp/ebak-data/matt_first -type f | wc -l) -ne 0 ]; then
     echo "There should be no files in matt_first data directory"
     exit 1
 fi
-# Only config file should exist
 
 if [ $(find /tmp/ebak-config/matt_first -type f | grep "\/config$" | wc -l) -ne 1 ] ; then
     echo "$MATTS_CONFIG should have been one line"
@@ -88,12 +80,16 @@ if [ $(find /tmp/ebak-config/matt_first/commit -type f | wc -l) -ne 1 ]; then
     exit 1
 fi
 
-# TODO: Reinstate?
-# if [ $(echo "$REMOTE" | grep '^s3' | wc -c) -gt 0 ]; then
-#     aws s3 ls "$REMOTE"
-# else
-    # ls $( echo "$REMOTE" | sed 's%^[a-z0-9]\+\://%%' )
-# fi
+if [ $(echo "$REMOTE" | grep '^file' | wc -c) -gt 0 ]; then
+    if [ $(gpg --batch --list-packets /tmp/ebak-repo/c-X* 2>&1 | grep '^ \+"' | sed 's/ \+"//' | sed 's/"$//') != "$GPGKEY_COMMIT" ]; then
+        echo "Commit should have been encrypted with $GPGKEY_COMMIT"
+        exit 1
+    fi
+    if [ $(gpg --batch --list-packets $(ls /tmp/ebak-repo/f-* | head -n 1) 2>&1 | grep '^ \+"' | sed 's/ \+"//' | sed 's/"$//') != $GPGKEY_FILEPART1 ]; then
+        echo "Filepart should have been encrypted with $GPGKEY_FILEPART1"
+        exit 1
+    fi
+fi
 
 node dist/src/index.js init --local-config=/tmp/ebak-config/jim_leach jimleach "$GPGKEY_COMMIT" /tmp/ebak-data/jim_leach "$REMOTE"
 
@@ -109,7 +105,6 @@ if [ $(find /tmp/ebak-config/jim_leach/remote-pending-commit -type f | wc -l) -n
     exit 1
 fi
 
-# They should have the same contents...
 if [ $(diff /tmp/ebak-config/jim_leach/remote-pending-commit/* /tmp/ebak-config/matt_first/commit/* | wc -l) -ne 0 ]; then
     echo "The remote-pending-commit did not match the commit"
     exit 1
@@ -117,7 +112,6 @@ fi
 
 node dist/src/index.js download --local-config=/tmp/ebak-config/jim_leach /tmp/ebak-data/jim_leach
 
-# And the remote-pending-commit should have become remote-commit
 if [ $(diff /tmp/ebak-config/jim_leach/remote-commit/* /tmp/ebak-config/matt_first/commit/* | wc -l) -ne 0 ]; then
     echo "The remote-pending-commit should now be in remote-commit"
     exit 1
@@ -138,9 +132,3 @@ fi
 
 echo "Tests Passed."
 
-# node dist/src/index.js download --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
-#
-# mkdir /tmp/ebak-data/jim_leach/my-projects/
-#
-# cp test/data/my-projects/t-fp-merge.md  /tmp/ebak-data/jim_leach/my-projects/
-#

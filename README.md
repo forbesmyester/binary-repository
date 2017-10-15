@@ -32,10 +32,10 @@ There is good test coverage as well as a full, bash based backup / restoration t
  * [1] Simplify Commit file format
  * [1] Store Filepart's GpgKey and Filepart Byte Threshold within Commit file.
  * [2] Allow different GPG Key for Commit file.
+ * [2] Check correct encryption / decryption used in integration test
 
 ### In Progress
 
- * [2] Check correct encryption / decryption used in integration test ( `gpg --batch --list-packets /tmp/ebak-repo/c-X6r6f90b000-ebak-mattfirst.commit` )
  * [2] Add the ClientId to the Filepart name in the repository.
  * [3] Time to eat my own dogfood
 
