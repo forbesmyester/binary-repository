@@ -1,4 +1,4 @@
-import { UploadedCommitted, CommitId, ClientId, Committed, AbsoluteFilePath, AbsoluteDirectoryPath, GpgKey, DdBs, S3BucketName, CommandName } from  './Types';
+import { UploadedCommitted, CommitId, ClientId, Committed, AbsoluteFilePath, AbsoluteDirectoryPath, GpgKey, S3BucketName, CommandName } from  './Types';
 import { join } from 'path';
 import { ExitStatus, CmdOutput, CmdSpawner, CmdRunner } from './CmdRunner';
 import { MapFunc, streamDataCollector, Transform } from 'streamdash';

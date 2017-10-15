@@ -6,12 +6,13 @@ import { merge, mapObjIndexed } from 'ramda';
 test.cb("Can buildCheckDatabase", (tst) => {
 
     let backupRecords: BackupRecord[] = [
-            { sha256: 'ef2', operation: Operation.Create, fileByteCount: 58, modifiedDate: new Date('2017-06-24T10:46:12.432Z'), path: 'error_command', part: [1, 1] },
-            { sha256: '8cf', operation: Operation.Create, fileByteCount: 29, modifiedDate: new Date('2017-06-25T14:47:13.856Z'), path: 'hello_command', part: [3, 3] },
-            { sha256: '999', operation: Operation.Create, fileByteCount: 33, modifiedDate: new Date('2017-06-25T14:47:13.856Z'), path: 'other_command', part: [2, 3] },
-            { sha256: 'def', operation: Operation.Create, fileByteCount: 1816, modifiedDate: new Date('2017-06-19T06:20:05.168Z'), path: 'my-projects/getTLIdEncoderDecoder.md', part: [1, 1] }
+            { gpgKey: 'g', sha256: 'ef2', operation: Operation.Create, fileByteCount: 58, modifiedDate: new Date('2017-06-24T10:46:12.432Z'), path: 'error_command', part: [1, 1] },
+            { gpgKey: 'g', sha256: '8cf', operation: Operation.Create, fileByteCount: 29, modifiedDate: new Date('2017-06-25T14:47:13.856Z'), path: 'hello_command', part: [3, 3] },
+            { gpgKey: 'g', sha256: '999', operation: Operation.Create, fileByteCount: 33, modifiedDate: new Date('2017-06-25T14:47:13.856Z'), path: 'other_command', part: [2, 3] },
+            { gpgKey: 'g', sha256: 'def', operation: Operation.Create, fileByteCount: 1816, modifiedDate: new Date('2017-06-19T06:20:05.168Z'), path: 'my-projects/getTLIdEncoderDecoder.md', part: [1, 1] }
         ],
         input: Commit = {
+            gpgKey: 'gg',
             clientId: 'fozz',
             createdAt: new Date('2017-07-22T17:02:48.966Z'),
             commitId: 'rusdc000',

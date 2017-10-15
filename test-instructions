@@ -4,19 +4,33 @@ IFS=$'\n\t'
 
 GPGKEY_COMMIT='ebak'
 # For S3
-export REMOTE="s3://${GPGKEY_COMMIT}-$(date +%F)"
+REMOTE="s3://${GPGKEY_COMMIT}-$(date +%F)"
 # For Files
-# export REMOTE="file:///tmp/${GPGKEY_COMMIT}-repo"
+REMOTE="file:///tmp/${GPGKEY_COMMIT}-repo"
+
+GPGKEY_FILEPART1='ebak-fp1'
 
 npm test
 
 # PUBLIC_KEY_COUNT=$(gpg --list-keys | grep "$GPGKEY_COMMIT\$")
-SECRET_KEY_COUNT=$(gpg --list-keys | grep "$GPGKEY_COMMIT\$" | wc -l)
+set +e
+COMMIT_SECRET_KEY_COUNT=$(gpg --list-keys | grep "$GPGKEY_COMMIT\$" | wc -l)
+set -e
 
-if [ $SECRET_KEY_COUNT -ne "1" ]; then
-    gpg --delete-secret-keys "$GPGKEY_COMMIT"
-    gpg --delete-keys "$GPGKEY_COMMIT"
-    gpg --quick-gen-key "$GPGKEY_COMMIT"
+if [ $COMMIT_SECRET_KEY_COUNT -ne "1" ]; then
+    gpg --delete-secret-keys "$GPGKEY_COMMIT" || true
+    gpg --delete-keys "$GPGKEY_COMMIT" || true
+    gpg --batch ---passphrase '' --quick-gen-key "$GPGKEY_COMMIT"
+fi
+
+set +e
+FILEPART1_SECRET_KEY_COUNT=$(gpg --list-keys | grep "$GPGKEY_FILEPART1\$" | wc -l)
+set -e
+
+if [ $FILEPART1_SECRET_KEY_COUNT -ne "1" ]; then
+    gpg --delete-secret-keys "$GPGKEY_FILEPART1" || true
+    gpg --delete-keys "$GPGKEY_FILEPART1" || true
+    gpg --batch --passphrase '' --quick-gen-key "$GPGKEY_FILEPART1"
 fi
 
 rm -rf   /tmp/ebak-data
@@ -37,7 +51,7 @@ fi
 
 # For Local
 
-node dist/src/index.js init --local-config=/tmp/ebak-config/matt_first mattfirst /tmp/ebak-data/matt_first "$GPGKEY_COMMIT" "$REMOTE"
+node dist/src/index.js init --filepart-gpg-encryption-key "$GPGKEY_FILEPART1" --local-config=/tmp/ebak-config/matt_first mattfirst "$GPGKEY_COMMIT" /tmp/ebak-data/matt_first "$REMOTE"
 
 node dist/src/index.js commit --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
 
@@ -81,7 +95,7 @@ fi
     # ls $( echo "$REMOTE" | sed 's%^[a-z0-9]\+\://%%' )
 # fi
 
-node dist/src/index.js init --local-config=/tmp/ebak-config/jim_leach jimleach /tmp/ebak-data/jim_leach "$GPGKEY_COMMIT" "$REMOTE"
+node dist/src/index.js init --local-config=/tmp/ebak-config/jim_leach jimleach "$GPGKEY_COMMIT" /tmp/ebak-data/jim_leach "$REMOTE"
 
 if [ $(find /tmp/ebak-config/jim_leach -type f | wc -l) -ne 1 ]; then
     echo "There should be one files in jim_leach config directory"

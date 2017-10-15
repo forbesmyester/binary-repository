@@ -1,4 +1,4 @@
-import { FilePartIndex, RemoteType, S3Location, Callback, ByteCount, Sha256, FilePart, AbsoluteFilePath, AbsoluteDirectoryPath, GpgKey, Sha256FilePart, DdBs, S3BucketName, CommandName, UploadedS3FilePart } from  './Types';
+import { FilePartIndex, RemoteType, S3Location, Callback, ByteCount, Sha256, FilePart, AbsoluteFilePath, AbsoluteDirectoryPath, GpgKey, Sha256FilePart, S3BucketName, CommandName, UploadedS3FilePart } from  './Types';
 import Client from './Client';
 import { MapFunc } from 'streamdash';
 import { join } from 'path';
@@ -23,7 +23,7 @@ export interface Sha256FilePartUploadS3Environment {
     OPT_SHA: Sha256;
     OPT_PART: FilePart;
     OPT_DD_SKIP: number;
-    OPT_DD_BS: DdBs;
+    OPT_DD_BS: number;
     OPT_DD_COUNT: number;
     OPT_DD_FILENAME: AbsoluteFilePath;
     OPT_IS_LAST: number;
@@ -102,7 +102,8 @@ export default function getSha256FilePartToUploadedS3FilePartMapFunc({cmdSpawner
                     merge(
                         {
                             result: { exitStatus: 0, output: [] },
-                            uploadAlreadyExists: true
+                            uploadAlreadyExists: true,
+                            gpgKey: gpgKey
                         },
                         a
                     )
@@ -124,6 +125,7 @@ export default function getSha256FilePartToUploadedS3FilePartMapFunc({cmdSpawner
                         null,
                         merge(
                             {
+                                gpgKey: gpgKey,
                                 result: {
                                     exitStatus: 0,
                                     output: lines

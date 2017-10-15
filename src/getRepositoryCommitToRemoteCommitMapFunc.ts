@@ -38,7 +38,7 @@ function getEnv(gpgKey: GpgKey, s3Bucket: S3BucketName, s3Object: S3Object, conf
     return {
         OPT_S3_OBJECT: s3Object,
         OPT_IS_FIRST: 1,
-        OPT_DESTINATION: join(configDir, 'tmp', s3Object.replace(/^c\-/, '')),
+        OPT_DESTINATION: join(configDir, 'tmp', s3Object),
         OPT_GPG_KEY: gpgKey,
         OPT_S3_BUCKET: s3Bucket
     };
@@ -74,14 +74,12 @@ export default function getRepositoryCommitToRemoteCommitMapFunc(
             {}
         );
 
-        let destFilename = input.path.replace(/^c\-/, '');
-
         let sdc = streamDataCollector(cmdRunner)
             .then((lines) => {
                 return {
                     result: { exitStatus: 0, output: lines },
                     commitType: 'remote-pending-commit',
-                    path: destFilename
+                    path: input.path
                 };
             })
             .then((r) => {
@@ -93,7 +91,7 @@ export default function getRepositoryCommitToRemoteCommitMapFunc(
                 });
             })
             .then((r: RemotePendingCommitCmdResult) => {
-                let dest = join(configDir, 'remote-pending-commit', destFilename);
+                let dest = join(configDir, 'remote-pending-commit', input.path);
                 dependencies.rename(env.OPT_DESTINATION, dest, (err) => {
                     if (err) { return next(err); }
                     next(null, r);

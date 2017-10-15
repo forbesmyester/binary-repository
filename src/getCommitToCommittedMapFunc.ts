@@ -36,27 +36,38 @@ export function getCommitToCommittedMapFunc({atomicFileWrite, mkdirp}: Dependenc
 
     return function(commit, next) {
         let lines = commit.record.map(r => {
-            return `${r.sha256};${r.operation};${r.fileByteCount};` +
-                `${r.part[0]}_${r.part[1]};${r.modifiedDate.toISOString()};` +
-                `${r.path}`;
+            return JSON.stringify([
+                r.sha256,
+                r.operation,
+                r.fileByteCount,
+                `${r.part[0]}_${r.part[1]}`,
+                r.modifiedDate.toISOString(),
+                r.path,
+                r.gpgKey
+            ]);
         });
 
-        let commitFile = Client.constructLocalPendingCommitFilename(
-            configDir,
-            commit.commitId,
-            commit.clientId
-        );
-        let tmpFile = join(tmpDir, commitFile.replace(/[^a-zA-Z0-9]/g, '_'));
+        let commitFilename = Client.constructCommitFilename(
+                commit.commitId,
+                commit.gpgKey,
+                commit.clientId
+            ),
+            commitFullFilename = join(
+                configDir,
+                'pending-commit',
+                commitFilename
+            ),
+            tmpFile = join(tmpDir, commitFullFilename.replace(/[^a-zA-Z0-9]/g, '_'));
 
         let p1 = created ? noop() : createDir(tmpDir);
         p1
-            .then(() => { return created ? noop() : createDir(dirname(commitFile)); })
-            .then(() => atomicFileWrite(tmpFile, commitFile, lines))
+            .then(() => { return created ? noop() : createDir(dirname(commitFullFilename)); })
+            .then(() => atomicFileWrite(tmpFile, commitFullFilename, lines))
             .then(
                 () => next(
                     null,
                     Object.assign({}, commit, {
-                        relativeFilePath: join(basename(commitFile))
+                        relativeFilePath: join(basename(commitFullFilename))
                     })
                 ),
                 (e) => { next(e); }

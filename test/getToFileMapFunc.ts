@@ -9,10 +9,12 @@ import { GpgKey, FilePartIndex, RelativeFilePath, Operation, Sha256, RemotePendi
 function getInput(path: RelativeFilePath, part: FilePartIndex, proceed = true): RemotePendingCommitDownloaded {
     let d = new Date('2017-07-22T17:02:48.000Z');
     return {
+        gpgKey: 'commit-gpg-key',
         clientId: 'notme',
         createdAt: d,
         commitId: 'Xb',
         record: [{
+            gpgKey: 'gpgKey',
             sha256: 'sha',
             operation: Operation.Create,
             fileByteCount: 200,
@@ -44,8 +46,8 @@ test.cb('Will skip if not proceed', (tst) => {
         unlink: e,
         decrypt: e,
         rename: (s, d, n) => {
-            tst.is(s, '/store/.ebak/remote-pending-commit/Xb-notme.commit');
-            tst.is(d, '/store/.ebak/remote-commit/Xb-notme.commit');
+            tst.is(s, '/store/.ebak/remote-pending-commit/c-Xb-commit--gpg--key-notme.commit');
+            tst.is(d, '/store/.ebak/remote-commit/c-Xb-commit--gpg--key-notme.commit');
             done.rename = done.rename + 1;
             n(null);
         },
@@ -93,11 +95,11 @@ test.cb('Can unencrypt local FilePart', (tst) => {
             let expected = {
                 oldFn: [
                     '/store/.ebak/tmp/sha.ebak.dec',
-                    '/store/.ebak/remote-pending-commit/Xb-notme.commit'
+                    '/store/.ebak/remote-pending-commit/c-Xb-commit--gpg--key-notme.commit'
                 ],
                 newFn: [
                     '/store/Docs/a.txt',
-                    '/store/.ebak/remote-commit/Xb-notme.commit'
+                    '/store/.ebak/remote-commit/c-Xb-commit--gpg--key-notme.commit'
                 ]
             };
             tst.is(oldFn, expected.oldFn[done.rename]);

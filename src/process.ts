@@ -55,6 +55,7 @@ class ConsoleWritable extends Writable<Object> {
             this.out("Error Caught!");
             this.out(this.name, ob.message);
             this.out(this.name, ob.stack);
+            process.exit(1);
         }
         this.out(this.name, JSON.stringify(ob));
         cb();
@@ -224,6 +225,7 @@ export function commit(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
         commitMaxDelay = 1000 * 60 * 5,
         s3Bucket = config.remote,
         gpgKey = config['gpg-encryption-key'],
+        fpGpgKey = config['filepart-gpg-encryption-key'],
         rootReader = new RootReadable(
             {glob: RootReadable.getGlobFunc()},
             rootDir,
@@ -248,6 +250,7 @@ export function commit(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
         uploadedS3FilePartsToCommit = new UploadedS3FilePartsToCommit(
             UploadedS3FilePartsToCommit.getDependencies(),
             clientId,
+            gpgKey,
             commitFileByteCountThreshold,
             commitMaxDelay,
             {}
@@ -256,7 +259,7 @@ export function commit(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
             getSha256FilePartToUploadedFilePart(
                 rootDir,
                 config.remote,
-                gpgKey
+                fpGpgKey
             ),
             stdPipeOptions
         ),
@@ -436,13 +439,12 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
             stdPipeOptions
         ));
 
-    let toRemotePendingCommitStatsMapFunc = getToRemotePendingCommitStatsMapFunc(
-            getToRemotePendingCommitStatsDependencies(),
-            rootDir
-        ),
-        toRemotePendingCommitStats = preparePipe(
+    let toRemotePendingCommitStats = preparePipe(
             new MapTransform(
-                toRemotePendingCommitStatsMapFunc,
+                getToRemotePendingCommitStatsMapFunc(
+                    getToRemotePendingCommitStatsDependencies(),
+                    rootDir
+                ),
                 stdPipeOptions
             )
         );

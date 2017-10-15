@@ -25,6 +25,7 @@ let commitDates = [
 function getFileParts(low, high, count) {
 
     let template: UploadedS3FilePart = {
+        gpgKey: 'g',
         sha256: "def8c702e06f7f6ac6576e0d4bbd830303aaa7d6857ee6c81c6d6a1b0a6c3bdf",
         fileByteCount: 600,
         length: 100,
@@ -85,6 +86,7 @@ test("Will error if a non-zero exit code is there (should never be)", (tst) => {
             commitIdGenerator: getTransactionIdGenerator()
         },
         "ClientId",
+        'gg',
         1024,
         1000 * 120,
         {}
@@ -122,6 +124,7 @@ test("Will output at filesize threshold and flush", (tst) => {
             commitIdGenerator: getTransactionIdGenerator()
         },
         "ClientId",
+        'gg',
         1024,
         1000 * 120,
         {}
@@ -133,6 +136,7 @@ test("Will output at filesize threshold and flush", (tst) => {
         {
             record: [
                 {
+                    gpgKey: 'g',
                     sha256: "def8c702e06f7f6ac6576e0d4bbd830303aaa7d6857ee6c81c6d6a1b0a6c3bdf",
                     operation: Operation.Create,
                     fileByteCount: 600,
@@ -141,6 +145,7 @@ test("Will output at filesize threshold and flush", (tst) => {
                     part: [22, 152],
                 },
                 {
+                    gpgKey: 'g',
                     sha256: "def8c702e06f7f6ac6576e0d4bbd830303aaa7d6857ee6c81c6d6a1b0a6c3bdf",
                     operation: Operation.Create,
                     fileByteCount: 600,
@@ -149,6 +154,7 @@ test("Will output at filesize threshold and flush", (tst) => {
                     part: [23, 152],
                 }
             ],
+            gpgKey: 'gg',
             createdAt: commitDates[1], // skips one on constructor
             commitId: "001",
             clientId: "ClientId",
@@ -156,6 +162,7 @@ test("Will output at filesize threshold and flush", (tst) => {
         {
             record: [
                 {
+                    gpgKey: 'g',
                     sha256: "def8c702e06f7f6ac6576e0d4bbd830303aaa7d6857ee6c81c6d6a1b0a6c3bdf",
                     operation: Operation.Create,
                     fileByteCount: 600,
@@ -164,6 +171,7 @@ test("Will output at filesize threshold and flush", (tst) => {
                     part: [24, 152],
                 }
             ],
+            gpgKey: 'gg',
             createdAt: commitDates[3], // skips one on flush
             commitId: "002",
             clientId: "ClientId",
@@ -201,6 +209,7 @@ test("Will output at time threshold and flush", (tst) => {
             commitIdGenerator: getTransactionIdGenerator()
         },
         "ClientId",
+        'gg',
         81920,
         1000 * 120,
         { highWaterMark: 1 }

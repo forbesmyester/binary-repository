@@ -1,4 +1,4 @@
-import { BASE_TLID_UNIQUENESS, BASE_TLID_TIMESTAMP, BackupRecord, Commit, ClientId, CommitId, Operation, Sha256, ByteCount, RelativeFilePath, FilePartIndex, UploadedS3FilePart } from './Types';
+import { BASE_TLID_UNIQUENESS, BASE_TLID_TIMESTAMP, BackupRecord, Commit, ClientId, CommitId, GpgKey, Operation, Sha256, ByteCount, RelativeFilePath, FilePartIndex, UploadedS3FilePart } from './Types';
 import { Transform } from 'streamdash';
 import { path, reduce } from 'ramda';
 import * as getTlidEncoderDecoder from 'get_tlid_encoder_decoder';
@@ -26,6 +26,7 @@ export class UploadedS3FilePartsToCommit extends Transform<UploadedS3FilePart, C
     constructor(
         { getDate, interval, commitIdGenerator }: Dependencies,
         private clientId: string,
+        private gpgKey: GpgKey, // For the Commit
         private fileByteCountThreshold: number,
         private maxDelay: number,
         opts
@@ -73,6 +74,7 @@ export class UploadedS3FilePartsToCommit extends Transform<UploadedS3FilePart, C
             return cb(new Error(`Non zero exit status when uploading (${exitStatus})`));
         }
         this.records.push({
+            gpgKey: input.gpgKey,
             sha256: input.sha256,
             operation: Operation.Create,
             fileByteCount: input.fileByteCount,
@@ -95,6 +97,7 @@ export class UploadedS3FilePartsToCommit extends Transform<UploadedS3FilePart, C
         if (this.records.length == 0) { return cb(); }
         let d = this.getDate();
         this.push({
+            gpgKey: this.gpgKey,
             clientId: this.clientId,
             createdAt: d,
             commitId: this.commitIdGenerator(d),

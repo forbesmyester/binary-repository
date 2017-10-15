@@ -11,10 +11,12 @@ import RepositoryLocalfiles from '../src/repository/RepositoryLocalfiles';
 function getInput(path: RelativeFilePath, part: FilePartIndex, proceed: boolean = true): RemotePendingCommitDownloaded {
     let d = new Date('2017-07-22T17:02:48.966Z');
     return {
+        gpgKey: 'gg',
         clientId: 'notme',
         createdAt: d,
         commitId: 'b',
         record: [{
+            gpgKey: 'g',
             sha256: 'sha',
             operation: Operation.Create,
             fileByteCount: 200,

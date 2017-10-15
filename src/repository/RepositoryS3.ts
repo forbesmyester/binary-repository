@@ -1,4 +1,4 @@
-import { AbsoluteFilePath, S3Location, S3BucketName, S3Object, RemotePendingCommitStatRecordDecided, Callback, AbsoluteDirectoryPath, ByteCount } from '../Types';
+import { GpgKey, AbsoluteFilePath, S3Location, S3BucketName, S3Object, RemotePendingCommitStatRecordDecided, Callback, AbsoluteDirectoryPath, ByteCount } from '../Types';
 import { createReadStream, createWriteStream, rename, stat } from 'fs';
 import RepositoryAbstract from './RepositoryAbstract';
 import padLeadingZero from '../padLeadingZero';
@@ -7,7 +7,7 @@ import { S3 } from 'aws-sdk';
 import * as NodeStream from 'stream';
 
 
-function constructObject(maxFilepart: number, a: RemotePendingCommitStatRecordDecided): S3Object {
+function constructObject(gpgKey: GpgKey, a: RemotePendingCommitStatRecordDecided): S3Object {
     let p = padLeadingZero(("" + a.part[1]).length, a.part[0]);
     return `f-${a.sha256}-${p}.ebak`;
 }
@@ -16,8 +16,8 @@ let s3 = new S3();
 
 let RepositoryS3: RepositoryAbstract = {
 
-    constructFilepartS3Location: (s3Bucket: S3BucketName, maxFilepart: number, rec: RemotePendingCommitStatRecordDecided): S3Location => {
-        return [s3Bucket, constructObject(maxFilepart, rec)];
+    constructFilepartS3Location: (s3Bucket: S3BucketName, gpgKey: GpgKey, rec: RemotePendingCommitStatRecordDecided): S3Location => {
+        return [s3Bucket, constructObject(gpgKey, rec)];
     },
 
     exists: (loc: S3Location, next: Callback<boolean>) => {

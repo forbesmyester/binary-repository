@@ -12,12 +12,12 @@ test.cb("Download Generate Environment (base)", (tst) => {
 
     let expected: CommitFilename & { result: CmdResult } = {
         commitType: "remote-pending-commit",
-        path: "X3aeit8p000-mattfirst.commit",
+        path: "c-X3aeit8p000-mattfirst.commit",
         result: {
             exitStatus: 0,
             output: [{
                 name: 'stdout',
-                text: 'dd if="/repos/ebak-commit-bucket/c-X3aeit8p000-mattfirst.commit" | gpg -d -r "ebak" | cat > "/tmp/x/.ebak/tmp/X3aeit8p000-mattfirst.commit"'
+                text: 'dd if="/repos/ebak-commit-bucket/c-X3aeit8p000-mattfirst.commit" | gpg -d -r "ebak" | cat > "/tmp/x/.ebak/tmp/c-X3aeit8p000-mattfirst.commit"'
             }]
         }
     };
@@ -34,8 +34,8 @@ test.cb("Download Generate Environment (base)", (tst) => {
             next(null, 0);
         },
         rename: (src, dest, next) => {
-            tst.is(src, "/tmp/x/.ebak/tmp/X3aeit8p000-mattfirst.commit");
-            tst.is(dest, "/tmp/x/.ebak/remote-pending-commit/X3aeit8p000-mattfirst.commit");
+            tst.is(src, "/tmp/x/.ebak/tmp/c-X3aeit8p000-mattfirst.commit");
+            tst.is(dest, "/tmp/x/.ebak/remote-pending-commit/c-X3aeit8p000-mattfirst.commit");
             next(null);
         },
         mkdirp: (dest, next) => {

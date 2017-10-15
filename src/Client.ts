@@ -1,8 +1,9 @@
-import { FilePartIndex, Sha256, CommitId, RemotePendingCommitStatRecordDecided, GpgKey, Callback, AbsoluteDirectoryPath, AbsoluteFilePath } from './Types';
+import { BASE_TLID_TIMESTAMP, BASE_TLID_UNIQUENESS, FilePartIndex, Sha256, ClientId, CommitId, RemotePendingCommitStatRecordDecided, GpgKey, Callback, AbsoluteDirectoryPath, AbsoluteFilePath } from './Types';
 import { ExitStatus, CmdOutput, CmdSpawner, CmdRunner } from './CmdRunner';
 import { dirname, join } from 'path';
 import { streamDataCollector } from 'streamdash';
 import padLeadingZero from './padLeadingZero';
+import * as getTlIdEncoderDecoder from 'get_tlid_encoder_decoder';
 
 
 function getEnv(gpgKey: GpgKey, src: AbsoluteFilePath, dst: AbsoluteFilePath) {
@@ -24,9 +25,13 @@ function constructFilepartFilename(sha256: Sha256, filePartIndex: FilePartIndex)
     return `f-${sha256}-${p}.ebak`
 }
 
+class NotCommitFileError extends Error {}
+
+let tlIdEncoderDecoder = getTlIdEncoderDecoder(BASE_TLID_TIMESTAMP, BASE_TLID_UNIQUENESS);
+
 export default {
     constructFilepartFilename,
-    constructFilepartLocalLocation: (configDir: AbsoluteDirectoryPath, maxFilepart: number, rec: RemotePendingCommitStatRecordDecided): AbsoluteFilePath => {
+    constructFilepartLocalLocation: (configDir: AbsoluteDirectoryPath, gpgKey: GpgKey, rec: RemotePendingCommitStatRecordDecided): AbsoluteFilePath => {
         return join(
             join(configDir, 'remote-encrypted-filepart'),
             constructFilepartFilename(
@@ -35,10 +40,44 @@ export default {
             )
         );
     },
-    constructLocalPendingCommitFilename: (configDir: AbsoluteDirectoryPath, commitId: CommitId, commitGpgKey: GpgKey) => {
-        let dir = join(configDir, 'pending-commit');
-        let filename = 'c-' + commitId + '-' + commitGpgKey + '.commit';
-        return join(dir, filename);
+    infoFromCommitFilename(filename: AbsoluteFilePath) {
+        let filenameRe = /\/*c\-([^\/\-]+)\-([^\/]+)\.commit$/;
+        let filenameMatch = filename.match(filenameRe);
+
+        if (!filenameMatch) {
+            throw new NotCommitFileError(
+                `The filename '${filename}' does not look like a commit file`
+            );
+        }
+
+        let gpgKeyAndClientSeperatorMatch = filenameMatch[2].match(/[^\-]\-[^\-]/);
+
+        if (gpgKeyAndClientSeperatorMatch === null) {
+            throw new NotCommitFileError(
+                `The filename '${filename}' does not look like a commit file`
+            );
+        }
+
+        if (gpgKeyAndClientSeperatorMatch === undefined) {
+            throw new NotCommitFileError(
+                `The filename '${filename}' does not look like a commit file`
+            );
+        }
+
+        let seperatorIndex = <number>gpgKeyAndClientSeperatorMatch.index + 1;
+        let gpgKey = filenameMatch[2].substr(0, seperatorIndex);
+        let clientId = filenameMatch[2].substr(seperatorIndex + 1);
+
+        return {
+            createdAt: new Date(tlIdEncoderDecoder.decode(filenameMatch[1])),
+            commitId: filenameMatch[1],
+            clientId: clientId.replace(/--/g, '-'),
+            gpgKey: gpgKey.replace(/--/g, '-')
+        };
+    },
+    constructCommitFilename: (commitId: CommitId, commitGpgKey: GpgKey, clientId: ClientId) => {
+        let r = s => s.replace(/\-/g, '--');
+        return `c-${commitId}-${r(commitGpgKey)}-${r(clientId)}.commit`;
     },
     decrypt: (gpgKey: GpgKey, tmpfile: AbsoluteFilePath, src: AbsoluteFilePath, dst: AbsoluteFilePath, next: Callback<void>): void => {
 

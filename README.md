@@ -29,17 +29,21 @@ There is good test coverage.
  * Deciding which data to download
  * Downloading data
  * Restoring data
+ * Simplify Commit file format
+ * Store Filepart's GpgKey and Filepart Byte Threshold within Commit file.
+ * Allow different GPG Key for Commit file.
 
 ### In Progress
 
- * Add total count of Fileparts to S3 filename (RepositoryS3.constructFilepartS3Location & getSha256FilePartToUploadedS3FilePartMapFunc - to use plain upload-cat / upload-s3)
+ * Allow skip over remote Filepart where the encryption key is not known.
 
 ### To do
 
- * Allow different GPG Key for Commit files.
+ * Add a check to that the ClientId id no already used on init
+ * Add an option to force SHA256 to be checked for all files.
  * Add the ability to remove files
- * Allow purge of old FilePart from S3
- * Allow restoration / download of individual files
+ * Allow purge of old (removed) FilePart from S3
+ * Allow restoration / download of selected files
 
 ## Future Plans
 

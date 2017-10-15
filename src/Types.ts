@@ -23,11 +23,6 @@ export class UserError extends Error {
 
 export type AbsoluteFilePath = string;
 
-/**
- * The location of a repository stored on the local filesystem
- */
-export type LocalRepositoryDirectoryPath = AbsoluteDirectoryPath;
-
 export type AbsoluteDirectoryPath = string;
 
 export type RelativeFilePath = string;
@@ -52,6 +47,7 @@ export interface Commit {
     readonly createdAt: Date;
     readonly commitId: CommitId;
     readonly clientId: ClientId;
+    readonly gpgKey: GpgKey;
 }
 
 export enum RemoteType {
@@ -77,27 +73,6 @@ export interface UploadedCommitted extends Committed {
 }
 
 /**
- * A CommitFile is a Commit (file) that is from the current ClientId.
- *
- * As Commit files are only wrote after all Sha256FilePart are uploaded we know
- * that it must be 100% complete.
- */
-export interface CommitFile extends File {
-}
-
-/**
- * A RemotePendingCommitFile is a Commit from another Client which we have
- * the Commit file itself for but have not decided anything about it (it is not
- * yet merged and we don't know when to merge it).
- *
- * If you want to distinguish between a RemotePendingCommitFile and a
- * Commit you should just see if the ClientId (from the filename) is the current
- * ClientId.
- */
-export interface RemotePendingCommitFile extends CommitFile {
-}
-
-/**
  * A Client uniquely indentifies any computer that has uploaded of data.
  */
 export type ClientId = string;
@@ -112,6 +87,7 @@ export interface BackupRecord { // Rename CommitRecord
     readonly modifiedDate: Date;
     readonly path: RelativeFilePath;
     readonly part: FilePartIndex;
+    readonly gpgKey: GpgKey;
 }
 
 
@@ -125,11 +101,6 @@ export enum Operation {
     //             // incase it becomes so (as I like nice sequential numbers!
     Delete = 3
 }
-
-/**
- * number of bytes to skip, compatible with dd bs=___, for example 1, 1M or 1G
- */
-export type DdBs = string|number;
 
 /**
  * The name of a command to run, which should live in ./bash/ of this project.
@@ -200,6 +171,7 @@ export interface CmdResult { readonly exitStatus: ExitStatus; readonly output: C
 export interface UploadedS3FilePart extends Sha256FilePart {
     readonly uploadAlreadyExists: boolean;
     readonly result: CmdResult;
+    readonly gpgKey: GpgKey;
 }
 
 export const BASE_TLID_TIMESTAMP = new Date('2017-07-22T08:54:05.274Z').getTime();
@@ -215,6 +187,7 @@ export interface ConfigFile {
     remote: S3BucketName;
     'client-id': ClientId;
     'gpg-encryption-key': GpgKey;
+    'filepart-gpg-encryption-key': GpgKey;
 }
 
 export interface RemotePendingCommit extends Commit {}

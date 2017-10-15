@@ -1,31 +1,25 @@
 import test from 'ava';
 import { MapFunc } from 'streamdash';
-import { BASE_TLID_TIMESTAMP, BASE_TLID_UNIQUENESS, BackupRecord, Operation, Callback2, Callback, CommitFilename, ClientId, Commit, AbsoluteDirectoryPath } from '../src/Types';
+import { GpgKey, BackupRecord, Operation, Callback2, Callback, CommitFilename, ClientId, Commit, AbsoluteDirectoryPath } from '../src/Types';
 import { join } from 'path';
-import * as getTlIdEncoderDecoder from 'get_tlid_encoder_decoder';
+import Client from './Client';
 
 export interface Dependencies {
     readFile(path: string, opts: { encoding: string }, cb: Callback2<string>);
 }
 
-let tlIdEncoderDecoder = getTlIdEncoderDecoder(BASE_TLID_TIMESTAMP, BASE_TLID_UNIQUENESS);
-
-class NotCommitFileError extends Error {}
-
-let lineRe = /^([0-9a-f]+);([0-9]);([0-9]+);([0-9]+_[0-9]+);([^;]+);(.*)/;
-let filenameRe = /\/*([^\/]+)\-([^\/]+)\.commit$/;
-
 function toRecord(str): BackupRecord|null {
-    let m = str.match(lineRe);
+    let m = JSON.parse(str);
     if (m === null) { return m; }
 
     return {
-        sha256: m[1],
-        operation: parseInt(m[2]),
-        fileByteCount: parseInt(m[3]),
-        modifiedDate: new Date(m[5]),
-        path: m[6],
-        part: m[4].split("_").map(a => parseInt(a, 10))
+        sha256: m[0],
+        operation: parseInt(m[1]),
+        fileByteCount: parseInt(m[2]),
+        modifiedDate: new Date(m[4]),
+        path: m[5],
+        part: m[3].split("_").map(a => parseInt(a, 10)),
+        gpgKey: m[6]
     };
 }
 
@@ -37,22 +31,14 @@ export default function({ readFile }: Dependencies, configDir: AbsoluteDirectory
 
             if (err) { return next(err); }
 
-            let filenameMatch = a.path.match(filenameRe);
-
-            if (!filenameMatch) {
-                throw new NotCommitFileError(
-                    `The filename '${a.path}' does not look like a commit file`
-                );
-            }
-
-            let commit: Commit = {
-                createdAt: new Date(tlIdEncoderDecoder.decode(filenameMatch[1])),
+            let commit: Commit = Object.assign(
+                Client.infoFromCommitFilename(a.path),
+                {
                 record: <BackupRecord[]>contents.split(/[\r\n]+/)
                     .map(toRecord)
-                    .filter(a => a !== null),
-                commitId: filenameMatch[1],
-                clientId: filenameMatch[2]
-            };
+                    .filter(a => a !== null)
+                }
+            );
 
             next(null, commit);
         });

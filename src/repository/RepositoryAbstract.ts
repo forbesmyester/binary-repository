@@ -1,8 +1,8 @@
-import { RemotePendingCommitStatRecordDecided, S3Location, S3BucketName, S3Object, AbsoluteDirectoryPath, AbsoluteFilePath, ByteCount, Callback } from '../Types';
+import { GpgKey, RemotePendingCommitStatRecordDecided, S3Location, S3BucketName, S3Object, AbsoluteDirectoryPath, AbsoluteFilePath, ByteCount, Callback } from '../Types';
 
 export default interface RepositoryLocalfiles {
 
-    constructFilepartS3Location(s3Bucket: S3BucketName, maxFilepart: number, rec: RemotePendingCommitStatRecordDecided): S3Location;
+    constructFilepartS3Location(s3Bucket: S3BucketName, gpgKey: GpgKey, rec: RemotePendingCommitStatRecordDecided): S3Location;
 
     exists(loc: S3Location, next: Callback<boolean>): void;
 

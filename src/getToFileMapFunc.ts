@@ -178,12 +178,20 @@ export default function getToFile({utimes, rename, mkdirp, unlink, decrypt}: Dep
         let oldFilename = join(
             configDir,
             'remote-pending-commit',
-            a.commitId + '-' + a.clientId + '.commit'
+            Client.constructCommitFilename(
+                a.commitId,
+                a.gpgKey,
+                a.clientId
+            )
         );
         let newFilename = join(
             configDir,
             'remote-commit',
-            a.commitId + '-' + a.clientId + '.commit'
+            Client.constructCommitFilename(
+                a.commitId,
+                a.gpgKey,
+                a.clientId
+            )
         );
         mkdirp(dirname(newFilename), (e) => {
             if (e) { return next(e); }

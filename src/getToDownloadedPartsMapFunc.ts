@@ -6,7 +6,7 @@ import { join } from 'path';
 import { MapFunc } from 'streamdash';
 import throat = require('throat');
 import { flatten, pipe, range, assoc, dissoc, map } from 'ramda';
-import { RemoteType, FilePartIndex, S3Object, S3Location, RemotePendingCommitStatRecordDecided, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, ByteCount } from './Types';
+import { GpgKey, RemoteType, FilePartIndex, S3Object, S3Location, RemotePendingCommitStatRecordDecided, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, ByteCount } from './Types';
 import * as mkdirp from 'mkdirp';
 import RepositoryLocalfiles from './repository/RepositoryLocalfiles';
 import RepositoryS3 from './repository/RepositoryS3';
@@ -20,8 +20,8 @@ export interface Dependencies {
     download: (tmpDir: AbsoluteDirectoryPath, loc: S3Location, downloadTo: AbsoluteFilePath, next: Callback<void>) => void;
     downloadSize: (loc: S3Location, next: Callback<ByteCount>) => void;
     mkdirp: MkdirP;
-    constructFilepartS3Location: (s3Bucket: S3BucketName, maxFilepart: number, rec: RemotePendingCommitStatRecordDecided) => S3Location;
-    constructFilepartLocalLocation: (configDir: AbsoluteDirectoryPath, maxFilepart: number, rec: RemotePendingCommitStatRecordDecided) => AbsoluteFilePath;
+    constructFilepartS3Location: (s3Bucket: S3BucketName, gpgKey: GpgKey, rec: RemotePendingCommitStatRecordDecided) => S3Location;
+    constructFilepartLocalLocation: (configDir: AbsoluteDirectoryPath, gpgKey: GpgKey, rec: RemotePendingCommitStatRecordDecided) => AbsoluteFilePath;
 }
 
 export function getDependencies(mode: RemoteType): Dependencies {
@@ -76,7 +76,7 @@ export default function getToDownloadedParts({ constructFilepartLocalLocation, c
     }
 
 
-    function doDownloaded(maxPartNumber: number, a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
+    function doDownloaded(gpgKey: GpgKey, a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
         // TODO: Yeh Yeh, it's a Christmas tree... do something about it!
         if (!a.proceed) return Promise.resolve(a);
         return new Promise((resolve, reject) => {
@@ -86,8 +86,8 @@ export default function getToDownloadedParts({ constructFilepartLocalLocation, c
                     if (e) { return reject(e); }
                     download(
                         tmpDir,
-                        constructFilepartS3Location(s3Bucket, maxPartNumber, a),
-                        constructFilepartLocalLocation(configDir, a.part[1], a),
+                        constructFilepartS3Location(s3Bucket, gpgKey, a),
+                        constructFilepartLocalLocation(configDir, gpgKey, a),
                         (e, r) => {
                             if (e) { return reject(e); }
                             resolve(a);
@@ -105,13 +105,13 @@ export default function getToDownloadedParts({ constructFilepartLocalLocation, c
         );
     }
 
-    function checkDownloaded(maxPartNumber: number, a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
+    function checkDownloaded(gpgKey: GpgKey, a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
         // TODO: Derive arg for pDonwloadSize from Driver
         if (!a.proceed) return Promise.resolve(a);
         return Promise.all([
             pMyStat(join(filepartDir, constructFilepart(a))),
             pDownloadSize(
-                constructFilepartS3Location(s3Bucket, maxPartNumber, a)
+                constructFilepartS3Location(s3Bucket, gpgKey, a)
             )
         ]).then(([stats, downloadSize]) => {
             if (stats === null) { return a; }

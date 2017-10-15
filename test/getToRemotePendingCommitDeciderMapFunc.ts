@@ -6,10 +6,12 @@ import getToRemotePendingCommitDeciderMapFunc from '../src/getToRemotePendingCom
 
 function getInput(sha256: Sha256, modifiedDate: Date, local: null|BackupCheckDatabaseValue, stat: null|RemotePendingCommitStatRecordStat, part: number = 2): RemotePendingCommitStat {
     return {
+        gpgKey: 'gg',
         clientId: 'notme',
         createdAt: new Date('2017-07-22T17:02:48.966Z'),
         commitId: 'b',
         record: [{
+            gpgKey: 'g',
             sha256: sha256,
             operation: Operation.Create,
             fileByteCount: 200,

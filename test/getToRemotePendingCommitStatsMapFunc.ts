@@ -54,12 +54,14 @@ test.cb("Can map", (tst) => {
             clientId: 'notme',
             createdAt: new Date('2017-07-22T17:02:48.966Z'),
             commitId: 'b',
+            gpgKey: 'commitGpgKey',
             record: [
                 {
                     sha256: '444',
                     operation: Operation.Create,
                     fileByteCount: 400,
                     modifiedDate: new Date('2018-09-09T17:27:22.730Z'),
+                    gpgKey: 'filepartGpgKey',
                     path: 'abc.txt',
                     part: [1, 1],
                     local: null
@@ -69,6 +71,7 @@ test.cb("Can map", (tst) => {
                     operation: Operation.Create,
                     fileByteCount: 200,
                     modifiedDate: new Date('2017-09-09T17:27:22.730Z'),
+                    gpgKey: 'filepartGpgKey',
                     path: 'def.txt',
                     part: [1, 1],
                     local: null

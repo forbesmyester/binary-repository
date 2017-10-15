@@ -45,11 +45,12 @@ test("Can initialize", (tst) => {
     };
 
     let remotePending: BackupRecord[] = [
-            { sha256: '8d2', operation: Operation.Create, fileByteCount: 3832, modifiedDate: new Date('2016-06-24T10:46:12.432Z'), path: 'my-projects/stronger-typed-streams.md', part: [1, 1] },
-            { sha256: '200', operation: Operation.Create, fileByteCount: 200, modifiedDate: new Date('2016-09-09T17:27:22.730Z'), path: 'my-projects/t-fp-merge.md', part: [1, 1] },
-            { sha256: '444', operation: Operation.Create, fileByteCount: 444, modifiedDate: new Date('2019-09-09T17:27:22.730Z'), path: 'new-file.txt', part: [1, 1] },
+            { gpgKey: 'g', sha256: '8d2', operation: Operation.Create, fileByteCount: 3832, modifiedDate: new Date('2016-06-24T10:46:12.432Z'), path: 'my-projects/stronger-typed-streams.md', part: [1, 1] },
+            { gpgKey: 'g', sha256: '200', operation: Operation.Create, fileByteCount: 200, modifiedDate: new Date('2016-09-09T17:27:22.730Z'), path: 'my-projects/t-fp-merge.md', part: [1, 1] },
+            { gpgKey: 'g', sha256: '444', operation: Operation.Create, fileByteCount: 444, modifiedDate: new Date('2019-09-09T17:27:22.730Z'), path: 'new-file.txt', part: [1, 1] },
         ],
         remoteCommit: RemotePendingCommit = {
+            gpgKey: 'gg',
             clientId: 'notme',
             createdAt: new Date('2017-07-22T17:02:48.966Z'),
             commitId: 'b',
@@ -58,6 +59,7 @@ test("Can initialize", (tst) => {
 
         let expectedRecord: RemotePendingCommitInfoRecord[] = [
             {
+                gpgKey: 'g',
                 sha256: '8d2',
                 operation: Operation.Create,
                 fileByteCount: 3832,
@@ -71,6 +73,7 @@ test("Can initialize", (tst) => {
                 }
             },
             {
+                gpgKey: 'g',
                 sha256: '200',
                 operation: Operation.Create,
                 fileByteCount: 200,
@@ -84,6 +87,7 @@ test("Can initialize", (tst) => {
                 }
             },
             {
+                gpgKey: 'g',
                 sha256: '444',
                 operation: Operation.Create,
                 fileByteCount: 444,
@@ -95,6 +99,7 @@ test("Can initialize", (tst) => {
         ];
 
         let expected: RemotePendingCommitInfo[] = [{
+            gpgKey: 'gg',
             clientId: 'notme',
             createdAt: new Date('2017-07-22T17:02:48.966Z'),
             commitId: 'b',

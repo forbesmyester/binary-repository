@@ -101,6 +101,7 @@ test.cb("Can run a command", (tst) => {
 
 
     let expected: UploadedS3FilePart = {
+        gpgKey: 'ebak',
         sha256: "def8c702e06f7f6ac6576e0d4bbd830303aaa7d6857ee6c81c6d6a1b0a6c3bdf",
         fileByteCount: 1222,
         length: 100,
@@ -169,6 +170,7 @@ test.cb("Will not run a command if already exists", (tst) => {
 
 
     let expected: UploadedS3FilePart = {
+        gpgKey: 'ebak',
         sha256: "def8c702e06f7f6ac6576e0d4bbd830303aaa7d6857ee6c81c6d6a1b0a6c3bdf",
         fileByteCount: 1222,
         length: 100,

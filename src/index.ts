@@ -16,7 +16,7 @@ function validateEbakConfigurationPath(path) {
 }
 
 function resolve(opts) {
-    let {_: [command], local, 'local-configuration': lc} = opts;
+    let {_: [command], local, 'local-configuration': lc, 'filepart-gpg-encryption-key': fpGpgKey, 'gpg-encryption-key': gpgKey} = opts;
 
     let path: string = local;
     if (!validateEbakConfigurationPath(path)) {
@@ -28,26 +28,37 @@ function resolve(opts) {
         throw new Error("'local-configuration' does not exist or is not initialized");
     }
 
-    return {command, local, 'localConfiguration': lc};
+    return {
+        command,
+        local,
+        'local-configuration': lc
+    };
 }
 
 yargs.usage('$0 <cmd> [args]')
+    .option('local-config', {
+        describe: "Use a configuration directory different to [local].ebak",
+        alias: "local-configuration"
+    })
+    .option('filepart-gpg-encryption-key', {
+        describe: 'Will use this key to encrypt FilePart (the actual data) as apposed to `gpg-encryption-key`',
+    })
     .command(
-        'init [client-id] [local] [gpg-encryption-key] [remote]', 'Initalizes',
+        'init [client-id] [gpg-encryption-key] [local] [remote]', 'Initalizes',
         {
+            'client-id': {
+                require: true,
+                describe: 'The directory you wish to push (upload)',
+                type: 'string'
+            },
             local: {
                 require: true,
                 describe: 'The directory you wish to push (upload)',
                 type: 'string'
             },
-            'client-id': {
-                required: true,
-                describe: 'This will identify [local] when synchronizing',
-                type: 'string'
-            },
             'gpg-encryption-key': {
-                require: true,
-                describe: 'The encryption key to use',
+                required: false,
+                describe: 'The encryption key to use for Commit files',
                 type: 'string'
             },
             remote: {
@@ -56,13 +67,15 @@ yargs.usage('$0 <cmd> [args]')
                 type: 'string'
             },
         },
-        function init({ local, remote, 'client-id': client, 'gpg-encryption-key': gpgKey, 'local-configuration': lc}) {
+        function init({ local, remote, 'client-id': clientId, 'filepart-gpg-encryption-key': fpGpgKey, 'gpg-encryption-key': gpgKey, 'local-configuration': lc}) {
             let p = lc ? lc : join(local, '.ebak');
 
             if (existsSync(p)) {
                 console.info(`FATAL ERROR: path '${p}' already exists`);
                 process.exit(1);
             }
+
+            fpGpgKey = fpGpgKey ? fpGpgKey : gpgKey;
 
             mkdirp(p, (err) => {
 
@@ -74,8 +87,9 @@ yargs.usage('$0 <cmd> [args]')
                 let cfg: ConfigFile = {
                     local,
                     remote,
-                    'client-id': client,
-                    'gpg-encryption-key': gpgKey
+                    'client-id': clientId,
+                    'gpg-encryption-key': gpgKey,
+                    'filepart-gpg-encryption-key': fpGpgKey
                 };
 
                 let file = join(p, 'config');
@@ -100,7 +114,7 @@ yargs.usage('$0 <cmd> [args]')
             },
         },
         function (args) {
-            let { local, localConfiguration } = resolve(args);
+            let { local, 'local-configuration': localConfiguration } = resolve(args);
             commit(local, localConfiguration);
         }
     )
@@ -114,17 +128,10 @@ yargs.usage('$0 <cmd> [args]')
             },
         },
         function (args) {
-            let { local, localConfiguration } = resolve(args);
+            let { local, 'local-configuration': localConfiguration } = resolve(args);
             push(local, localConfiguration);
         }
     )
-    .option('force-sha1', {
-        describe: "Check for backup status based on SHA1 also (as well as File Size and Modification Date)",
-    })
-    .option('local-config', {
-        describe: "Use a configuration directory different to [local].ebak",
-        alias: "local-configuration"
-    })
     .command(
         'fetch [local]', 'Syncronize with remote data',
         {
@@ -135,7 +142,7 @@ yargs.usage('$0 <cmd> [args]')
             },
         },
         function (args) {
-            let { local, localConfiguration } = resolve(args);
+            let { local, 'local-configuration': localConfiguration } = resolve(args);
             fetch(local, localConfiguration);
         }
     )
@@ -149,7 +156,7 @@ yargs.usage('$0 <cmd> [args]')
             },
         },
         function (args) {
-            let { local, localConfiguration } = resolve(args);
+            let { local, 'local-configuration': localConfiguration } = resolve(args);
             download(local, localConfiguration);
         }
     )
