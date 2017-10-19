@@ -4,7 +4,7 @@ IFS=$'\n\t'
 
 GPGKEY_COMMIT='ebak'
 REMOTE="s3://${GPGKEY_COMMIT}-$(date +%F)"
-# REMOTE="file:///tmp/${GPGKEY_COMMIT}-repo" # Comment this line for AWS testing
+REMOTE="file:///tmp/${GPGKEY_COMMIT}-repo" # Comment this line for AWS testing
 
 GPGKEY_FILEPART1='ebak-fp1'
 

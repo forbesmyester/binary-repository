@@ -27,9 +27,9 @@ test("Generate Environment (base)", (tst) => {
                 OPT_DD_COUNT: 12,
                 OPT_DD_FILENAME: "/tmp/x/error_command",
                 OPT_IS_LAST: 0,
-                OPT_GPG_KEY: "ebak",
+                OPT_GPG_KEY: "my-gpg-key",
                 OPT_S3_BUCKET: "ebak-bucket",
-                OPT_S3_OBJECT: 'f-def8-022-1KB.ebak'
+                OPT_S3_OBJECT: 'f-def8-022-1KB-my--gpg--key.ebak'
         };
 
 
@@ -37,7 +37,7 @@ test("Generate Environment (base)", (tst) => {
         getDependencies(RemoteType.LOCAL_FILES),
         '/tmp/x',
         'ebak-bucket',
-        'ebak',
+        'my-gpg-key',
         1024,
         'bash/test-upload-s3'
     );
@@ -69,16 +69,16 @@ test("Generate Environment (last)", (tst) => {
                 OPT_DD_COUNT: -1,
                 OPT_DD_FILENAME: "/tmp/x/error_command",
                 OPT_IS_LAST: 1,
-                OPT_GPG_KEY: "ebak",
+                OPT_GPG_KEY: "my-gpg-key",
                 OPT_S3_BUCKET: "ebak-bucket",
-                OPT_S3_OBJECT: 'f-def8-152-1KB.ebak'
+                OPT_S3_OBJECT: 'f-def8-152-1KB-my--gpg--key.ebak'
         };
 
     let inst = getSha256FilePartToUploadedS3FilePartMapFunc(
         getDependencies(RemoteType.LOCAL_FILES),
         '/tmp/x',
         'ebak-bucket',
-        'ebak',
+        'my-gpg-key',
         1024,
         'bash/test-upload-s3'
     );
@@ -104,7 +104,7 @@ test.cb("Can run a command", (tst) => {
 
 
     let expected: UploadedS3FilePart = {
-        gpgKey: 'ebak',
+        gpgKey: 'my-gpg-key',
         sha256: "def8",
         fileByteCount: 1222,
         filePartByteCountThreshold: 1024,
@@ -120,8 +120,8 @@ test.cb("Can run a command", (tst) => {
             output: [{
                 name: 'stdout',
                 text: 'dd if="/tmp/x/error_command" bs="1" skip="1111" count="100" | ' +
-                'gpg -e -r "ebak" | ' +
-                'aws s3 cp - "s3://ebak-bucket/f-def8-022-1KB.ebak"'
+                'gpg -e -r "my-gpg-key" | ' +
+                'aws s3 cp - "s3://ebak-bucket/f-def8-022-1KB-my--gpg--key.ebak"'
             }]
         }
     };
@@ -134,7 +134,7 @@ test.cb("Can run a command", (tst) => {
             calledExists = true;
             tst.deepEqual(
                 f,
-                ['ebak-bucket', "f-def8-022-1KB.ebak"]
+                ['ebak-bucket', "f-def8-022-1KB-my--gpg--key.ebak"]
             );
             n(null, false);
         },
@@ -145,7 +145,7 @@ test.cb("Can run a command", (tst) => {
         dependencies,
         '/tmp/x',
         'ebak-bucket',
-        'ebak',
+        'my-gpg-key',
         1024,
         'bash/test-upload-s3'
     );
@@ -176,7 +176,7 @@ test.cb("Will not run a command if already exists", (tst) => {
 
 
     let expected: UploadedS3FilePart = {
-        gpgKey: 'ebak',
+        gpgKey: 'my-gpg-key',
         sha256: "def8",
         fileByteCount: 1222,
         filePartByteCountThreshold: 1024,
@@ -200,7 +200,7 @@ test.cb("Will not run a command if already exists", (tst) => {
             calledExists = true;
             tst.deepEqual(
                 f,
-                ['ebak-bucket', "f-def8-022-1KB.ebak"]
+                ['ebak-bucket', "f-def8-022-1KB-my--gpg--key.ebak"]
             );
             n(null, true);
         },
@@ -211,7 +211,7 @@ test.cb("Will not run a command if already exists", (tst) => {
         dependencies,
         '/tmp/x',
         'ebak-bucket',
-        'ebak',
+        'my-gpg-key',
         1024,
         'bash/test-upload-s3'
     );

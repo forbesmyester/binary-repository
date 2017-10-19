@@ -79,7 +79,8 @@ export default function getSha256FilePartToUploadedS3FilePartMapFunc({cmdSpawner
             OPT_S3_OBJECT: Client.constructFilepartFilename(
                 a.sha256,
                 a.part,
-                filePartByteCountThreshold
+                filePartByteCountThreshold,
+                gpgKey
             )
         };
 
@@ -92,7 +93,8 @@ export default function getSha256FilePartToUploadedS3FilePartMapFunc({cmdSpawner
             Client.constructFilepartFilename(
                 a.sha256,
                 a.part,
-                filePartByteCountThreshold
+                filePartByteCountThreshold,
+                gpgKey
             )
         ];
 

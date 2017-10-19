@@ -76,7 +76,7 @@ export default function getToDownloadedParts({ constructFilepartLocalLocation, c
     }
 
 
-    function doDownloaded(gpgKey: GpgKey, a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
+    function doDownloaded(a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
         // TODO: Yeh Yeh, it's a Christmas tree... do something about it!
         if (!a.proceed) return Promise.resolve(a);
         return new Promise((resolve, reject) => {
@@ -86,8 +86,8 @@ export default function getToDownloadedParts({ constructFilepartLocalLocation, c
                     if (e) { return reject(e); }
                     download(
                         tmpDir,
-                        constructFilepartS3Location(s3Bucket, gpgKey, a),
-                        constructFilepartLocalLocation(configDir, gpgKey, a),
+                        constructFilepartS3Location(s3Bucket, a.gpgKey, a),
+                        constructFilepartLocalLocation(configDir, a.gpgKey, a),
                         (e, r) => {
                             if (e) { return reject(e); }
                             resolve(a);
@@ -102,17 +102,19 @@ export default function getToDownloadedParts({ constructFilepartLocalLocation, c
         return Client.constructFilepartFilename(
             a.sha256,
             a.part,
-            a.filePartByteCountThreshold
+            a.filePartByteCountThreshold,
+            a.gpgKey
         );
     }
 
-    function checkDownloaded(gpgKey: GpgKey, a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
+    function checkDownloaded(a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
         // TODO: Derive arg for pDonwloadSize from Driver
+
         if (!a.proceed) return Promise.resolve(a);
         return Promise.all([
             pMyStat(join(filepartDir, constructFilepart(a))),
             pDownloadSize(
-                constructFilepartS3Location(s3Bucket, gpgKey, a)
+                constructFilepartS3Location(s3Bucket, a.gpgKey, a)
             )
         ]).then(([stats, downloadSize]) => {
             if (stats === null) { return a; }
@@ -145,8 +147,8 @@ export default function getToDownloadedParts({ constructFilepartLocalLocation, c
     function process(a: RemotePendingCommitStatRecordDecided, next: Callback<RemotePendingCommitStatRecordDecided>) {
         let max = a.part[1];
         spawnPartsIfLast(a)
-            .then(multi(checkDownloaded.bind(null, max)))
-            .then(multi(doDownloaded.bind(null, max)))
+            .then(multi(checkDownloaded.bind(null)))
+            .then(multi(doDownloaded.bind(null)))
             .then((aa: RemotePendingCommitStatRecordDecided[]) => {
                 next(null, a);
             })

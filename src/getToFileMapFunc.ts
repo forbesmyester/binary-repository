@@ -82,7 +82,7 @@ let myUnlink = (realUnlink, f, next) => {
     });
 };
 
-export default function getToFile({utimes, rename, mkdirp, unlink, decrypt}: Dependencies, gpgKey: GpgKey, configDir: AbsoluteDirectoryPath, rootDir: AbsoluteDirectoryPath): MapFunc<RemotePendingCommitDownloaded, RemotePendingCommitDownloaded> {
+export default function getToFile({utimes, rename, mkdirp, unlink, decrypt}: Dependencies, configDir: AbsoluteDirectoryPath, rootDir: AbsoluteDirectoryPath): MapFunc<RemotePendingCommitDownloaded, RemotePendingCommitDownloaded> {
 
     function generateDecryptedFilename(rec: RemotePendingCommitDownloadedRecord) {
         return join(configDir, 'tmp', rec.sha256 + '.ebak.dec');
@@ -95,7 +95,8 @@ export default function getToFile({utimes, rename, mkdirp, unlink, decrypt}: Dep
             Client.constructFilepartFilename(
                 rec.sha256,
                 rec.part,
-                rec.filePartByteCountThreshold
+                rec.filePartByteCountThreshold,
+                rec.gpgKey
             )
         );
     };
@@ -122,7 +123,7 @@ export default function getToFile({utimes, rename, mkdirp, unlink, decrypt}: Dep
         }, range(1, rec.part[1] + 1));
 
         decrypt(
-            gpgKey,
+            rec.gpgKey,
             map(generateOriginalEncryptedFilename, recs),
             generateDecryptedFilename(rec),
             (e) => { next(e, rec); }

@@ -21,10 +21,11 @@ function getBashRoot(d: AbsoluteFilePath): AbsoluteDirectoryPath {
     return join(dirname(dirname(d)), 'bash');
 }
 
-function constructFilepartFilename(sha256: Sha256, filePartIndex: FilePartIndex, filePartByteCountThreshold: number): string {
+function constructFilepartFilename(sha256: Sha256, filePartIndex: FilePartIndex, filePartByteCountThreshold: number, gpgKey: GpgKey): string {
     return 'f-' + sha256 + '-' +
                 padLeadingZero(("" + filePartIndex[1]).length, filePartIndex[0]) + '-' +
-                filesize(filePartByteCountThreshold, { spacer: '' }) +
+                filesize(filePartByteCountThreshold, { spacer: '' }) + '-' +
+                gpgKey.replace(/\-/g, '--') +
                 '.ebak';
 }
 
@@ -40,7 +41,8 @@ export default {
             constructFilepartFilename(
                 rec.sha256,
                 rec.part,
-                rec.filePartByteCountThreshold
+                rec.filePartByteCountThreshold,
+                gpgKey
             )
         );
     },

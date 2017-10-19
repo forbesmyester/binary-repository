@@ -66,12 +66,15 @@ class ConsoleWritable extends Writable<Object> {
 function getPreparePipe(es: ErrorStream) {
     return (p) => {
         es.add(p);
+        p.on('error', (e) => {
+            throw e;
+        });
         return p;
     };
 }
 
 let errorStream = new ErrorStream({objectMode: true}),
-    errorOut = new ConsoleWritable({out: console.log}, "EEError: "),
+    errorOut = new ConsoleWritable({out: console.log}, "Error: "),
     preparePipe = getPreparePipe(errorStream);
 
 
@@ -219,6 +222,8 @@ export function commit(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
         commitFileByteCountThreshold = 1024 * 1024 * 256, // 256MB
         commitMaxDelay = 1000 * 60 * 5;
 
+    let quiet = false;
+
     if (!safeSize(filePartByteCountThreshold)) {
         throw new Error(`The size ${filePartByteCountThreshold} is not a safe size`);
     }
@@ -316,11 +321,16 @@ export function commit(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
     let backup = fileNotBackedUpRightAfterLeft
         .pipe(preparePipe(fileToSha256File))
         .pipe(preparePipe(fileToSha256FilePart))
-        .pipe(preparePipe(sha256FilePartToUploadedS3FilePart)) // TODO: Loses 0 length files
+        .pipe(preparePipe(sha256FilePartToUploadedS3FilePart))
         .pipe(preparePipe(uploadedS3FilePartsToCommit))
         .pipe(preparePipe(commitToCommitted));
 
-    backup.pipe(new ConsoleWritable({out: console.log}, "LogObj: "));
+    backup.on('finish', () => {
+        if (!quiet) {
+            console.log("All data uploaded to repository and committed");
+        }
+    });
+
 
 }
 
@@ -334,6 +344,8 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
         globber = RootReadable.getGlobFunc(),
         repositoryCommitFiles: null|Readable<Filename> = null,
         cmd: string = '';
+
+    let quiet = false;
 
     if (remoteType == RemoteType.LOCAL_FILES) {
         cmd = 'bash/download-cat'
@@ -369,17 +381,12 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
         { objectMode: true }
     ));
 
-    let toDebugConsole = preparePipe(
-        new ConsoleWritable({out: console.log}, "LogObj: ")
-    );
-    toDebugConsole.on('finish', function() { console.log("FIN"); });
-    toDebugConsole.on('end', function() { console.log("END"); });
-    toDebugConsole.on('error', function() { console.log("ERR"); });
 
-    // repositoryCommitFiles.pipe(toDebugConsole);
-    repositoryCommitFiles.pipe(toRemoteCommit);
-    toRemoteCommit.pipe(toDebugConsole);
-
+    repositoryCommitFiles.pipe(toRemoteCommit).on('finish', () => {
+        if (!quiet) {
+            console.log("All commits fetched, you may now download");
+        }
+    });
 
 }
 
@@ -387,16 +394,11 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
 
     let stdPipeOptions = { objectMode: true, highWaterMark: 1};
 
-    let toDebugConsole = preparePipe(
-        new ConsoleWritable({out: console.log}, "LogObj: ")
-    );
-
     let config: ConfigFile = readConfig(configDir);
 
-    let remoteType = getRemoteType(config.remote);
+    let quiet = false;
 
-    toDebugConsole.on('finish', function() { console.log("FIN"); });
-    toDebugConsole.on('end', function() { console.log("END"); });
+    let remoteType = getRemoteType(config.remote);
 
     function getCommitStream(configDir: AbsoluteDirectoryPath, subDirs: string[], onlyFirst: boolean) {
 
@@ -479,7 +481,6 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
     let toFile = preparePipe(new MapTransform(
         getToFileMapFunc(
             getToFileMapFuncDependencies(),
-            config['gpg-encryption-key'],
             configDir,
             rootDir
         ),
@@ -496,7 +497,9 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
         .pipe(toRemotePendingCommitDecider)
         .pipe(toDownloadedParts)
         .pipe(toFile)
-        .pipe(toDebugConsole);
+        .on('finish', () => {
+            if (!quiet) { console.log("All data downloaded"); }
+        });
 
 
     // toDownloadedParts:

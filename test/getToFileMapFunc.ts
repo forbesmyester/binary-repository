@@ -14,7 +14,7 @@ function getInput(path: RelativeFilePath, part: FilePartIndex, proceed = true): 
         createdAt: d,
         commitId: 'Xb',
         record: [{
-            gpgKey: 'gpgKey',
+            gpgKey: 'gpg-key',
             sha256: 'sha',
             operation: Operation.Create,
             filePartByteCountThreshold: 1024,
@@ -58,7 +58,7 @@ test.cb('Will skip if not proceed', (tst) => {
         }
     };
 
-    let mf = getToFile(deps, 'gpgKey', '/store/.ebak', '/store');
+    let mf = getToFile(deps, '/store/.ebak', '/store');
 
     mf(getInput('Docs/a.txt', [2, 2], false), (e, r) => {
         tst.is(done.utimes, 0);
@@ -119,26 +119,26 @@ test.cb('Can unencrypt local FilePart', (tst) => {
         },
         unlink: (path: AbsoluteFilePath, next: Callback<void>) => {
             let expected = [
-                '/store/.ebak/remote-encrypted-filepart/f-sha-1-1KB.ebak',
-                '/store/.ebak/remote-encrypted-filepart/f-sha-2-1KB.ebak'
+                '/store/.ebak/remote-encrypted-filepart/f-sha-1-1KB-gpg--key.ebak',
+                '/store/.ebak/remote-encrypted-filepart/f-sha-2-1KB-gpg--key.ebak'
             ];
             tst.deepEqual(path, expected[done.unlink]);
             done.unlink = done.unlink + 1;
             next(null);
         },
         decrypt: (gpgKey: GpgKey, src: AbsoluteFilePath[], dst: AbsoluteFilePath, next: Callback<void>) => {
-            tst.is(gpgKey, 'gpgKey');
+            tst.is(gpgKey, 'gpg-key');
             tst.is(dst, '/store/.ebak/tmp/sha.ebak.dec');
             tst.deepEqual(src, [
-                '/store/.ebak/remote-encrypted-filepart/f-sha-1-1KB.ebak',
-                '/store/.ebak/remote-encrypted-filepart/f-sha-2-1KB.ebak'
+                '/store/.ebak/remote-encrypted-filepart/f-sha-1-1KB-gpg--key.ebak',
+                '/store/.ebak/remote-encrypted-filepart/f-sha-2-1KB-gpg--key.ebak'
             ]);
             done['decrypt'] = done['decrypt'] + 1;
             next(null);
         }
     };
 
-    let mf = getToFile(deps, 'gpgKey', '/store/.ebak', '/store');
+    let mf = getToFile(deps, '/store/.ebak', '/store');
 
     mf(getInput('Docs/a.txt', [2, 2]), (e, r) => {
         tst.is(done.utimes, 1);

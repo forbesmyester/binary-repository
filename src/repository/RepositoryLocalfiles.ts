@@ -7,10 +7,14 @@ import * as filesize from 'filesize';
 import { join } from 'path';
 
 function constructObject(gpgKey: GpgKey, a: RemotePendingCommitStatRecordDecided): S3Object {
-    let p = padLeadingZero(("" + a.part[1]).length, a.part[0]);
-    let s = filesize(a.filePartByteCountThreshold, { spacer: '' });
-    return `f-${a.sha256}-${p}-${s}.ebak`;
+    return Client.constructFilepartFilename(
+        a.sha256,
+        a.part,
+        a.filePartByteCountThreshold,
+        gpgKey
+    );
 }
+
 function copyFile(tmpDir: AbsoluteDirectoryPath, src: AbsoluteFilePath, dest: AbsoluteFilePath, next: Callback<void>) {
         let nexted = false;
         let tmpFile = join(tmpDir, dest.replace(/[^a-zA-Z0-9]/g, '_'));
