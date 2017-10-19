@@ -27,7 +27,8 @@ function getFileParts(low, high, count) {
     let template: UploadedS3FilePart = {
         gpgKey: 'g',
         sha256: "def8c702e06f7f6ac6576e0d4bbd830303aaa7d6857ee6c81c6d6a1b0a6c3bdf",
-        fileByteCount: 600,
+        fileByteCount: 1200,
+        filePartByteCountThreshold: 1024,
         length: 100,
         part: [22, 152],
         uploadAlreadyExists: false,
@@ -41,7 +42,7 @@ function getFileParts(low, high, count) {
                 name: 'stdout',
                 text: 'dd if="/tmp/x/error_command" bs="1" skip="1111" count="100" | ' +
                 'gpg -e -r "ebak" | ' +
-                'aws s3 cp - "s3://ebak-bucket/c-def8c702e06f7f6ac6576e0d4bbd830303aaa7d6857ee6c81c6d6a1b0a6c3bdf-022.ebak"'
+                'aws s3 cp - "s3://ebak-bucket/c-def8c702e06f7f6ac6576e0d4bbd830303aaa7d6857ee6c81c6d6a1b0a6c3bdf-022-1K.ebak"'
             }]
         }
     };
@@ -87,7 +88,7 @@ test("Will error if a non-zero exit code is there (should never be)", (tst) => {
         },
         "ClientId",
         'gg',
-        1024,
+        2048,
         1000 * 120,
         {}
     );
@@ -125,7 +126,7 @@ test("Will output at filesize threshold and flush", (tst) => {
         },
         "ClientId",
         'gg',
-        1024,
+        2048,
         1000 * 120,
         {}
     );
@@ -137,18 +138,20 @@ test("Will output at filesize threshold and flush", (tst) => {
             record: [
                 {
                     gpgKey: 'g',
+                    filePartByteCountThreshold: 1024,
                     sha256: "def8c702e06f7f6ac6576e0d4bbd830303aaa7d6857ee6c81c6d6a1b0a6c3bdf",
                     operation: Operation.Create,
-                    fileByteCount: 600,
+                    fileByteCount: 1200,
                     modifiedDate,
                     path: "//error_command",
                     part: [22, 152],
                 },
                 {
                     gpgKey: 'g',
+                    filePartByteCountThreshold: 1024,
                     sha256: "def8c702e06f7f6ac6576e0d4bbd830303aaa7d6857ee6c81c6d6a1b0a6c3bdf",
                     operation: Operation.Create,
-                    fileByteCount: 600,
+                    fileByteCount: 1200,
                     modifiedDate,
                     path: "//error_command",
                     part: [23, 152],
@@ -163,9 +166,10 @@ test("Will output at filesize threshold and flush", (tst) => {
             record: [
                 {
                     gpgKey: 'g',
+                    filePartByteCountThreshold: 1024,
                     sha256: "def8c702e06f7f6ac6576e0d4bbd830303aaa7d6857ee6c81c6d6a1b0a6c3bdf",
                     operation: Operation.Create,
-                    fileByteCount: 600,
+                    fileByteCount: 1200,
                     modifiedDate,
                     path: "//error_command",
                     part: [24, 152],

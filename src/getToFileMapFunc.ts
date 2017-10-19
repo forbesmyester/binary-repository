@@ -94,7 +94,8 @@ export default function getToFile({utimes, rename, mkdirp, unlink, decrypt}: Dep
             'remote-encrypted-filepart',
             Client.constructFilepartFilename(
                 rec.sha256,
-                rec.part
+                rec.part,
+                rec.filePartByteCountThreshold
             )
         );
     };

@@ -3,6 +3,7 @@ import atomicFileWrite, { AtomicFileWrite } from './atomicFileWrite';
 import * as mkdirp from 'mkdirp';
 import Client from './Client';
 import { MapFunc } from 'streamdash';
+import * as filesize from 'filesize';
 import { basename, dirname, join } from 'path';
 
 export interface MkdirP {
@@ -41,6 +42,7 @@ export function getCommitToCommittedMapFunc({atomicFileWrite, mkdirp}: Dependenc
                 r.operation,
                 r.fileByteCount,
                 `${r.part[0]}_${r.part[1]}`,
+                r.filePartByteCountThreshold,
                 r.modifiedDate.toISOString(),
                 r.path,
                 r.gpgKey

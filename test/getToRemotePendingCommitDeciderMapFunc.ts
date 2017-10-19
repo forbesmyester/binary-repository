@@ -11,6 +11,7 @@ function getInput(sha256: Sha256, modifiedDate: Date, local: null|BackupCheckDat
         createdAt: new Date('2017-07-22T17:02:48.966Z'),
         commitId: 'b',
         record: [{
+            filePartByteCountThreshold: 1024,
             gpgKey: 'g',
             sha256: sha256,
             operation: Operation.Create,

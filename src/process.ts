@@ -1,6 +1,7 @@
 import { RemoteType, S3BucketName, RemoteUri, GpgKey, UploadedS3FilePart, Sha256FilePart, CommitType, ConfigFile, AbsoluteDirectoryPath, RelativeFilePath, Sha256, ByteCount, ModifiedDate, Callback, Sha256File, File, Filename, CommitFilename, Commit } from './Types';
 import { rename, readFileSync, readFile } from 'fs';
 import getToRemotePendingCommitStatsMapFunc from './getToRemotePendingCommitStatsMapFunc';
+import safeSize from './safeSize';
 import getToRemotePendingCommitDeciderMapFunc from './getToRemotePendingCommitDeciderMapFunc';
 
 import { getDependencies as getToFileMapFuncDependencies } from './getToFileMapFunc';
@@ -120,7 +121,7 @@ function getRemoteType(remote: RemoteUri) {
     throw new Error("Cannot figure out remote type from RemoteUri: " + remote);
 }
 
-function getSha256FilePartToUploadedFilePart(rootDir: AbsoluteDirectoryPath, remote: RemoteUri, gpgKey: GpgKey): MapFunc<Sha256FilePart, UploadedS3FilePart> {
+function getSha256FilePartToUploadedFilePart(rootDir: AbsoluteDirectoryPath, remote: RemoteUri, gpgKey: GpgKey, filePartByteCountThreshold: number): MapFunc<Sha256FilePart, UploadedS3FilePart> {
 
     if (remote.match(/^s3\:\/\//)) {
         return getSha256FilePartToUploadedS3FilePartMapFunc(
@@ -128,7 +129,8 @@ function getSha256FilePartToUploadedFilePart(rootDir: AbsoluteDirectoryPath, rem
             rootDir,
             removeProtocol(remote),
             gpgKey,
-            './bash/upload-filepart-s3'
+            filePartByteCountThreshold,
+            './bash/upload-s3'
         );
     }
 
@@ -138,7 +140,8 @@ function getSha256FilePartToUploadedFilePart(rootDir: AbsoluteDirectoryPath, rem
             rootDir,
             removeProtocol(remote),
             gpgKey,
-            './bash/upload-filepart-cat'
+            filePartByteCountThreshold,
+            './bash/upload-cat'
         );
     }
 
@@ -167,7 +170,7 @@ export function push(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirector
                 configDir,
                 removeProtocol(remote),
                 gpgKey,
-                './bash/upload-commit-s3'
+                './bash/upload-s3'
             );
         }
 
@@ -177,7 +180,7 @@ export function push(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirector
                 configDir,
                 removeProtocol(remote),
                 gpgKey,
-                './bash/upload-commit-cat'
+                './bash/upload-cat'
             );
         }
 
@@ -212,7 +215,17 @@ export function push(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirector
 
 export function commit(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
 
-    // TODO: Should compare SHA's if the timestamps have changed...
+    const filePartByteCountThreshold = 1024 * 1024 * 64, // 64MB
+        commitFileByteCountThreshold = 1024 * 1024 * 256, // 256MB
+        commitMaxDelay = 1000 * 60 * 5;
+
+    if (!safeSize(filePartByteCountThreshold)) {
+        throw new Error(`The size ${filePartByteCountThreshold} is not a safe size`);
+    }
+
+    if (!safeSize(commitFileByteCountThreshold)) {
+        throw new Error(`The size ${commitFileByteCountThreshold} is not a safe size`);
+    }
 
     let stdPipeOptions = { objectMode: true, highWaterMark: 1},
         tmpDir = join(configDir, "tmp"),
@@ -220,9 +233,6 @@ export function commit(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
         remoteCommitDir = 'remote-commit',
         config: ConfigFile = readConfig(configDir),
         clientId = config['client-id'],
-        filePartByteCountThreshold = 1024 * 1024 * 64, // 64MB
-        commitFileByteCountThreshold = 1024 * 1024 * 256, // 256MB
-        commitMaxDelay = 1000 * 60 * 5,
         s3Bucket = config.remote,
         gpgKey = config['gpg-encryption-key'],
         fpGpgKey = config['filepart-gpg-encryption-key'],
@@ -259,7 +269,8 @@ export function commit(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
             getSha256FilePartToUploadedFilePart(
                 rootDir,
                 config.remote,
-                fpGpgKey
+                fpGpgKey,
+                filePartByteCountThreshold
             ),
             stdPipeOptions
         ),

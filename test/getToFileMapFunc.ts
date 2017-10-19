@@ -17,6 +17,7 @@ function getInput(path: RelativeFilePath, part: FilePartIndex, proceed = true): 
             gpgKey: 'gpgKey',
             sha256: 'sha',
             operation: Operation.Create,
+            filePartByteCountThreshold: 1024,
             fileByteCount: 200,
             modifiedDate: d,
             path: path,
@@ -118,8 +119,8 @@ test.cb('Can unencrypt local FilePart', (tst) => {
         },
         unlink: (path: AbsoluteFilePath, next: Callback<void>) => {
             let expected = [
-                '/store/.ebak/remote-encrypted-filepart/f-sha-1.ebak',
-                '/store/.ebak/remote-encrypted-filepart/f-sha-2.ebak'
+                '/store/.ebak/remote-encrypted-filepart/f-sha-1-1KB.ebak',
+                '/store/.ebak/remote-encrypted-filepart/f-sha-2-1KB.ebak'
             ];
             tst.deepEqual(path, expected[done.unlink]);
             done.unlink = done.unlink + 1;
@@ -129,8 +130,8 @@ test.cb('Can unencrypt local FilePart', (tst) => {
             tst.is(gpgKey, 'gpgKey');
             tst.is(dst, '/store/.ebak/tmp/sha.ebak.dec');
             tst.deepEqual(src, [
-                '/store/.ebak/remote-encrypted-filepart/f-sha-1.ebak',
-                '/store/.ebak/remote-encrypted-filepart/f-sha-2.ebak'
+                '/store/.ebak/remote-encrypted-filepart/f-sha-1-1KB.ebak',
+                '/store/.ebak/remote-encrypted-filepart/f-sha-2-1KB.ebak'
             ]);
             done['decrypt'] = done['decrypt'] + 1;
             next(null);

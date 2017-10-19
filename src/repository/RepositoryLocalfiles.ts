@@ -1,12 +1,15 @@
 import { GpgKey, AbsoluteFilePath, S3Location, S3BucketName, S3Object, RemotePendingCommitStatRecordDecided, Callback, AbsoluteDirectoryPath, ByteCount } from '../Types';
 import { createReadStream, createWriteStream, rename, stat } from 'fs';
+import Client from '../Client';
 import RepositoryAbstract from './RepositoryAbstract';
 import padLeadingZero from '../padLeadingZero';
+import * as filesize from 'filesize';
 import { join } from 'path';
 
 function constructObject(gpgKey: GpgKey, a: RemotePendingCommitStatRecordDecided): S3Object {
     let p = padLeadingZero(("" + a.part[1]).length, a.part[0]);
-    return `f-${a.sha256}-${p}.ebak`;
+    let s = filesize(a.filePartByteCountThreshold, { spacer: '' });
+    return `f-${a.sha256}-${p}-${s}.ebak`;
 }
 function copyFile(tmpDir: AbsoluteDirectoryPath, src: AbsoluteFilePath, dest: AbsoluteFilePath, next: Callback<void>) {
         let nexted = false;

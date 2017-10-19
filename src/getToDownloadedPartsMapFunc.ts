@@ -101,7 +101,8 @@ export default function getToDownloadedParts({ constructFilepartLocalLocation, c
     function constructFilepart(a: RemotePendingCommitStatRecordDecided): S3Object {
         return Client.constructFilepartFilename(
             a.sha256,
-            a.part
+            a.part,
+            a.filePartByteCountThreshold
         );
     }
 

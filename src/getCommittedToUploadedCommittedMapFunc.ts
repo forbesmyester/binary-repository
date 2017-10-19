@@ -16,6 +16,9 @@ export interface MkdirP {
  * upload to S3
  */
 interface UploadS3Environment {
+    OPT_DD_BS: number;
+    OPT_DD_SKIP: number;
+    OPT_IS_LAST: number;
     OPT_DD_FILENAME: AbsoluteFilePath;
     OPT_GPG_KEY: GpgKey;
     OPT_S3_BUCKET: S3BucketName;
@@ -25,6 +28,9 @@ interface UploadS3Environment {
 function getEnv(gpgKey: GpgKey, s3Bucket: S3BucketName, configDir: AbsoluteDirectoryPath,  a: CommitFilename): UploadS3Environment {
 
     return {
+        OPT_DD_BS: 1,
+        OPT_DD_SKIP: 0,
+        OPT_IS_LAST: 1,
         OPT_S3_OBJECT: a.path,
         OPT_DD_FILENAME: join(configDir, 'pending-commit', a.path),
         OPT_GPG_KEY: gpgKey,

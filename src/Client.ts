@@ -1,6 +1,7 @@
 import { BASE_TLID_TIMESTAMP, BASE_TLID_UNIQUENESS, FilePartIndex, Sha256, ClientId, CommitId, RemotePendingCommitStatRecordDecided, GpgKey, Callback, AbsoluteDirectoryPath, AbsoluteFilePath } from './Types';
 import { ExitStatus, CmdOutput, CmdSpawner, CmdRunner } from './CmdRunner';
 import { dirname, join } from 'path';
+import * as filesize from 'filesize';
 import { streamDataCollector } from 'streamdash';
 import padLeadingZero from './padLeadingZero';
 import * as getTlIdEncoderDecoder from 'get_tlid_encoder_decoder';
@@ -20,9 +21,11 @@ function getBashRoot(d: AbsoluteFilePath): AbsoluteDirectoryPath {
     return join(dirname(dirname(d)), 'bash');
 }
 
-function constructFilepartFilename(sha256: Sha256, filePartIndex: FilePartIndex): string {
-    let p = padLeadingZero(("" + filePartIndex[1]).length, filePartIndex[0]);
-    return `f-${sha256}-${p}.ebak`
+function constructFilepartFilename(sha256: Sha256, filePartIndex: FilePartIndex, filePartByteCountThreshold: number): string {
+    return 'f-' + sha256 + '-' +
+                padLeadingZero(("" + filePartIndex[1]).length, filePartIndex[0]) + '-' +
+                filesize(filePartByteCountThreshold, { spacer: '' }) +
+                '.ebak';
 }
 
 class NotCommitFileError extends Error {}
@@ -36,7 +39,8 @@ export default {
             join(configDir, 'remote-encrypted-filepart'),
             constructFilepartFilename(
                 rec.sha256,
-                rec.part
+                rec.part,
+                rec.filePartByteCountThreshold
             )
         );
     },

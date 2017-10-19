@@ -88,6 +88,7 @@ export interface BackupRecord { // Rename CommitRecord
     readonly path: RelativeFilePath;
     readonly part: FilePartIndex;
     readonly gpgKey: GpgKey;
+    readonly filePartByteCountThreshold: number;
 }
 
 
@@ -164,6 +165,7 @@ export interface Sha256FilePart extends Sha256File {
     readonly length: number;
     readonly isLast: boolean;
     readonly part: FilePartIndex;
+    readonly filePartByteCountThreshold: number;
 }
 
 export interface CmdResult { readonly exitStatus: ExitStatus; readonly output: CmdOutput[]; }

@@ -62,6 +62,7 @@ test.cb("Can map", (tst) => {
                     fileByteCount: 400,
                     modifiedDate: new Date('2018-09-09T17:27:22.730Z'),
                     gpgKey: 'filepartGpgKey',
+                    filePartByteCountThreshold: 1024,
                     path: 'abc.txt',
                     part: [1, 1],
                     local: null
@@ -72,6 +73,7 @@ test.cb("Can map", (tst) => {
                     fileByteCount: 200,
                     modifiedDate: new Date('2017-09-09T17:27:22.730Z'),
                     gpgKey: 'filepartGpgKey',
+                    filePartByteCountThreshold: 1024,
                     path: 'def.txt',
                     part: [1, 1],
                     local: null

@@ -4,12 +4,14 @@ import RepositoryAbstract from './RepositoryAbstract';
 import padLeadingZero from '../padLeadingZero';
 import { join } from 'path';
 import { S3 } from 'aws-sdk';
+import * as filesize from 'filesize';
 import * as NodeStream from 'stream';
 
 
 function constructObject(gpgKey: GpgKey, a: RemotePendingCommitStatRecordDecided): S3Object {
     let p = padLeadingZero(("" + a.part[1]).length, a.part[0]);
-    return `f-${a.sha256}-${p}.ebak`;
+    let s = filesize(a.filePartByteCountThreshold, { spacer: '' });
+    return `f-${a.sha256}-${p}-${s}.ebak`;
 }
 
 let s3 = new S3();

@@ -16,10 +16,11 @@ function toRecord(str): BackupRecord|null {
         sha256: m[0],
         operation: parseInt(m[1]),
         fileByteCount: parseInt(m[2]),
-        modifiedDate: new Date(m[4]),
-        path: m[5],
+        modifiedDate: new Date(m[5]),
+        path: m[6],
         part: m[3].split("_").map(a => parseInt(a, 10)),
-        gpgKey: m[6]
+        filePartByteCountThreshold: m[4],
+        gpgKey: m[7]
     };
 }
 

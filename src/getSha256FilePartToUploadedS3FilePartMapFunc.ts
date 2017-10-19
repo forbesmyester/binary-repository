@@ -1,4 +1,4 @@
-import { FilePartIndex, RemoteType, S3Location, Callback, ByteCount, Sha256, FilePart, AbsoluteFilePath, AbsoluteDirectoryPath, GpgKey, Sha256FilePart, S3BucketName, CommandName, UploadedS3FilePart } from  './Types';
+import { S3Object, ClientId, FilePartIndex, RemoteType, S3Location, Callback, ByteCount, Sha256, FilePart, AbsoluteFilePath, AbsoluteDirectoryPath, GpgKey, Sha256FilePart, S3BucketName, CommandName, UploadedS3FilePart } from  './Types';
 import Client from './Client';
 import { MapFunc } from 'streamdash';
 import { join } from 'path';
@@ -20,8 +20,6 @@ import RepositoryS3 from './repository/RepositoryS3';
  * upload to S3
  */
 export interface Sha256FilePartUploadS3Environment {
-    OPT_SHA: Sha256;
-    OPT_PART: FilePart;
     OPT_DD_SKIP: number;
     OPT_DD_BS: number;
     OPT_DD_COUNT: number;
@@ -29,10 +27,11 @@ export interface Sha256FilePartUploadS3Environment {
     OPT_IS_LAST: number;
     OPT_GPG_KEY: GpgKey;
     OPT_S3_BUCKET: S3BucketName;
+    OPT_S3_OBJECT: S3Object;
 }
 
 export interface MapFuncWithGetEnv<I, O> extends MapFunc<I, O> {
-    getEnv(a: Sha256FilePart): Sha256FilePartUploadS3Environment;
+    getEnv(filePartByteCountThreshold: number, a: Sha256FilePart): Sha256FilePartUploadS3Environment;
 }
 
 export interface Dependencies {
@@ -65,20 +64,23 @@ export function getDependencies(rt: RemoteType): Dependencies {
     throw new Error("Unsupported");
 }
 
-export default function getSha256FilePartToUploadedS3FilePartMapFunc({cmdSpawner, exists}: Dependencies, rootPath: AbsoluteDirectoryPath, s3Bucket: S3BucketName, gpgKey: GpgKey, cmd: CommandName): MapFuncWithGetEnv<Sha256FilePart, UploadedS3FilePart> {
+export default function getSha256FilePartToUploadedS3FilePartMapFunc({cmdSpawner, exists}: Dependencies, rootPath: AbsoluteDirectoryPath, s3Bucket: S3BucketName, gpgKey: GpgKey, filePartByteCountThreshold: number, cmd: CommandName): MapFuncWithGetEnv<Sha256FilePart, UploadedS3FilePart> {
 
-    function getEnv(a: Sha256FilePart): Sha256FilePartUploadS3Environment {
+    function getEnv(filePartByteCountThreshold: number, a: Sha256FilePart): Sha256FilePartUploadS3Environment {
 
         return {
-            OPT_SHA: a.sha256,
-            OPT_PART: padLeadingZero(("" + a.part[1]).length, a.part[0]),
             OPT_DD_SKIP: a.offset,
             OPT_DD_BS: 1,
             OPT_DD_COUNT: a.length,
             OPT_DD_FILENAME: join(rootPath, a.path),
             OPT_IS_LAST: a.part[0] == a.part[1] ? 1 : 0,
             OPT_GPG_KEY: gpgKey,
-            OPT_S3_BUCKET: s3Bucket
+            OPT_S3_BUCKET: s3Bucket,
+            OPT_S3_OBJECT: Client.constructFilepartFilename(
+                a.sha256,
+                a.part,
+                filePartByteCountThreshold
+            )
         };
 
     }
@@ -89,7 +91,8 @@ export default function getSha256FilePartToUploadedS3FilePartMapFunc({cmdSpawner
             s3Bucket,
             Client.constructFilepartFilename(
                 a.sha256,
-                a.part
+                a.part,
+                filePartByteCountThreshold
             )
         ];
 
@@ -112,7 +115,7 @@ export default function getSha256FilePartToUploadedS3FilePartMapFunc({cmdSpawner
 
             let cmdRunner = new CmdRunner(
                 { cmdSpawner: cmdSpawner },
-                Object.assign({}, process.env, getEnv(a)),
+                Object.assign({}, process.env, getEnv(filePartByteCountThreshold, a)),
                 ".",
                 cmd,
                 [],

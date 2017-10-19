@@ -23,7 +23,7 @@ test.cb("do it", (tst) => {
         '/tmp/x/.ebak',
         'ebak-commit-bucket',
         'ebak',
-        'bash/test-upload-commit-s3'
+        'bash/test-upload-s3'
     );
 
     mapFunc(input, (err, result) => {

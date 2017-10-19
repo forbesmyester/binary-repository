@@ -45,9 +45,9 @@ test("Can initialize", (tst) => {
     };
 
     let remotePending: BackupRecord[] = [
-            { gpgKey: 'g', sha256: '8d2', operation: Operation.Create, fileByteCount: 3832, modifiedDate: new Date('2016-06-24T10:46:12.432Z'), path: 'my-projects/stronger-typed-streams.md', part: [1, 1] },
-            { gpgKey: 'g', sha256: '200', operation: Operation.Create, fileByteCount: 200, modifiedDate: new Date('2016-09-09T17:27:22.730Z'), path: 'my-projects/t-fp-merge.md', part: [1, 1] },
-            { gpgKey: 'g', sha256: '444', operation: Operation.Create, fileByteCount: 444, modifiedDate: new Date('2019-09-09T17:27:22.730Z'), path: 'new-file.txt', part: [1, 1] },
+            { filePartByteCountThreshold: 1024, gpgKey: 'g', sha256: '8d2', operation: Operation.Create, fileByteCount: 3832, modifiedDate: new Date('2016-06-24T10:46:12.432Z'), path: 'my-projects/stronger-typed-streams.md', part: [1, 1] },
+            { filePartByteCountThreshold: 1024, gpgKey: 'g', sha256: '200', operation: Operation.Create, fileByteCount: 200, modifiedDate: new Date('2016-09-09T17:27:22.730Z'), path: 'my-projects/t-fp-merge.md', part: [1, 1] },
+            { filePartByteCountThreshold: 1024, gpgKey: 'g', sha256: '444', operation: Operation.Create, fileByteCount: 444, modifiedDate: new Date('2019-09-09T17:27:22.730Z'), path: 'new-file.txt', part: [1, 1] },
         ],
         remoteCommit: RemotePendingCommit = {
             gpgKey: 'gg',
@@ -62,6 +62,7 @@ test("Can initialize", (tst) => {
                 gpgKey: 'g',
                 sha256: '8d2',
                 operation: Operation.Create,
+                filePartByteCountThreshold: 1024,
                 fileByteCount: 3832,
                 modifiedDate: new Date('2016-06-24T10:46:12.432Z'),
                 path: 'my-projects/stronger-typed-streams.md',
@@ -76,6 +77,7 @@ test("Can initialize", (tst) => {
                 gpgKey: 'g',
                 sha256: '200',
                 operation: Operation.Create,
+                filePartByteCountThreshold: 1024,
                 fileByteCount: 200,
                 modifiedDate: new Date('2016-09-09T17:27:22.730Z'),
                 path: 'my-projects/t-fp-merge.md',
@@ -90,6 +92,7 @@ test("Can initialize", (tst) => {
                 gpgKey: 'g',
                 sha256: '444',
                 operation: Operation.Create,
+                filePartByteCountThreshold: 1024,
                 fileByteCount: 444,
                 modifiedDate: new Date('2019-09-09T17:27:22.730Z'),
                 path: 'new-file.txt',

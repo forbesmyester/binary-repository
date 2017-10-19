@@ -17,6 +17,7 @@ function getInput(path: RelativeFilePath, part: FilePartIndex, proceed: boolean 
         commitId: 'b',
         record: [{
             gpgKey: 'g',
+            filePartByteCountThreshold: 1024,
             sha256: 'sha',
             operation: Operation.Create,
             fileByteCount: 200,
@@ -65,7 +66,7 @@ test.cb("Can do everything inc. download", (tst) => {
 
     let deps: Dependencies = {
         stat: (f, next) => {
-            tst.is(`/store/.ebak/remote-encrypted-filepart/f-sha-${++statDone}.ebak`, f);
+            tst.is(`/store/.ebak/remote-encrypted-filepart/f-sha-${++statDone}-1KB.ebak`, f);
             next(null, getStatResult(statDone * 100));
         },
         mkdirp: (dest, next) => {
@@ -79,16 +80,16 @@ test.cb("Can do everything inc. download", (tst) => {
             tst.deepEqual(t, '/store/.ebak/tmp');
             tst.deepEqual(
                 f,
-                ['s3://mister-bucket', 'f-sha-1.ebak']
+                ['s3://mister-bucket', 'f-sha-1-1KB.ebak']
             );
-            tst.deepEqual(d, '/store/.ebak/remote-encrypted-filepart/f-sha-1.ebak');
+            tst.deepEqual(d, '/store/.ebak/remote-encrypted-filepart/f-sha-1-1KB.ebak');
             downloadDone = downloadDone + 1;
             next(null);
         },
         downloadSize: (loc, next) => {
             tst.deepEqual(
                 loc,
-                ['s3://mister-bucket', `f-sha-${++downloadSizeDone}.ebak`]
+                ['s3://mister-bucket', `f-sha-${++downloadSizeDone}-1KB.ebak`]
             );
             next(null, 200);
         },

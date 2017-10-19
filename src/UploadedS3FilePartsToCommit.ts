@@ -80,6 +80,7 @@ export class UploadedS3FilePartsToCommit extends Transform<UploadedS3FilePart, C
             fileByteCount: input.fileByteCount,
             modifiedDate: input.modifiedDate,
             path: input.path,
+            filePartByteCountThreshold: input.filePartByteCountThreshold,
             part: input.part
         });
         let filesBytesCount = reduce(

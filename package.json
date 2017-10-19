@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@types/async": "^2.0.43",
+    "@types/filesize": "^3.2.15",
     "@types/glob": "^5.0.30",
     "@types/mkdirp": "^0.5.0",
     "@types/node": "^7.0.15",
@@ -35,8 +36,10 @@
   "dependencies": {
     "async": "^2.5.0",
     "aws-sdk": "^2.49.0",
+    "filesize": "^3.5.10",
     "get_tlid_encoder_decoder": "^0.9.5",
     "mkdirp": "^0.5.1",
+    "pretty-bytes": "^4.0.2",
     "ramda": "^0.24.1",
     "streamdash": "^0.9.2",
     "stronger-typed-streams": "^0.1.0",

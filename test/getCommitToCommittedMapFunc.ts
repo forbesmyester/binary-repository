@@ -11,6 +11,7 @@ test.cb("Can map", (tst) => {
         record: [
             {
                 gpgKey: 'g',
+                filePartByteCountThreshold: 1024,
                 sha256: "def8c",
                 operation: Operation.Create,
                 fileByteCount: 600,
@@ -20,6 +21,7 @@ test.cb("Can map", (tst) => {
             },
             {
                 gpgKey: 'g',
+                filePartByteCountThreshold: 1024,
                 sha256: "def8c",
                 operation: Operation.Create,
                 fileByteCount: 600,
@@ -29,6 +31,7 @@ test.cb("Can map", (tst) => {
             },
             {
                 gpgKey: 'g',
+                filePartByteCountThreshold: 1024,
                 sha256: "abc12",
                 operation: Operation.Create,
                 fileByteCount: 200,
@@ -48,9 +51,9 @@ test.cb("Can map", (tst) => {
     });
 
     let expectedContents = [
-        '["def8c",1,600,"22_152","2017-06-19T06:20:05.168Z","/error_command","g"]',
-        '["def8c",1,600,"23_152","2017-06-19T06:20:05.168Z","/error_command","g"]',
-        '["abc12",1,200,"2_5","2017-06-19T02:00:05.000Z","/test-file","g"]'
+        '["def8c",1,600,"22_152",1024,"2017-06-19T06:20:05.168Z","/error_command","g"]',
+        '["def8c",1,600,"23_152",1024,"2017-06-19T06:20:05.168Z","/error_command","g"]',
+        '["abc12",1,200,"2_5",1024,"2017-06-19T02:00:05.000Z","/test-file","g"]'
     ];
 
     let atomicFileWrite: (tmpPath: AbsoluteFilePath, finalPath: AbsoluteFilePath, contents: string[]) => Promise<AbsoluteFilePath> = (tmpPath, finalPath, contents) => {
