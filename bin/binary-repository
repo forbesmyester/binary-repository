@@ -1,11 +1,15 @@
-import { realpathSync, existsSync, writeFileSync } from 'fs';
-import * as yargs from 'yargs';
-import { join } from 'path';
-import * as mkdirp from 'mkdirp';
-import { pathOr } from 'ramda';
-import * as getTlidEncoderDecoder from 'get_tlid_encoder_decoder';
-import { ConfigFile, BASE_TLID_TIMESTAMP } from './Types';
-import { commit, download, fetch, push } from './process';
+#!/usr/bin/env node
+
+let { realpathSync, existsSync, writeFileSync } = require('fs');
+let { join } = require('path');
+let { pathOr } = require('ramda');
+let { ConfigFile, BASE_TLID_TIMESTAMP } = require('../dist/src/Types');
+let { commit, download, fetch, push } = require('../dist/src/process');
+
+let yargs = require('yargs');
+let mkdirp = require('mkdirp');
+let getTlidEncoderDecoder = require('get_tlid_encoder_decoder');
+
 
 let tLIdEncoderDecoder = getTlidEncoderDecoder(BASE_TLID_TIMESTAMP, 1);
 
@@ -18,7 +22,7 @@ function validateEbakConfigurationPath(path) {
 function resolve(opts) {
     let {_: [command], local, 'local-configuration': lc, 'filepart-gpg-encryption-key': fpGpgKey, 'gpg-encryption-key': gpgKey} = opts;
 
-    let path: string = local;
+    let path = local;
     if (!validateEbakConfigurationPath(path)) {
         throw new Error("'local' does not exist or is not initialized");
     }
@@ -84,7 +88,7 @@ yargs.usage('$0 <cmd> [args]')
                     process.exit(1);
                 }
 
-                let cfg: ConfigFile = {
+                let cfg = {
                     local,
                     remote,
                     'client-id': clientId,

@@ -1,5 +1,5 @@
 {
-  "name": "ebak",
+  "name": "binary-repository",
   "version": "0.9.0",
   "description": "Encrypted backups on AWS (or other)",
   "directories": {
@@ -13,6 +13,9 @@
   "repository": {
     "type": "git",
     "url": "git@github.com:forbesmyester/ebak.git"
+  },
+  "bin": {
+    "binary-repository": "bin/binary-repository"
   },
   "devDependencies": {
     "@types/async": "^2.0.43",

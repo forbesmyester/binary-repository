@@ -4,7 +4,7 @@ IFS=$'\n\t'
 
 GPGKEY_COMMIT='ebak'
 REMOTE="s3://${GPGKEY_COMMIT}-$(date +%F)"
-REMOTE="file:///tmp/${GPGKEY_COMMIT}-repo" # Comment this line for AWS testing
+REMOTE="file://integration-test-temp-files/${GPGKEY_COMMIT}-repo" # Comment this line for AWS testing
 
 GPGKEY_FILEPART1='ebak-fp1'
 
@@ -30,10 +30,9 @@ if [ $FILEPART1_SECRET_KEY_COUNT -ne "1" ]; then
     gpg --batch --passphrase '' --quick-gen-key "$GPGKEY_FILEPART1"
 fi
 
-rm -rf   /tmp/ebak-data
-rm -rf   /tmp/ebak-config
-mkdir -p /tmp/ebak-data/matt_first
-mkdir -p /tmp/ebak-data/jim_leach
+rm -rf   integration-test-temp-files
+mkdir -p integration-test-temp-files/ebak-data/matt_first
+mkdir -p integration-test-temp-files/ebak-data/jim_leach
 
 
 if [ $(echo "$REMOTE" | grep '^s3' | wc -c) -gt 0 ]; then
@@ -45,87 +44,87 @@ else
     rm -rf $( echo "$REMOTE" | sed 's%^[a-z0-9]\+\://%%' )
 fi
 
-node dist/src/index.js init --filepart-gpg-encryption-key "$GPGKEY_FILEPART1" --local-config=/tmp/ebak-config/matt_first mattfirst "$GPGKEY_COMMIT" /tmp/ebak-data/matt_first "$REMOTE"
+./bin/binary-repository init --filepart-gpg-encryption-key "$GPGKEY_FILEPART1" --local-config=integration-test-temp-files/ebak-config/matt_first mattfirst "$GPGKEY_COMMIT"   integration-test-temp-files/ebak-data/matt_first "$REMOTE"
 
-node dist/src/index.js commit --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
+./bin/binary-repository commit --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first
 
-if [ $(find /tmp/ebak-data/matt_first -type f | wc -l) -ne 0 ]; then
+if [ $(find integration-test-temp-files/ebak-data/matt_first -type f | wc -l) -ne 0 ]; then
     echo "There should be no files in matt_first data directory"
     exit 1
 fi
 
-if [ $(find /tmp/ebak-config/matt_first -type f | grep "\/config$" | wc -l) -ne 1 ] ; then
+if [ $(find integration-test-temp-files/ebak-config/matt_first -type f | grep "\/config$" | wc -l) -ne 1 ] ; then
     echo "$MATTS_CONFIG should have been one line"
     exit 1
 fi
 
-cp -R test/data/my-projects /tmp/ebak-data/matt_first
+cp -R test/data/my-projects integration-test-temp-files/ebak-data/matt_first
 
-node dist/src/index.js commit --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
+./bin/binary-repository commit --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first
 
-if [ $(find /tmp/ebak-config/matt_first/pending-commit -type f | wc -l) -ne 1 ]; then
+if [ $(find integration-test-temp-files/ebak-config/matt_first/pending-commit -type f | wc -l) -ne 1 ]; then
     echo "Was expecting one matt_first pending-commit"
     exit 1
 fi
 
-node dist/src/index.js push --local-config=/tmp/ebak-config/matt_first /tmp/ebak-data/matt_first
+./bin/binary-repository push --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first
 
-if [ $(find /tmp/ebak-config/matt_first/pending-commit -type f | wc -l) -ne 0 ]; then
+if [ $(find integration-test-temp-files/ebak-config/matt_first/pending-commit -type f | wc -l) -ne 0 ]; then
     echo "Was expecting zero matt_first pending-commit"
     exit 1
 fi
 
-if [ $(find /tmp/ebak-config/matt_first/commit -type f | wc -l) -ne 1 ]; then
+if [ $(find integration-test-temp-files/ebak-config/matt_first/commit -type f | wc -l) -ne 1 ]; then
     echo "Was expecting one matt_first commit"
     exit 1
 fi
 
 if [ $(echo "$REMOTE" | grep '^file' | wc -c) -gt 0 ]; then
-    if [ $(gpg --batch --list-packets /tmp/ebak-repo/c-X* 2>&1 | grep '^ \+"' | sed 's/ \+"//' | sed 's/"$//') != "$GPGKEY_COMMIT" ]; then
+    if [ $(gpg --batch --list-packets integration-test-temp-files/ebak-repo/c-X* 2>&1 | grep '^ \+"' | sed 's/ \+"//' | sed 's/"$//') != "$GPGKEY_COMMIT" ]; then
         echo "Commit should have been encrypted with $GPGKEY_COMMIT"
         exit 1
     fi
-    if [ $(gpg --batch --list-packets $(ls /tmp/ebak-repo/f-* | head -n 1) 2>&1 | grep '^ \+"' | sed 's/ \+"//' | sed 's/"$//') != $GPGKEY_FILEPART1 ]; then
+    if [ $(gpg --batch --list-packets $(ls integration-test-temp-files/ebak-repo/f-* | head -n 1) 2>&1 | grep '^ \+"' | sed 's/ \+"//' | sed 's/"$//') != $GPGKEY_FILEPART1 ]; then
         echo "Filepart should have been encrypted with $GPGKEY_FILEPART1"
         exit 1
     fi
 fi
 
-node dist/src/index.js init --local-config=/tmp/ebak-config/jim_leach jimleach "$GPGKEY_COMMIT" /tmp/ebak-data/jim_leach "$REMOTE"
+./bin/binary-repository init --local-config=integration-test-temp-files/ebak-config/jim_leach jimleach "$GPGKEY_COMMIT" integration-test-temp-files/ebak-data/jim_leach "$REMOTE"
 
-if [ $(find /tmp/ebak-config/jim_leach -type f | wc -l) -ne 1 ]; then
+if [ $(find integration-test-temp-files/ebak-config/jim_leach -type f | wc -l) -ne 1 ]; then
     echo "There should be one files in jim_leach config directory"
     exit 1
 fi
 
-node dist/src/index.js fetch --local-config=/tmp/ebak-config/jim_leach /tmp/ebak-data/jim_leach
+./bin/binary-repository fetch --local-config=integration-test-temp-files/ebak-config/jim_leach integration-test-temp-files/ebak-data/jim_leach
 
-if [ $(find /tmp/ebak-config/jim_leach/remote-pending-commit -type f | wc -l) -ne 1 ]; then
+if [ $(find integration-test-temp-files/ebak-config/jim_leach/remote-pending-commit -type f | wc -l) -ne 1 ]; then
     echo "There should be one remote-pending-commit in jim_leach directory"
     exit 1
 fi
 
-if [ $(diff /tmp/ebak-config/jim_leach/remote-pending-commit/* /tmp/ebak-config/matt_first/commit/* | wc -l) -ne 0 ]; then
+if [ $(diff integration-test-temp-files/ebak-config/jim_leach/remote-pending-commit/* integration-test-temp-files/ebak-config/matt_first/commit/* | wc -l) -ne 0 ]; then
     echo "The remote-pending-commit did not match the commit"
     exit 1
 fi
 
-node dist/src/index.js download --local-config=/tmp/ebak-config/jim_leach /tmp/ebak-data/jim_leach
+./bin/binary-repository download --local-config=integration-test-temp-files/ebak-config/jim_leach integration-test-temp-files/ebak-data/jim_leach
 
-if [ $(diff /tmp/ebak-config/jim_leach/remote-commit/* /tmp/ebak-config/matt_first/commit/* | wc -l) -ne 0 ]; then
+if [ $(diff integration-test-temp-files/ebak-config/jim_leach/remote-commit/* integration-test-temp-files/ebak-config/matt_first/commit/* | wc -l) -ne 0 ]; then
     echo "The remote-pending-commit should now be in remote-commit"
     exit 1
 fi
 
-if [ $(diff -bur /tmp/ebak-data/jim_leach /tmp/ebak-data/matt_first | wc -l) -ne 0 ]; then
+if [ $(diff -bur integration-test-temp-files/ebak-data/jim_leach integration-test-temp-files/ebak-data/matt_first | wc -l) -ne 0 ]; then
     echo "The contents of the data should be identical"
     exit 1
 fi
 
-ls -l /tmp/ebak-data/matt_first/my-projects/ | sort | sed 's/^[^ ]* //' > /tmp/ebak-config/matt_first/ls
-ls -l /tmp/ebak-data/jim_leach/my-projects/ | sort | sed 's/^[^ ]* //' > /tmp/ebak-config/jim_leach/ls
+ls -l integration-test-temp-files/ebak-data/matt_first/my-projects/ | sort | sed 's/^[^ ]* //' > integration-test-temp-files/ebak-config/matt_first/ls
+ls -l integration-test-temp-files/ebak-data/jim_leach/my-projects/ | sort | sed 's/^[^ ]* //' > integration-test-temp-files/ebak-config/jim_leach/ls
 
-if [ $(diff /tmp/ebak-config/jim_leach/ls /tmp/ebak-config/matt_first/ls | wc -l) -ne 0 ]; then
+if [ $(diff integration-test-temp-files/ebak-config/jim_leach/ls integration-test-temp-files/ebak-config/matt_first/ls | wc -l) -ne 0 ]; then
     echo "Timestamps or something of synched files (but not permissions) is not the same"
     exit 1
 fi
