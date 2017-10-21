@@ -84,7 +84,6 @@ test("Will error if a non-zero exit code is there (should never be)", (tst) => {
     let trn = new UploadedS3FilePartsToCommit(
         {
             getDate: getGetDate(),
-            interval: (f) => { return () => {}; },
             commitIdGenerator: getTransactionIdGenerator()
         },
         "ClientId",
@@ -122,7 +121,6 @@ test("Will output at filesize threshold and flush", (tst) => {
     let trn = new UploadedS3FilePartsToCommit(
         {
             getDate: getGetDate(),
-            interval: (f) => { return () => {}; },
             commitIdGenerator: getTransactionIdGenerator()
         },
         "ClientId",
@@ -207,10 +205,6 @@ test("Will output at time threshold and flush", (tst) => {
     let trn = new UploadedS3FilePartsToCommit(
         {
             getDate: getGetDate(),
-            interval: (f) => {
-                intervalCb = f;
-                return () => {};
-            },
             commitIdGenerator: getTransactionIdGenerator()
         },
         "ClientId",

@@ -277,7 +277,7 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
             gpgKey,
             commitFileByteCountThreshold,
             commitMaxDelay,
-            {}
+            stdPipeOptions
         ),
         sha256FilePartToUploadedS3FilePart = new MapTransform(
             getSha256FilePartToUploadedFilePart(
@@ -305,13 +305,13 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
         commitToBackupCheckDatabase = new ScanTransform(
             getCommitToBackupCheckDatabaseScanFunc({}),
             {},
-            { objectMode: true }
+            stdPipeOptions
         ),
         backupCheckDatabaseFinal = new FinalDuplex({objectMode: true});
 
     let fileNotBackedUpRightAfterLeft = new RightAfterLeft(
             getFileNotBackedUpRightAfterLeftMapFunc({}),
-            { objectMode: true }
+            stdPipeOptions
         );
 
 
