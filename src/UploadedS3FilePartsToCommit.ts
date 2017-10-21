@@ -45,10 +45,6 @@ export class UploadedS3FilePartsToCommit extends Transform<UploadedS3FilePart, C
 
     _transform(input: UploadedS3FilePart, encoding, cb) {
 
-        if (input.uploadAlreadyExists) {
-            return cb();
-        }
-
         let exitStatus = path(['result', 'exitStatus'], input);
         if (exitStatus !== 0) {
             // TODO: Replace with proper error.

@@ -245,6 +245,7 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
         tmpDir = join(configDir, "tmp"),
         commitDir = 'commit',
         remoteCommitDir = 'remote-commit',
+        pendingCommitDir = 'pending-commit',
         config: ConfigFile = readConfig(configDir),
         clientId = config['client-id'],
         s3Bucket = config.remote,
@@ -315,7 +316,7 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
         );
 
 
-    getSortedCommitFilenamePipe(configDir, [commitDir, remoteCommitDir])
+    getSortedCommitFilenamePipe(configDir, [pendingCommitDir, commitDir, remoteCommitDir])
         .pipe(preparePipe(localCommitFileToCommit))
         .pipe(preparePipe(commitToBackupCheckDatabase))
         .pipe(preparePipe(backupCheckDatabaseFinal))
