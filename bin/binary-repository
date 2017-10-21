@@ -4,7 +4,7 @@ let { realpathSync, existsSync, writeFileSync } = require('fs');
 let { join } = require('path');
 let { pathOr } = require('ramda');
 let { ConfigFile, BASE_TLID_TIMESTAMP } = require('../dist/src/Types');
-let { commit, download, fetch, push } = require('../dist/src/process');
+let { upload, download, fetch, push } = require('../dist/src/process');
 
 let yargs = require('yargs');
 let mkdirp = require('mkdirp');
@@ -20,59 +20,53 @@ function validateEbakConfigurationPath(path) {
 }
 
 function resolve(opts) {
-    let {_: [command], local, 'local-configuration': lc, 'filepart-gpg-encryption-key': fpGpgKey, 'gpg-encryption-key': gpgKey} = opts;
+    let {_: [command], local, 'local-config': lc, 'filepart-gpg-key': fpGpgKey, 'gpg-key': gpgKey} = opts;
 
     let path = local;
     if (!validateEbakConfigurationPath(path)) {
         throw new Error("'local' does not exist or is not initialized");
     }
 
-    lc = lc ? lc : join(local, '.ebak');
+    lc = lc ? lc : join(local, '.binary-repository');
     if (!validateEbakConfigurationPath(path)) {
-        throw new Error("'local-configuration' does not exist or is not initialized");
+        throw new Error("'local-config' does not exist or is not initialized");
     }
 
     return {
         command,
         local,
-        'local-configuration': lc
+        'local-config': lc
     };
 }
 
 yargs.usage('$0 <cmd> [args]')
+    .option('local', {
+        describe: "The path you wish to backup / synchronize", type: 'string'
+    })
     .option('local-config', {
-        describe: "Use a configuration directory different to [local].ebak",
-        alias: "local-configuration"
+        describe: "Override config location [local].binary-repository",
+        type: 'string'
     })
-    .option('filepart-gpg-encryption-key', {
-        describe: 'Will use this key to encrypt FilePart (the actual data) as apposed to `gpg-encryption-key`',
+    .option('filepart-gpg-key', {
+        describe: 'Override `gpg-key` when encrypting file data',
+        type: 'string'
     })
+    .option('gpg-key', {
+        describe: 'Encryption key for data',
+        type: 'string'
+    })
+    .option('client-id', { describe: 'Unique name to help identify this client', type: 'string' })
+    .option('remote', { describe: 'Where you want to upload your encrypted data', type: 'string' })
     .command(
-        'init [client-id] [gpg-encryption-key] [local] [remote]', 'Initalizes',
+        'init [local]', 'Initalizes',
         {
-            'client-id': {
-                require: true,
-                describe: 'The directory you wish to push (upload)',
-                type: 'string'
-            },
-            local: {
-                require: true,
-                describe: 'The directory you wish to push (upload)',
-                type: 'string'
-            },
-            'gpg-encryption-key': {
-                required: false,
-                describe: 'The encryption key to use for Commit files',
-                type: 'string'
-            },
-            remote: {
-                require: true,
-                describe: 'The destination you wish to push (upload)',
-                type: 'string'
-            },
+            local: { require: true },
+            'gpg-key': { require: true },
+            'client-id': { require: true },
+            remote: { require: true },
         },
-        function init({ local, remote, 'client-id': clientId, 'filepart-gpg-encryption-key': fpGpgKey, 'gpg-encryption-key': gpgKey, 'local-configuration': lc}) {
-            let p = lc ? lc : join(local, '.ebak');
+        function init({ local, remote, 'client-id': clientId, 'filepart-gpg-key': fpGpgKey, 'gpg-key': gpgKey, 'local-config': lc}) {
+            let p = lc ? lc : join(local, '.binary-repository');
 
             if (existsSync(p)) {
                 console.info(`FATAL ERROR: path '${p}' already exists`);
@@ -92,8 +86,8 @@ yargs.usage('$0 <cmd> [args]')
                     local,
                     remote,
                     'client-id': clientId,
-                    'gpg-encryption-key': gpgKey,
-                    'filepart-gpg-encryption-key': fpGpgKey
+                    'gpg-key': gpgKey,
+                    'filepart-gpg-key': fpGpgKey
                 };
 
                 let file = join(p, 'config');
@@ -109,64 +103,41 @@ yargs.usage('$0 <cmd> [args]')
         }
     )
     .command(
-        'commit [local]', 'Syncronize local data to remote',
-        {
-            local: {
-                require: true,
-                describe: 'The directory you wish to commit',
-                type: 'string'
-            },
-        },
+        'upload [local]', 'Uploads contents, but not metadata',
+        { local: { require: true } },
         function (args) {
-            let { local, 'local-configuration': localConfiguration } = resolve(args);
-            commit(local, localConfiguration);
+            let { local, 'local-config': localConfiguration } = resolve(args);
+            upload(local, localConfiguration);
         }
     )
     .command(
-        'push [local]', 'Syncronize local data to remote',
-        {
-            local: {
-                require: true,
-                describe: 'The repository you wish to pus (upload)',
-                type: 'string'
-            },
-        },
+        'push [local]', 'Uploads metadata about previous `upload`',
+        { local: { require: true } },
         function (args) {
-            let { local, 'local-configuration': localConfiguration } = resolve(args);
+            let { local, 'local-config': localConfiguration } = resolve(args);
             push(local, localConfiguration);
         }
     )
     .command(
         'fetch [local]', 'Syncronize with remote data',
-        {
-            local: {
-                require: true,
-                describe: 'Fetches commit files from the remote so they can be downloaded',
-                type: 'string'
-            },
-        },
+        { local: { require: true } },
         function (args) {
-            let { local, 'local-configuration': localConfiguration } = resolve(args);
+            let { local, 'local-config': localConfiguration } = resolve(args);
             fetch(local, localConfiguration);
         }
     )
     .command(
         'download [local]', 'Download remote data',
-        {
-            local: {
-                require: true,
-                describe: 'Fetches commit files from the remote so they can be downloaded',
-                type: 'string'
-            },
-        },
+        { local: { require: true } },
         function (args) {
-            let { local, 'local-configuration': localConfiguration } = resolve(args);
+            let { local, 'local-config': localConfiguration } = resolve(args);
             download(local, localConfiguration);
         }
     )
     .demandCommand(1, "You must specify a sub-command")
     .check(o => resolve(o))
     .strict()
+    .version()
     .help()
     .argv;
 

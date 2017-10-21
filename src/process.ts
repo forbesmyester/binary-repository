@@ -194,9 +194,11 @@ export function push(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirector
 
     let stdPipeOptions = { objectMode: true, highWaterMark: 1},
         config: ConfigFile = readConfig(configDir),
-        gpgKey = config['gpg-encryption-key'],
+        gpgKey = config['gpg-key'],
         pendingCommitDir = 'pending-commit',
         s3Bucket = config.remote;
+
+    const quiet = false;
 
     let commitedToUploadedCommitted = new MapTransform(
             getCommittedToUploadedCommittedMapFunc(
@@ -215,16 +217,21 @@ export function push(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirector
         );
 
     getSortedCommitFilenamePipe(configDir, [pendingCommitDir])
-        .pipe(preparePipe(commitedToUploadedCommitted));
+        .pipe(preparePipe(commitedToUploadedCommitted))
+        .on('finish', () => {
+        if (!quiet) {
+            console.log("All metadata uploaded, backup complete");
+        }
+    });
 }
 
-export function commit(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
+export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
 
     const filePartByteCountThreshold = 1024 * 1024 * 64, // 64MB
         commitFileByteCountThreshold = 1024 * 1024 * 256, // 256MB
         commitMaxDelay = 1000 * 60 * 5;
 
-    let quiet = false;
+    const quiet = false;
 
     if (!safeSize(filePartByteCountThreshold)) {
         throw new Error(`The size ${filePartByteCountThreshold} is not a safe size`);
@@ -241,8 +248,8 @@ export function commit(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
         config: ConfigFile = readConfig(configDir),
         clientId = config['client-id'],
         s3Bucket = config.remote,
-        gpgKey = config['gpg-encryption-key'],
-        fpGpgKey = config['filepart-gpg-encryption-key'],
+        gpgKey = config['gpg-key'],
+        fpGpgKey = config['filepart-gpg-key'],
         rootReader = new RootReadable(
             {glob: RootReadable.getGlobFunc()},
             rootDir,
@@ -329,7 +336,7 @@ export function commit(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
 
     backup.on('finish', () => {
         if (!quiet) {
-            console.log("All data uploaded to repository and committed");
+            console.log("Files uploaded to repository, you may now `push` metadata");
         }
     });
 
@@ -347,7 +354,7 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
         repositoryCommitFiles: null|Readable<Filename> = null,
         cmd: string = '';
 
-    let quiet = false;
+    const quiet = false;
 
     if (remoteType == RemoteType.LOCAL_FILES) {
         cmd = 'bash/download-cat'
@@ -377,7 +384,7 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
             {cmdSpawner: cmdSpawner, rename: rename, mkdirp},
             configDir,
             removeProtocol(config['remote']),
-            config['gpg-encryption-key'],
+            config['gpg-key'],
             cmd
         ),
         { objectMode: true }
@@ -386,7 +393,7 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
 
     repositoryCommitFiles.pipe(toRemoteCommit).on('finish', () => {
         if (!quiet) {
-            console.log("All commits fetched, you may now download");
+            console.log("All commits fetched, you may now `download`");
         }
     });
 
@@ -398,7 +405,7 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
 
     let config: ConfigFile = readConfig(configDir);
 
-    let quiet = false;
+    const quiet = false;
 
     let remoteType = getRemoteType(config.remote);
 
