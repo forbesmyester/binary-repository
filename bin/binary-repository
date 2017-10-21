@@ -164,7 +164,7 @@ yargs.usage('$0 <cmd> [args]')
             download(local, localConfiguration);
         }
     )
-    .demandCommand(1, "You must specify a command")
+    .demandCommand(1, "You must specify a sub-command")
     .check(o => resolve(o))
     .strict()
     .help()

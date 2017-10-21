@@ -15,7 +15,7 @@ import getCommitToBackupCheckDatabaseScanFunc from './getCommitToBackupCheckData
 import CommitFilenameLocalFiles from './CommitFilenameLocalFiles';
 import CommitFilenameS3 from './CommitFilenameS3';
 import { RootReadable } from './RootReadable';
-import { join } from 'path';
+import { dirname, join } from 'path';
 import commitSortFunction from './commitFilenameSorter';
 import { getMergeInCommitType } from './getMergeInCommitType';
 import { RightAfterLeft, FirstDuplex, FinalDuplex, ScanTransform, SortDuplex, ErrorStream, MapFunc, MapTransform, ParallelJoin } from 'streamdash';
@@ -39,6 +39,8 @@ import { mapObjIndexed } from 'ramda';
 import getRepositoryCommitToRemoteCommitMapFunc from './getRepositoryCommitToRemoteCommitMapFunc';
 import * as mkdirp from 'mkdirp';
 import { S3 } from 'aws-sdk';
+
+const bashDir = join(dirname(dirname(__dirname)), 'bash');
 
 class ConsoleWritable extends Writable<Object> {
 
@@ -133,7 +135,7 @@ function getSha256FilePartToUploadedFilePart(rootDir: AbsoluteDirectoryPath, rem
             removeProtocol(remote),
             gpgKey,
             filePartByteCountThreshold,
-            './bash/upload-s3'
+            join(bashDir, 'upload-s3')
         );
     }
 
@@ -144,7 +146,7 @@ function getSha256FilePartToUploadedFilePart(rootDir: AbsoluteDirectoryPath, rem
             removeProtocol(remote),
             gpgKey,
             filePartByteCountThreshold,
-            './bash/upload-cat'
+            join(bashDir, 'upload-cat')
         );
     }
 
@@ -173,7 +175,7 @@ export function push(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirector
                 configDir,
                 removeProtocol(remote),
                 gpgKey,
-                './bash/upload-s3'
+                join(bashDir, 'upload-s3')
             );
         }
 
@@ -183,7 +185,7 @@ export function push(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirector
                 configDir,
                 removeProtocol(remote),
                 gpgKey,
-                './bash/upload-cat'
+                join(bashDir, 'upload-cat')
             );
         }
 
