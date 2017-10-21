@@ -20,7 +20,6 @@ export class UploadedS3FilePartsToCommit extends Transform<UploadedS3FilePart, C
     private emptyTime: Date;
     private getDate: () => Date;
     private commitIdGenerator: (d: Date) => string;
-    private cancelTimer: Function;
     private interval;
 
     constructor(
@@ -59,15 +58,6 @@ export class UploadedS3FilePartsToCommit extends Transform<UploadedS3FilePart, C
             return cb();
         }
 
-        if (!this.cancelTimer) {
-            this.cancelTimer = this.interval(() => {
-                let t = this.getDate();
-                if ((t.getTime() - this.maxDelay) > this.emptyTime.getTime()) {
-                    this.empty(() => {});
-                }
-            });
-        }
-
         let exitStatus = path(['result', 'exitStatus'], input);
         if (exitStatus !== 0) {
             // TODO: Replace with proper error.
@@ -88,9 +78,15 @@ export class UploadedS3FilePartsToCommit extends Transform<UploadedS3FilePart, C
             0,
             this.records
         );
-        if (filesBytesCount > this.fileByteCountThreshold) {
+
+        if (
+            (filesBytesCount > this.fileByteCountThreshold) ||
+            ((this.getDate().getTime() - this.maxDelay) > this.emptyTime.getTime())
+        ) {
             return this.empty(cb);
         }
+
+
         cb();
     }
 
@@ -105,15 +101,12 @@ export class UploadedS3FilePartsToCommit extends Transform<UploadedS3FilePart, C
             record: this.records
         });
         this.records = [];
-        this.emptyTime = this.getDate();
+        this.emptyTime = d;
         cb();
     }
 
     _flush(cb) {
         this.empty(cb);
-        if (this.cancelTimer) {
-            this.cancelTimer();
-        }
     }
 
 }

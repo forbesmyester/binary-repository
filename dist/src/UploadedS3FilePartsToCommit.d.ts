@@ -14,7 +14,6 @@ export declare class UploadedS3FilePartsToCommit extends Transform<UploadedS3Fil
     private emptyTime;
     private getDate;
     private commitIdGenerator;
-    private cancelTimer;
     private interval;
     constructor({getDate, interval, commitIdGenerator}: Dependencies, clientId: string, gpgKey: GpgKey, fileByteCountThreshold: number, maxDelay: number, opts: any);
     static getDependencies(): {

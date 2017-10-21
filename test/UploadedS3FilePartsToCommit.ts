@@ -1,4 +1,5 @@
 import test from 'ava';
+import { inspect } from 'util';
 import { Operation, FilePartIndex, Callback, Commit, UploadedS3FilePart } from '../src/Types';
 import { MapTransform, ArrayReadable, streamDataCollector } from 'streamdash';
 import { adjust, reduce, assoc, map, pipe, range } from 'ramda';
@@ -127,7 +128,7 @@ test("Will output at filesize threshold and flush", (tst) => {
         "ClientId",
         'gg',
         2048,
-        1000 * 120,
+        1000 * 1200,
         {}
     );
 
@@ -158,7 +159,7 @@ test("Will output at filesize threshold and flush", (tst) => {
                 }
             ],
             gpgKey: 'gg',
-            createdAt: commitDates[1], // skips one on constructor
+            createdAt: commitDates[2], // skips one on constructor
             commitId: "001",
             clientId: "ClientId",
         },
@@ -176,7 +177,7 @@ test("Will output at filesize threshold and flush", (tst) => {
                 }
             ],
             gpgKey: 'gg',
-            createdAt: commitDates[3], // skips one on flush
+            createdAt: commitDates[4], // skips one on flush
             commitId: "002",
             clientId: "ClientId",
         }
