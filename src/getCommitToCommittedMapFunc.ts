@@ -71,9 +71,9 @@ export function getCommitToCommittedMapFunc({atomicFileWrite, mkdirp}: Dependenc
                     Object.assign({}, commit, {
                         relativeFilePath: join(basename(commitFullFilename))
                     })
-                ),
-                (e) => { next(e); }
-            );
+                )
+            )
+            .catch((e) => { next(e); });
 
 
 

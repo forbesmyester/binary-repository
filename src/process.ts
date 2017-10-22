@@ -65,6 +65,14 @@ class ConsoleWritable extends Writable<Object> {
     }
 }
 
+
+class EndWritable extends Writable<Object> {
+    constructor() { super({objectMode: true}); }
+    _write(ob, encoding, cb) { process.stdout.write("."); cb(); }
+}
+
+
+
 function getPreparePipe(es: ErrorStream) {
     return (p) => {
         es.add(p);
@@ -218,11 +226,12 @@ export function push(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirector
 
     getSortedCommitFilenamePipe(configDir, [pendingCommitDir])
         .pipe(preparePipe(commitedToUploadedCommitted))
+        .pipe(preparePipe(new EndWritable()))
         .on('finish', () => {
-        if (!quiet) {
-            console.log("All metadata uploaded, backup complete");
-        }
-    });
+            if (!quiet) {
+                console.log("All metadata uploaded, backup complete");
+            }
+        });
 }
 
 export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
@@ -333,13 +342,13 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
         .pipe(preparePipe(fileToSha256FilePart))
         .pipe(preparePipe(sha256FilePartToUploadedS3FilePart))
         .pipe(preparePipe(uploadedS3FilePartsToCommit))
-        .pipe(preparePipe(commitToCommitted));
-
-    backup.on('finish', () => {
-        if (!quiet) {
-            console.log("Files uploaded to repository, you may now `push` metadata");
-        }
-    });
+        .pipe(preparePipe(commitToCommitted))
+        .pipe(preparePipe(new EndWritable()))
+        .on('finish', () => {
+            if (!quiet) {
+                console.log("Files uploaded to repository, you may now `push` metadata");
+            }
+        });
 
 
 }
@@ -392,7 +401,9 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
     ));
 
 
-    repositoryCommitFiles.pipe(toRemoteCommit).on('finish', () => {
+    repositoryCommitFiles.pipe(toRemoteCommit)
+        .pipe(preparePipe(new EndWritable()))
+        .on('finish', () => {
         if (!quiet) {
             console.log("All commits fetched, you may now `download`");
         }
@@ -507,6 +518,7 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
         .pipe(toRemotePendingCommitDecider)
         .pipe(toDownloadedParts)
         .pipe(toFile)
+        .pipe(preparePipe(new EndWritable()))
         .on('finish', () => {
             if (!quiet) { console.log("All data downloaded"); }
         });

@@ -1,4 +1,5 @@
 node_modules
 *.dump
+src/**/*.js
 npm-debug.log
 integration-test-temp-files
