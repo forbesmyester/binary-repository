@@ -60,7 +60,7 @@ class ConsoleWritable extends Writable<Object> {
             this.out(this.name, ob.stack);
             process.exit(1);
         }
-        this.out(this.name, JSON.stringify(ob));
+        this.out(this.name, ob);
         cb();
     }
 }
@@ -84,7 +84,10 @@ function getPreparePipe(es: ErrorStream) {
 }
 
 let errorStream = new ErrorStream({objectMode: true}),
-    errorOut = new ConsoleWritable({out: console.log}, "Error: "),
+    errorOut = new ConsoleWritable(
+        { out: (n, o) => { console.log(`${n}: ${JSON.stringify(o)}`); }},
+        "Error: "
+    ),
     preparePipe = getPreparePipe(errorStream);
 
 
@@ -234,6 +237,64 @@ export function push(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirector
         });
 }
 
+function getNotBackedUp(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
+    let stdPipeOptions = { objectMode: true, highWaterMark: 1},
+        commitDir = 'commit',
+        remoteCommitDir = 'remote-commit',
+        pendingCommitDir = 'pending-commit';
+
+
+    let fileNotBackedUpRightAfterLeft = new RightAfterLeft(
+            getFileNotBackedUpRightAfterLeftMapFunc({}),
+            stdPipeOptions
+        ),
+        localCommitFileToCommit = new MapTransform(
+            getLocalCommitFilenameToCommitMapFunc(
+                { readFile },
+                configDir
+            ),
+            stdPipeOptions
+        ),
+        commitToBackupCheckDatabase = new ScanTransform(
+            getCommitToBackupCheckDatabaseScanFunc({}),
+            {},
+            stdPipeOptions
+        ),
+        rootReader = new RootReadable(
+            {glob: RootReadable.getGlobFunc()},
+            rootDir,
+            []
+        ),
+        filenameToFile = new MapTransform(
+            getFilenameToFileMapFunc({ stat }, rootDir),
+            stdPipeOptions
+        ),
+        backupCheckDatabaseFinal = new FinalDuplex({objectMode: true});
+
+
+    getSortedCommitFilenamePipe(configDir, [pendingCommitDir, commitDir, remoteCommitDir])
+        .pipe(preparePipe(localCommitFileToCommit))
+        .pipe(preparePipe(commitToBackupCheckDatabase))
+        .pipe(preparePipe(backupCheckDatabaseFinal))
+        .pipe(preparePipe(fileNotBackedUpRightAfterLeft.left));
+
+
+    let listFiles = preparePipe(rootReader)
+        .pipe(preparePipe(filenameToFile))
+        .pipe(preparePipe(fileNotBackedUpRightAfterLeft.right));
+
+    return fileNotBackedUpRightAfterLeft;
+
+}
+
+export function listUpload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
+    getNotBackedUp(rootDir, configDir)
+        .pipe(new ConsoleWritable(
+        { out: (n, o) => { console.log(` > ${o.path}`); }},
+        "Error: "
+    ));
+}
+
 export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
 
     const filePartByteCountThreshold = 1024 * 1024 * 64, // 64MB
@@ -260,15 +321,6 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
         s3Bucket = config.remote,
         gpgKey = config['gpg-key'],
         fpGpgKey = config['filepart-gpg-key'],
-        rootReader = new RootReadable(
-            {glob: RootReadable.getGlobFunc()},
-            rootDir,
-            []
-        ),
-        filenameToFile = new MapTransform(
-            getFilenameToFileMapFunc({ stat }, rootDir),
-            stdPipeOptions
-        ),
         fileToSha256File = new MapTransform(
             getFileToSha256FileMapFunc(
                 { runner: getRunner({ cmdSpawner: CmdRunner.getCmdSpawner({}) }) },
@@ -304,40 +356,9 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
                 configDir
             ),
             stdPipeOptions
-        ),
-        localCommitFileToCommit = new MapTransform(
-            getLocalCommitFilenameToCommitMapFunc(
-                { readFile },
-                configDir
-            ),
-            stdPipeOptions
-        ),
-        commitToBackupCheckDatabase = new ScanTransform(
-            getCommitToBackupCheckDatabaseScanFunc({}),
-            {},
-            stdPipeOptions
-        ),
-        backupCheckDatabaseFinal = new FinalDuplex({objectMode: true});
-
-    let fileNotBackedUpRightAfterLeft = new RightAfterLeft(
-            getFileNotBackedUpRightAfterLeftMapFunc({}),
-            stdPipeOptions
         );
 
-
-    getSortedCommitFilenamePipe(configDir, [pendingCommitDir, commitDir, remoteCommitDir])
-        .pipe(preparePipe(localCommitFileToCommit))
-        .pipe(preparePipe(commitToBackupCheckDatabase))
-        .pipe(preparePipe(backupCheckDatabaseFinal))
-        .pipe(preparePipe(fileNotBackedUpRightAfterLeft.left));
-
-
-    let listFiles = preparePipe(rootReader)
-        .pipe(preparePipe(filenameToFile))
-        .pipe(preparePipe(fileNotBackedUpRightAfterLeft.right));
-
-
-    let backup = fileNotBackedUpRightAfterLeft
+    getNotBackedUp(rootDir, configDir)
         .pipe(preparePipe(fileToSha256File))
         .pipe(preparePipe(fileToSha256FilePart))
         .pipe(preparePipe(sha256FilePartToUploadedS3FilePart))

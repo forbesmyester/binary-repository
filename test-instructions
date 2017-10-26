@@ -129,5 +129,17 @@ if [ $(diff integration-test-temp-files/ebak-config/jim_leach/ls integration-tes
     exit 1
 fi
 
+
+rm -rf integration-test-temp-files/ebak-full/dave_mosquito
+mkdir -p integration-test-temp-files/ebak-full/dave_mosquito
+./bin/binary-repository init --client-id dave_mosquito --gpg-key "$GPGKEY_COMMIT" --remote "$REMOTE" integration-test-temp-files/ebak-full/dave_mosquito
+./bin/binary-repository fetch integration-test-temp-files/ebak-full/dave_mosquito
+./bin/binary-repository download integration-test-temp-files/ebak-full/dave_mosquito
+./bin/binary-repository list-upload integration-test-temp-files/ebak-full/dave_mosquito
+if [ $(./bin/binary-repository list-upload integration-test-temp-files/ebak-full/dave_mosquito | wc -l) -ne 0 ]; then
+    echo "Dave Mosquito would upload something??? why"
+    exit 1
+fi
+
 echo "Tests Passed."
 

@@ -4,7 +4,7 @@ let { realpathSync, existsSync, writeFileSync } = require('fs');
 let { join } = require('path');
 let { pathOr } = require('ramda');
 let { ConfigFile, BASE_TLID_TIMESTAMP } = require('../dist/src/Types');
-let { upload, download, fetch, push } = require('../dist/src/process');
+let { listUpload, upload, download, fetch, push } = require('../dist/src/process');
 
 let yargs = require('yargs');
 let mkdirp = require('mkdirp');
@@ -100,6 +100,14 @@ yargs.usage('$0 <cmd> [args]')
                 console.log(`SUCCESS: path '${local}' has been initialized with ` +
                     `config stored in ${file}`);
             });
+        }
+    )
+    .command(
+        'list-upload [local]', 'Lists what `upload` would upload',
+        { local: { require: true } },
+        function (args) {
+            let { local, 'local-config': localConfiguration } = resolve(args);
+            listUpload(local, localConfiguration);
         }
     )
     .command(

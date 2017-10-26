@@ -16,7 +16,7 @@ function toRecord(str): BackupRecord|null {
         sha256: m[0],
         operation: parseInt(m[1]),
         fileByteCount: parseInt(m[2]),
-        modifiedDate: new Date(m[5]),
+        modifiedDate: new Date(new Date(m[5]).setMilliseconds(0)),
         path: m[6],
         part: m[3].split("_").map(a => parseInt(a, 10)),
         filePartByteCountThreshold: m[4],

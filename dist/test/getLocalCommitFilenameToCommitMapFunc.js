@@ -26,9 +26,9 @@ ava_1.default.cb("Can map", (tst) => {
     }
     localCommitFileToCommitMapFunc(input, (err, c) => {
         let backupRecords = [
-            { filePartByteCountThreshold: 1024, gpgKey: 'g', sha256: 'ef2', operation: Types_1.Operation.Create, fileByteCount: 58, modifiedDate: new Date('2017-06-24T10:46:12.432Z'), path: 'error_command', part: [1, 1] },
-            { filePartByteCountThreshold: 1024, gpgKey: 'g', sha256: '8cf', operation: Types_1.Operation.Create, fileByteCount: 29, modifiedDate: new Date('2017-06-25T14:47:13.856Z'), path: 'hello_command', part: [2, 3] },
-            { filePartByteCountThreshold: 1024, gpgKey: 'g', sha256: 'def', operation: Types_1.Operation.Create, fileByteCount: 1816, modifiedDate: new Date('2017-06-19T06:20:05.168Z'), path: 'my-projects/getTLIdEncoderDecoder.md', part: [1, 1] }
+            { filePartByteCountThreshold: 1024, gpgKey: 'g', sha256: 'ef2', operation: Types_1.Operation.Create, fileByteCount: 58, modifiedDate: new Date('2017-06-24T10:46:12.000Z'), path: 'error_command', part: [1, 1] },
+            { filePartByteCountThreshold: 1024, gpgKey: 'g', sha256: '8cf', operation: Types_1.Operation.Create, fileByteCount: 29, modifiedDate: new Date('2017-06-25T14:47:13.000Z'), path: 'hello_command', part: [2, 3] },
+            { filePartByteCountThreshold: 1024, gpgKey: 'g', sha256: 'def', operation: Types_1.Operation.Create, fileByteCount: 1816, modifiedDate: new Date('2017-06-19T06:20:05.000Z'), path: 'my-projects/getTLIdEncoderDecoder.md', part: [1, 1] }
         ], expected = {
             gpgKey: 'gpg-key',
             clientId: 'fozz-client',
