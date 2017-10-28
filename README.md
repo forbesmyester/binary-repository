@@ -108,6 +108,7 @@ It seems that my version of GPG was configured pretty well by default, which is 
  * [2] Add the FilePartByteCountThreshold to the Filepart name in the repository.
  * [3] Add GPGKey as part of Filepart to stop name collisions.
  * [5] Allow listing of what would be uploaded / needs backing up.
+ * [5] Allow listing of what would be download / restored.
 
 ### In Progress
 
