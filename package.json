@@ -1,6 +1,6 @@
 {
   "name": "binary-repository",
-  "version": "0.11.0",
+  "version": "0.11.2",
   "description": "Encrypted backups on AWS (or other)",
   "directories": {
     "src": "src",
@@ -12,7 +12,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:forbesmyester/ebak.git"
+    "url": "git@github.com:forbesmyester/binary-repository.git"
   },
   "bin": {
     "binary-repository": "bin/binary-repository"
@@ -34,9 +34,9 @@
   "author": "Matthew Forrester <github.com@speechmarks.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/forbesmyester/ebak/issues"
+    "url": "https://github.com/forbesmyester/binary-repository/issues"
   },
-  "homepage": "https://github.com/forbesmyester/ebak",
+  "homepage": "https://github.com/forbesmyester/binary-repository",
   "dependencies": {
     "async": "^2.5.0",
     "aws-sdk": "^2.49.0",
