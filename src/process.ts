@@ -65,6 +65,17 @@ class ConsoleWritable extends Writable<Object> {
     }
 }
 
+class Spy<A> extends Transform<A, A> {
+    constructor(private onPassedThrough, opts) {
+        super(opts);
+    }
+    _transform(a, encoding, cb) {
+        this.push(a);
+        this.onPassedThrough(a);
+        cb();
+    }
+}
+
 function getPreparePipe(es: ErrorStream) {
     return (p) => {
         es.add(p);
@@ -326,9 +337,14 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
         .pipe(preparePipe(filenameToFile))
         .pipe(preparePipe(fileNotBackedUpRightAfterLeft.right));
 
+    let shaSpy = new Spy(
+        (a) => { console.log('PASSTHRU', a); },
+        stdPipeOptions
+    );
 
     let backup = fileNotBackedUpRightAfterLeft
         .pipe(preparePipe(fileToSha256File))
+        .pipe(shaSpy)
         .pipe(preparePipe(fileToSha256FilePart))
         .pipe(preparePipe(sha256FilePartToUploadedS3FilePart))
         .pipe(preparePipe(uploadedS3FilePartsToCommit))
