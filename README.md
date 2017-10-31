@@ -107,6 +107,8 @@ It seems that my version of GPG was configured pretty well by default, which is 
  * [2] Check correct encryption / decryption used in integration test
  * [2] Add the FilePartByteCountThreshold to the Filepart name in the repository.
  * [3] Add GPGKey as part of Filepart to stop name collisions.
+ * [5] Allow listing of what would be uploaded / needs backing up.
+ * [5] Allow listing of what would be download / restored.
 
 ### In Progress
 
@@ -115,8 +117,7 @@ It seems that my version of GPG was configured pretty well by default, which is 
 ### To do
 
  * [5] List encryption / decryption keys in GPG (and add backup methods)
- * [5] Allow adding of Filepart decription key to be ignored into Config
- * [5] Skip over remote Filepart where the encryption key is ignored.
+ * [5] Allow skipping over restoration of (some files)... what are the implications?
  * [6] Add a check to that the ClientId id no already used on init
  * [7] Tidy up command line interface output
  * [8] Ensure README.md is ready for public consumption and add a user guide

@@ -84,7 +84,6 @@ test("Will error if a non-zero exit code is there (should never be)", (tst) => {
     let trn = new UploadedS3FilePartsToCommit(
         {
             getDate: getGetDate(),
-            interval: (f) => { return () => {}; },
             commitIdGenerator: getTransactionIdGenerator()
         },
         "ClientId",
@@ -112,17 +111,11 @@ test("Will output at filesize threshold and flush", (tst) => {
         return () => commitDates[i++];
     };
 
-    let input = getFileParts(21, 24, 152);
-    input[0] = assoc(
-        'uploadAlreadyExists',
-        true,
-        input[0]
-    );
+    let input = getFileParts(21, 23, 152);
     let src = new ArrayReadable(input);
     let trn = new UploadedS3FilePartsToCommit(
         {
             getDate: getGetDate(),
-            interval: (f) => { return () => {}; },
             commitIdGenerator: getTransactionIdGenerator()
         },
         "ClientId",
@@ -145,7 +138,7 @@ test("Will output at filesize threshold and flush", (tst) => {
                     fileByteCount: 1200,
                     modifiedDate,
                     path: "//error_command",
-                    part: [22, 152],
+                    part: [21, 152],
                 },
                 {
                     gpgKey: 'g',
@@ -155,7 +148,7 @@ test("Will output at filesize threshold and flush", (tst) => {
                     fileByteCount: 1200,
                     modifiedDate,
                     path: "//error_command",
-                    part: [23, 152],
+                    part: [22, 152],
                 }
             ],
             gpgKey: 'gg',
@@ -173,7 +166,7 @@ test("Will output at filesize threshold and flush", (tst) => {
                     fileByteCount: 1200,
                     modifiedDate,
                     path: "//error_command",
-                    part: [24, 152],
+                    part: [23, 152],
                 }
             ],
             gpgKey: 'gg',
@@ -207,10 +200,6 @@ test("Will output at time threshold and flush", (tst) => {
     let trn = new UploadedS3FilePartsToCommit(
         {
             getDate: getGetDate(),
-            interval: (f) => {
-                intervalCb = f;
-                return () => {};
-            },
             commitIdGenerator: getTransactionIdGenerator()
         },
         "ClientId",

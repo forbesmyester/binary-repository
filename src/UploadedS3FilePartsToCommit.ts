@@ -10,7 +10,6 @@ let tLIdEncoderDecoder = getTlidEncoderDecoder(
 
 export interface Dependencies {
     getDate: () => Date;
-    interval: (f: Function) => Function;
     commitIdGenerator: (d: Date) => string;
 }
 
@@ -20,10 +19,9 @@ export class UploadedS3FilePartsToCommit extends Transform<UploadedS3FilePart, C
     private emptyTime: Date;
     private getDate: () => Date;
     private commitIdGenerator: (d: Date) => string;
-    private interval;
 
     constructor(
-        { getDate, interval, commitIdGenerator }: Dependencies,
+        { getDate, commitIdGenerator }: Dependencies,
         private clientId: string,
         private gpgKey: GpgKey, // For the Commit
         private fileByteCountThreshold: number,
@@ -34,18 +32,11 @@ export class UploadedS3FilePartsToCommit extends Transform<UploadedS3FilePart, C
         this.getDate = getDate;
         this.commitIdGenerator = commitIdGenerator;
         this.emptyTime = this.getDate();
-        this.interval = interval;
     }
 
     static getDependencies() {
         return {
             getDate: () => { return new Date(); },
-            interval: (f) => {
-                let t = setInterval(f, 100);
-                return function() {
-                    clearInterval(t);
-                };
-            },
             commitIdGenerator: (d: Date) => {
                 return tLIdEncoderDecoder.encode(d.getTime());
             }
@@ -53,10 +44,6 @@ export class UploadedS3FilePartsToCommit extends Transform<UploadedS3FilePart, C
     }
 
     _transform(input: UploadedS3FilePart, encoding, cb) {
-
-        if (input.uploadAlreadyExists) {
-            return cb();
-        }
 
         let exitStatus = path(['result', 'exitStatus'], input);
         if (exitStatus !== 0) {

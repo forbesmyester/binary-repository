@@ -60,6 +60,15 @@ fi
 
 cp -R test/data/my-projects integration-test-temp-files/ebak-data/matt_first
 
+find  integration-test-temp-files/ebak-data/matt_first/ -type f | sed sI.*matt_first/II | grep -v '^$' | sort > integration-test-temp-files/the_files
+
+./bin/binary-repository list-upload --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first | sort > integration-test-temp-files/will_upload
+
+if [ $(diff integration-test-temp-files/the_files integration-test-temp-files/will_upload | wc -l) -ne 0 ]; then
+    echo "Upload list does not equal file list?..."
+    exit 1
+fi
+
 ./bin/binary-repository upload --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first
 
 if [ $(find integration-test-temp-files/ebak-config/matt_first/pending-commit -type f | wc -l) -ne 1 ]; then
@@ -109,6 +118,13 @@ if [ $(diff integration-test-temp-files/ebak-config/jim_leach/remote-pending-com
     exit 1
 fi
 
+./bin/binary-repository list-download --local-config=integration-test-temp-files/ebak-config/jim_leach integration-test-temp-files/ebak-data/jim_leach | sort > integration-test-temp-files/will_download
+
+if [ $(diff integration-test-temp-files/will_upload integration-test-temp-files/will_download | wc -l) -ne 0 ]; then
+    echo "The download list was not the same as the upload list"
+    exit 1
+fi
+
 ./bin/binary-repository download --local-config=integration-test-temp-files/ebak-config/jim_leach integration-test-temp-files/ebak-data/jim_leach
 
 if [ $(diff integration-test-temp-files/ebak-config/jim_leach/remote-commit/* integration-test-temp-files/ebak-config/matt_first/commit/* | wc -l) -ne 0 ]; then
@@ -126,6 +142,17 @@ ls -l integration-test-temp-files/ebak-data/jim_leach/my-projects/ | sort | sed 
 
 if [ $(diff integration-test-temp-files/ebak-config/jim_leach/ls integration-test-temp-files/ebak-config/matt_first/ls | wc -l) -ne 0 ]; then
     echo "Timestamps or something of synched files (but not permissions) is not the same"
+    exit 1
+fi
+
+
+rm -rf integration-test-temp-files/ebak-full/edward_elephant
+mkdir -p integration-test-temp-files/ebak-full/edward_elephant
+./bin/binary-repository init --client-id edward_elephant --gpg-key "$GPGKEY_COMMIT" --remote "$REMOTE" integration-test-temp-files/ebak-full/edward_elephant
+./bin/binary-repository fetch integration-test-temp-files/ebak-full/edward_elephant
+./bin/binary-repository download integration-test-temp-files/ebak-full/edward_elephant
+if [ $(./bin/binary-repository list-upload integration-test-temp-files/ebak-full/edward_elephant | wc -l) -ne 0 ]; then
+    echo "Edward Elephant would upload something??? why"
     exit 1
 fi
 

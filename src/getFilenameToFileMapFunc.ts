@@ -12,7 +12,10 @@ export function getFilenameToFileMapFunc({ stat }, rootPath: AbsoluteDirectoryPa
         let fullPath: AbsoluteFilePath = join(rootPath, f.path);
         stat(fullPath, (e, s) => {
             if (e) { return next(e); }
-            next(null, Object.assign({ fileByteCount: s.size, modifiedDate: s.mtime }, f));
+            next(null, Object.assign({
+                fileByteCount: s.size,
+                modifiedDate: new Date(s.mtime.setMilliseconds(0))
+            }, f));
         });
     };
 
