@@ -1,4 +1,5 @@
 import { RemotePendingCommitStatDecided, RemoteType, S3BucketName, RemoteUri, GpgKey, UploadedS3FilePart, Sha256FilePart, CommitType, ConfigFile, AbsoluteDirectoryPath, RelativeFilePath, Sha256, ByteCount, ModifiedDate, Callback, Sha256File, File, Filename, CommitFilename, Commit } from './Types';
+import { format } from 'util';
 import { rename, readFileSync, readFile } from 'fs';
 import getToRemotePendingCommitStatsMapFunc from './getToRemotePendingCommitStatsMapFunc';
 import safeSize from './safeSize';
@@ -6,7 +7,7 @@ import getToRemotePendingCommitDeciderMapFunc from './getToRemotePendingCommitDe
 
 import { getDependencies as getToFileMapFuncDependencies } from './getToFileMapFunc';
 import getToFileMapFunc from './getToFileMapFunc';
-
+import managedMultiProgress from 'managed-multi-progress';
 
 import { getDependencies as getToDownloadedPartsMapFuncDependencies } from './getToDownloadedPartsMapFunc';
 import getToDownloadedPartsMapFunc from './getToDownloadedPartsMapFunc';
@@ -308,6 +309,42 @@ export function listUpload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDi
         ));
 }
 
+function getOverallBar(barUpdater, quiet) {
+    let totalItems = 0,
+        currentItem = 0;
+    let plus = new Spy(
+        (a) => {
+            if (!quiet) {
+                barUpdater({
+                    id: "main",
+                    total: totalItems += 1,
+                    current: currentItem,
+                    params: { total: totalItems, title: "Overall" }
+                });
+            }
+        },
+        { objectMode: true }
+    );
+    let minus = new Spy(
+        (a) => {
+            if (!quiet) {
+                barUpdater({
+                    id: "main",
+                    total: totalItems,
+                    current: currentItem += 1,
+                    params: { current: currentItem, title: "Overall" }
+                });
+            }
+        },
+        { objectMode: true }
+    );
+
+    return {
+        minus,
+        plus
+    };
+}
+
 export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
 
     const filePartByteCountThreshold = 1024 * 1024 * 64, // 64MB
@@ -315,6 +352,24 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
         commitMaxDelay = 1000 * 60 * 5;
 
     const quiet = false;
+
+    let barUpdater = managedMultiProgress(
+        5,
+        {
+            current: 0,
+            total: 0,
+            format: '[:bar] :current/:total - :title',
+            id: 'main',
+            width: 9,
+            complete: '#',
+            incomplete: '-',
+        },
+        {
+            total: 3,
+            width: 9,
+            format: '[:bar] :current/:total - :title',
+        }
+    );
 
     if (!safeSize(filePartByteCountThreshold)) {
         throw new Error(`The size ${filePartByteCountThreshold} is not a safe size`);
@@ -371,22 +426,46 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
             stdPipeOptions
         );
 
-    let shaSpy = new Spy(
-        (a) => { console.log('PASSTHRU', a); },
-        stdPipeOptions
-    );
+    function getFileSpy(t, n) {
+        return new Spy(
+            (a) => {
+                if (!quiet) {
+                    const length = 60;
+                    let p = (a.path.length <= length) ? a.path :
+                        a.path.substr(a.path.length - length);
+                    barUpdater({
+                        id: a.path,
+                        current: n,
+                        params: { title: format(t, p) }
+                    });
+                }
+            },
+            stdPipeOptions
+        );
+    }
+
+    let overallBar = getOverallBar(barUpdater, quiet);
+
+    let totalItems = 0;
+    let currentItem = 0;
 
     getNotBackedUp(rootDir, configDir)
+        .pipe(overallBar.plus)
+        .pipe(getFileSpy("%s: SHA summing...", 1))
         .pipe(preparePipe(fileToSha256File))
-        .pipe(shaSpy)
         .pipe(preparePipe(fileToSha256FilePart))
+        .pipe(getFileSpy("%s: Uploading...", 2))
         .pipe(preparePipe(sha256FilePartToUploadedS3FilePart))
+        .pipe(getFileSpy("%s: Committing...", 3))
+        .pipe(overallBar.minus)
         .pipe(preparePipe(uploadedS3FilePartsToCommit))
         .pipe(preparePipe(commitToCommitted))
         .pipe(preparePipe(new EndWritable()))
         .on('finish', () => {
             if (!quiet) {
-                console.log("Files uploaded to repository, you may now `push` metadata");
+                barUpdater.terminate(
+                    "Files uploaded to repository, you may now `push` metadata"
+                );
             }
         });
 
@@ -566,6 +645,44 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
     const quiet = false;
     let remoteType = getRemoteType(config.remote);
 
+    let barUpdater = managedMultiProgress(
+        5,
+        {
+            current: 0,
+            total: 0,
+            format: '[:bar] :current/:total - :title',
+            id: 'main',
+            width: 9,
+            complete: '#',
+            incomplete: '-',
+        },
+        {
+            total: 3,
+            width: 9,
+            format: '[:bar] :current/:total - :title',
+        }
+    );
+
+    let overallBar = getOverallBar(barUpdater, quiet);
+
+    function getFileSpy(t, n) {
+        return new Spy(
+            (a) => {
+                if (!quiet) {
+                    const length = 60;
+                    let p = (a.path.length <= length) ? a.path :
+                        a.path.substr(a.path.length - length);
+                    barUpdater({
+                        id: a.path,
+                        current: n,
+                        params: { title: format(t, p) }
+                    });
+                }
+            },
+            stdPipeOptions
+        );
+    }
+
     let toDownloadedParts = preparePipe(new MapTransform(
         getToDownloadedPartsMapFunc(
             getToDownloadedPartsMapFuncDependencies(remoteType),
@@ -585,11 +702,15 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
     ));
 
     listDownloadImpl(rootDir, configDir)
+        .pipe(overallBar.plus) // TODO: Make per file not commit
         .pipe(toDownloadedParts)
+        .pipe(overallBar.minus)
         .pipe(toFile)
         .pipe(preparePipe(new EndWritable()))
         .on('finish', () => {
-            if (!quiet) { console.log("All data downloaded"); }
+            if (!quiet) {
+                barUpdater.terminate("All data downloaded");
+            }
         });
 
 }
