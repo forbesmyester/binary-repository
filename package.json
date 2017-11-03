@@ -1,6 +1,6 @@
 {
   "name": "binary-repository",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "description": "Encrypted backups on AWS (or other)",
   "directories": {
     "src": "src",
@@ -43,7 +43,7 @@
     "filesize": "^3.5.10",
     "get_tlid_encoder_decoder": "^0.9.5",
     "glob": "^7.1.2",
-    "managed-multi-progress": "^0.12.0",
+    "managed-multi-progress": "^0.12.1",
     "mkdirp": "^0.5.1",
     "pretty-bytes": "^4.0.2",
     "progress": "^2.0.0",

@@ -309,9 +309,17 @@ export function listUpload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDi
         ));
 }
 
-function getOverallBar(barUpdater, quiet) {
+interface OverallBar {
+    plus: Spy<any & Filename>;
+    minus: Spy<any & Filename>;
+}
+
+function getOverallBar(barUpdater, quiet): OverallBar {
+    const length = 60;
     let totalItems = 0,
-        currentItem = 0;
+        currentItem = 0,
+        currentTitle = 'Overall';
+
     let plus = new Spy(
         (a) => {
             if (!quiet) {
@@ -319,7 +327,7 @@ function getOverallBar(barUpdater, quiet) {
                     id: "main",
                     total: totalItems += 1,
                     current: currentItem,
-                    params: { total: totalItems, title: "Overall" }
+                    params: { total: totalItems, title: currentTitle }
                 });
             }
         },
@@ -328,11 +336,17 @@ function getOverallBar(barUpdater, quiet) {
     let minus = new Spy(
         (a) => {
             if (!quiet) {
+                let p = "Overall";
+                if (a && a.path && a.path.substr) {
+                    p = (a.path.length <= length) ? a.path :
+                        a.path.substr(a.path.length - length);
+                }
+                currentTitle = "Finished: " + p;
                 barUpdater({
                     id: "main",
                     total: totalItems,
                     current: currentItem += 1,
-                    params: { current: currentItem, title: "Overall" }
+                    params: { current: currentItem, title: currentTitle }
                 });
             }
         },
@@ -483,7 +497,26 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
         repositoryCommitFiles: null|Readable<Filename> = null,
         cmd: string = '';
 
-    const quiet = false;
+    const quiet = false,
+        barUpdater = managedMultiProgress(
+            5,
+            {
+                current: 0,
+                total: 0,
+                format: '[:bar] :current/:total - :title',
+                id: 'main',
+                width: 9,
+                complete: '#',
+                incomplete: '-',
+            },
+            {
+                total: 3,
+                width: 9,
+                format: '[:bar] :current/:total - :title',
+            }
+        ),
+        overallBar = getOverallBar(barUpdater, quiet);
+
 
     if (remoteType == RemoteType.LOCAL_FILES) {
         cmd = 'bash/download-cat'
@@ -519,11 +552,16 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
         { objectMode: true }
     ));
 
-    repositoryCommitFiles.pipe(toRemoteCommit)
+    repositoryCommitFiles
+        .pipe(overallBar.plus)
+        .pipe(toRemoteCommit)
+        .pipe(overallBar.minus)
         .pipe(preparePipe(new EndWritable()))
         .on('finish', () => {
         if (!quiet) {
-            console.log("All commits fetched, you may now `download`");
+            barUpdater.terminate(
+                "All commits fetched, you may now `download`"
+            );
         }
     });
 
