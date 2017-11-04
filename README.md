@@ -74,7 +74,7 @@ I then wanted to make sure that I'm using a sensibly strong level of encryption:
     Secret key is available.
     
     sec  rsa4096/B22BFB8D3C5790FD
-         created: 2017-10-19  expires: never       usage: SC
+         created: 2017-09-09  expires: never       usage: SC
          trust: ultimate      validity: ultimate
     ssb  rsa4096/EB2BFB03B02164A4
          created: 2017-10-19  expires: never       usage: E
@@ -87,7 +87,53 @@ I then wanted to make sure that I'm using a sensibly strong level of encryption:
          Compression: ZLIB, BZIP2, ZIP, Uncompressed
          Features: MDC, Keyserver no-modify
 
-It seems that my version of GPG was configured pretty well by default, which is great.
+It seems that my version of GPG was configured pretty well by default (was looking for AES256), which is great.
+
+#### Important, Make sure you can restore your backups!
+
+Once you've got your keys created. You probably ought to consider backing them up, so you can recover from disaster. I plan to integrate this into `binary-repository` at some point but right now you have to do it manually... fear not, it's not hard!
+
+First identify the public/private key you wish to backup:
+
+    $ gpg --list-keys
+    /home/fozz/.gnupg/pubring.kbx
+    -----------------------------
+    pub   rsa2048 2017-09-09 [SC]
+          D69487B716DAAA4A30D6A090691E0826BF39FE6C
+    uid           [ultimate] Matthew Forrester (Key for use with binary-repository)
+    sub   rsa2048 2017-09-29 [E]
+    
+    $ gpg --list-secret-keys
+    /home/fozz/.gnupg/pubring.kbx
+    -----------------------------
+    sec   rsa2048 2017-09-09 [SC] [expires: 2019-09-09]
+          D69487B716DAAA4A30D6A090691E0826BF39FE6C
+    uid           [ultimate] Matthew Forrester (Key for use with binary-repository) 
+    ssb   rsa2048 2017-09-09 [E]
+
+To back it up you need to export the secret key (for reading your backups) and perhaps your public key (if you wish to keep creating backups after the disaster). This is done like so:
+
+    gpg --export-secret-keys -a D69487B716DAAA4A30D6A090691E0826BF39FE6C > binary-repository-key.gpg.priv
+    gpg --export-keys -a D69487B716DAAA4A30D6A090691E0826BF39FE6C > binary-repository-key.gpg.pub
+    
+Verify that `binary-repository-key.gpg.priv` includes the words `-----BEGIN PGP PRIVATE KEY BLOCK-----` and that `binary-repository-key.gpg.pub` includes the words `-----BEGIN PGP PUBLIC KEY BLOCK-----` at the top. Both should be followed by a blank line and the followed by lots of binary data (the private one should be longer).
+
+Keep these files safe, I have them in active use on another computer but also printed out and mailed to my parents home address.
+
+To re-import the keys do something like the following:
+
+    $ gpg --import binary-repository-key.gpg.priv
+    gpg: key 3F4B6EDD9CE5E240: public key "Matthew Forrester (Key for use with binary-repository)" imported
+    gpg: key 3F4B6EDD9CE5E240: secret key imported
+    gpg: Total number processed: 1
+    gpg:               imported: 1
+    gpg:       secret keys read: 1
+    gpg:   secret keys imported: 1
+    
+    $ gpg --import binary-repository-key.gpg.pub 
+    gpg: key 3F4B6EDD9CE5E240: "Matthew Forrester (Key for use with binary-repository)" not changed
+    gpg: Total number processed: 1
+    gpg:              unchanged: 1
 
 
 ## Current Stage
