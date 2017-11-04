@@ -20,7 +20,7 @@ function validateEbakConfigurationPath(path) {
 }
 
 function resolve(performLcCheck, opts) {
-    let {_: [command], local, 'local-config': lc, 'filepart-gpg-key': fpGpgKey, 'gpg-key': gpgKey} = opts;
+    let {_: [command], quiet=false, local, 'local-config': lc, 'filepart-gpg-key': fpGpgKey, 'gpg-key': gpgKey} = opts;
 
     let path = local;
     if (!validateEbakConfigurationPath(path)) {
@@ -35,6 +35,7 @@ function resolve(performLcCheck, opts) {
     }
 
     return {
+        quiet,
         command,
         local,
         'local-config': lc
@@ -53,6 +54,10 @@ yargs.usage('$0 <cmd> [args]')
         describe: 'Override `gpg-key` when encrypting file data',
         type: 'string'
     })
+    .option('quiet', {
+        describe: 'Whether to run silently or not',
+        type: 'boolean'
+    })
     .option('gpg-key', {
         describe: 'Encryption key for data',
         type: 'string'
@@ -67,7 +72,7 @@ yargs.usage('$0 <cmd> [args]')
             'client-id': { require: true },
             remote: { require: true },
         },
-        function init({ local, remote, 'client-id': clientId, 'filepart-gpg-key': fpGpgKey, 'gpg-key': gpgKey, 'local-config': lc}) {
+        function init({ quiet, local, remote, 'client-id': clientId, 'filepart-gpg-key': fpGpgKey, 'gpg-key': gpgKey, 'local-config': lc}) {
             let p = lc ? lc : join(local, '.binary-repository');
 
             if (existsSync(p)) {
@@ -99,8 +104,10 @@ yargs.usage('$0 <cmd> [args]')
                     JSON.stringify(cfg),
                     { encoding: 'utf8' }
                 );
-                console.log(`SUCCESS: path '${local}' has been initialized with ` +
-                    `config stored in ${file}`);
+                if (!quiet) {
+                    console.log(`SUCCESS: path '${local}' has been initialized ` +
+                        `with config stored in ${file}`);
+                }
             });
         }
     )
@@ -109,8 +116,8 @@ yargs.usage('$0 <cmd> [args]')
         { local: { require: true } },
         function (args) {
             try {
-                let { local, 'local-config': localConfiguration } = resolve(true, args);
-                listDownload(local, localConfiguration);
+                let { local, 'local-config': localConfiguration, quiet } = resolve(true, args);
+                listDownload(local, localConfiguration, { quiet });
             } catch (e) { console.log(e.message); process.exit(1) }
         }
     )
@@ -119,8 +126,8 @@ yargs.usage('$0 <cmd> [args]')
         { local: { require: true } },
         function (args) {
             try {
-                let { local, 'local-config': localConfiguration } = resolve(true, args);
-                listUpload(local, localConfiguration);
+                let { local, 'local-config': localConfiguration, quiet } = resolve(true, args);
+                listUpload(local, localConfiguration, { quiet });
             } catch (e) { console.log(e.message); process.exit(1) }
         }
     )
@@ -129,8 +136,8 @@ yargs.usage('$0 <cmd> [args]')
         { local: { require: true } },
         function (args) {
             try {
-                let { local, 'local-config': localConfiguration } = resolve(true, args);
-                upload(local, localConfiguration);
+                let { local, 'local-config': localConfiguration, quiet } = resolve(true, args);
+                upload(local, localConfiguration, { quiet });
             } catch (e) { console.log(e.message); process.exit(1) }
         }
     )
@@ -139,8 +146,8 @@ yargs.usage('$0 <cmd> [args]')
         { local: { require: true } },
         function (args) {
             try {
-                let { local, 'local-config': localConfiguration } = resolve(true, args);
-                push(local, localConfiguration);
+                let { local, 'local-config': localConfiguration, quiet } = resolve(true, args);
+                push(local, localConfiguration, { quiet });
             } catch (e) { console.log(e.message); process.exit(1) }
         }
     )
@@ -149,8 +156,8 @@ yargs.usage('$0 <cmd> [args]')
         { local: { require: true } },
         function (args) {
             try {
-                let { local, 'local-config': localConfiguration } = resolve(true, args);
-                fetch(local, localConfiguration);
+                let { local, 'local-config': localConfiguration, quiet } = resolve(true, args);
+                fetch(local, localConfiguration, { quiet });
             } catch (e) { console.log(e.message); process.exit(1) }
         }
     )
@@ -159,8 +166,8 @@ yargs.usage('$0 <cmd> [args]')
         { local: { require: true } },
         function (args) {
             try {
-                let { local, 'local-config': localConfiguration } = resolve(true, args);
-                download(local, localConfiguration);
+                let { local, 'local-config': localConfiguration, quiet } = resolve(true, args);
+                download(local, localConfiguration, { quiet });
             } catch (e) { console.log(e.message); process.exit(1) }
         }
     )

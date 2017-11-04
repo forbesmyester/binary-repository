@@ -5,6 +5,7 @@ IFS=$'\n\t'
 GPGKEY_COMMIT='ebak'
 REMOTE="s3://${GPGKEY_COMMIT}-$(date +%F)"
 REMOTE="file://integration-test-temp-files/${GPGKEY_COMMIT}-repo" # Comment this line for AWS testing
+QUIET="false"
 
 GPGKEY_FILEPART1='ebak-fp1'
 
@@ -44,9 +45,9 @@ else
     rm -rf $( echo "$REMOTE" | sed 's%^[a-z0-9]\+\://%%' )
 fi
 
-./bin/binary-repository init --filepart-gpg-key "$GPGKEY_FILEPART1" --local-config=integration-test-temp-files/ebak-config/matt_first --client-id mattfirst --gpg-key "$GPGKEY_COMMIT"  --remote "$REMOTE" integration-test-temp-files/ebak-data/matt_first
+./bin/binary-repository init --quiet=$QUIET --filepart-gpg-key "$GPGKEY_FILEPART1" --local-config=integration-test-temp-files/ebak-config/matt_first --client-id mattfirst --gpg-key "$GPGKEY_COMMIT"  --remote "$REMOTE" integration-test-temp-files/ebak-data/matt_first
 
-./bin/binary-repository upload --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first
+./bin/binary-repository upload --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first
 
 if [ $(find integration-test-temp-files/ebak-data/matt_first -type f | wc -l) -ne 0 ]; then
     echo "There should be no files in matt_first data directory"
@@ -62,21 +63,21 @@ cp -R test/data/my-projects integration-test-temp-files/ebak-data/matt_first
 
 find  integration-test-temp-files/ebak-data/matt_first/ -type f | sed sI.*matt_first/II | grep -v '^$' | sort > integration-test-temp-files/the_files
 
-./bin/binary-repository list-upload --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first | sort > integration-test-temp-files/will_upload
+./bin/binary-repository list-upload --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first | sort > integration-test-temp-files/will_upload
 
 if [ $(diff integration-test-temp-files/the_files integration-test-temp-files/will_upload | wc -l) -ne 0 ]; then
     echo "Upload list does not equal file list?..."
     exit 1
 fi
 
-./bin/binary-repository upload --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first
+./bin/binary-repository upload --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first
 
 if [ $(find integration-test-temp-files/ebak-config/matt_first/pending-commit -type f | wc -l) -ne 1 ]; then
     echo "Was expecting one matt_first pending-commit"
     exit 1
 fi
 
-./bin/binary-repository push --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first
+./bin/binary-repository push --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first
 
 if [ $(find integration-test-temp-files/ebak-config/matt_first/pending-commit -type f | wc -l) -ne 0 ]; then
     echo "Was expecting zero matt_first pending-commit"
@@ -99,14 +100,14 @@ if [ $(echo "$REMOTE" | grep '^file' | wc -c) -gt 0 ]; then
     fi
 fi
 
-./bin/binary-repository init --local-config=integration-test-temp-files/ebak-config/jim_leach --client-id jimleach --gpg-key "$GPGKEY_COMMIT" --remote "$REMOTE" integration-test-temp-files/ebak-data/jim_leach
+./bin/binary-repository init --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/jim_leach --client-id jimleach --gpg-key "$GPGKEY_COMMIT" --remote "$REMOTE" integration-test-temp-files/ebak-data/jim_leach
 
 if [ $(find integration-test-temp-files/ebak-config/jim_leach -type f | wc -l) -ne 1 ]; then
     echo "There should be one files in jim_leach config directory"
     exit 1
 fi
 
-./bin/binary-repository fetch --local-config=integration-test-temp-files/ebak-config/jim_leach integration-test-temp-files/ebak-data/jim_leach
+./bin/binary-repository fetch --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/jim_leach integration-test-temp-files/ebak-data/jim_leach
 
 if [ $(find integration-test-temp-files/ebak-config/jim_leach/remote-pending-commit -type f | wc -l) -ne 1 ]; then
     echo "There should be one remote-pending-commit in jim_leach directory"
@@ -118,14 +119,14 @@ if [ $(diff integration-test-temp-files/ebak-config/jim_leach/remote-pending-com
     exit 1
 fi
 
-./bin/binary-repository list-download --local-config=integration-test-temp-files/ebak-config/jim_leach integration-test-temp-files/ebak-data/jim_leach | sort > integration-test-temp-files/will_download
+./bin/binary-repository list-download --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/jim_leach integration-test-temp-files/ebak-data/jim_leach | sort > integration-test-temp-files/will_download
 
 if [ $(diff integration-test-temp-files/will_upload integration-test-temp-files/will_download | wc -l) -ne 0 ]; then
     echo "The download list was not the same as the upload list"
     exit 1
 fi
 
-./bin/binary-repository download --local-config=integration-test-temp-files/ebak-config/jim_leach integration-test-temp-files/ebak-data/jim_leach
+./bin/binary-repository download --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/jim_leach integration-test-temp-files/ebak-data/jim_leach
 
 if [ $(diff integration-test-temp-files/ebak-config/jim_leach/remote-commit/* integration-test-temp-files/ebak-config/matt_first/commit/* | wc -l) -ne 0 ]; then
     echo "The remote-pending-commit should now be in remote-commit"
@@ -148,10 +149,10 @@ fi
 
 rm -rf integration-test-temp-files/ebak-full/edward_elephant
 mkdir -p integration-test-temp-files/ebak-full/edward_elephant
-./bin/binary-repository init --client-id edward_elephant --gpg-key "$GPGKEY_COMMIT" --remote "$REMOTE" integration-test-temp-files/ebak-full/edward_elephant
-./bin/binary-repository fetch integration-test-temp-files/ebak-full/edward_elephant
-./bin/binary-repository download integration-test-temp-files/ebak-full/edward_elephant
-if [ $(./bin/binary-repository list-upload integration-test-temp-files/ebak-full/edward_elephant | wc -l) -ne 0 ]; then
+./bin/binary-repository init --quiet=$QUIET --client-id edward_elephant --gpg-key "$GPGKEY_COMMIT" --remote "$REMOTE" integration-test-temp-files/ebak-full/edward_elephant
+./bin/binary-repository fetch --quiet=$QUIET integration-test-temp-files/ebak-full/edward_elephant
+./bin/binary-repository download --quiet=$QUIET integration-test-temp-files/ebak-full/edward_elephant
+if [ $(./bin/binary-repository list-upload --quiet=$QUIET integration-test-temp-files/ebak-full/edward_elephant | wc -l) -ne 0 ]; then
     echo "Edward Elephant would upload something??? why"
     exit 1
 fi
