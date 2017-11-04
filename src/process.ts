@@ -69,7 +69,7 @@ class ConsoleWritable extends Writable<Object> {
 
 class EndWritable extends Writable<Object> {
     constructor() { super({objectMode: true}); }
-    _write(ob, encoding, cb) { process.stdout.write("."); cb(); }
+    _write(ob, encoding, cb) { cb(); }
 }
 
 
@@ -195,7 +195,7 @@ function readConfig(configDir: AbsoluteDirectoryPath) {
     }
 }
 
-export function push(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
+export function push(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath, { quiet }) {
 
     function getCommittedToUploadedCommittedMapFunc(configDir: AbsoluteDirectoryPath, remote: RemoteUri, gpgKey: GpgKey) {
 
@@ -227,8 +227,6 @@ export function push(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirector
         gpgKey = config['gpg-key'],
         pendingCommitDir = 'pending-commit',
         s3Bucket = config.remote;
-
-    const quiet = false;
 
     let commitedToUploadedCommitted = new MapTransform(
             getCommittedToUploadedCommittedMapFunc(
@@ -321,8 +319,17 @@ interface OverallBar {
     minus: Spy<any & Filename>;
 }
 
-function getOverallBar(barUpdater, quiet): OverallBar {
-    const length = 45;
+
+function getProgressBarTitle(path, useStartForTitle = false) {
+    const progressBarTitleLength = 42;
+    return (path.length <= progressBarTitleLength) ?
+        path :
+        useStartForTitle ?
+            ('...' + path.substr(path.length - progressBarTitleLength)) :
+            (path.substr(0, progressBarTitleLength) + '...');
+}
+
+function getOverallBar(barUpdater, quiet, useStartForTitle=false): OverallBar {
     let totalItems = 0,
         currentItem = 0,
         currentTitle = 'Overall';
@@ -345,8 +352,6 @@ function getOverallBar(barUpdater, quiet): OverallBar {
             if (!quiet) {
                 let p = "Overall";
                 if (a && a.path && a.path.substr) {
-                    p = (a.path.length <= length) ? a.path :
-                        a.path.substr(a.path.length - length);
                 }
                 currentTitle = "Finished: " + p;
                 barUpdater({
@@ -360,19 +365,14 @@ function getOverallBar(barUpdater, quiet): OverallBar {
         { objectMode: true }
     );
 
-    return {
-        minus,
-        plus
-    };
+    return { minus, plus };
 }
 
-export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
+export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath, { quiet }) {
 
     const filePartByteCountThreshold = 1024 * 1024 * 64, // 64MB
         commitFileByteCountThreshold = 1024 * 1024 * 256, // 256MB
         commitMaxDelay = 1000 * 60 * 5;
-
-    const quiet = false;
 
     let barUpdater = managedMultiProgress(
         5,
@@ -454,13 +454,10 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
                     throw new Error("getFileSpy: Everything should derive from Filename");
                 }
                 if (!quiet) {
-                    const length = 45;
-                    let p = (a.path.length <= length) ? a.path :
-                        a.path.substr(a.path.length - length);
                     barUpdater({
-                        id: p,
+                        id: a.path,
                         current: n,
-                        params: { title: format(t, p) }
+                        params: { title: format(t, getProgressBarTitle(a.path)) }
                     });
                 }
             },
@@ -496,7 +493,7 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
 
 }
 
-export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
+export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath, { quiet }) {
 
 
     let stdPipeOptions = { objectMode: true, highWaterMark: 1},
@@ -507,8 +504,7 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
         repositoryCommitFiles: null|Readable<Filename> = null,
         cmd: string = '';
 
-    const quiet = false,
-        barUpdater = managedMultiProgress(
+    let barUpdater = managedMultiProgress(
             5,
             {
                 current: 0,
@@ -686,11 +682,10 @@ export function listDownload(rootDir: AbsoluteDirectoryPath, configDir: Absolute
         ));
 }
 
-export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
+export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath, { quiet }) {
 
     let stdPipeOptions = { objectMode: true, highWaterMark: 1};
     let config: ConfigFile = readConfig(configDir);
-    const quiet = false;
     let remoteType = getRemoteType(config.remote);
 
     let barUpdater = managedMultiProgress(
@@ -711,19 +706,17 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
         }
     );
 
-    let overallBar = getOverallBar(barUpdater, quiet);
+    let overallBar = getOverallBar(barUpdater, quiet, true);
+
 
     function getFileSpy(t, n) {
         return new Spy(
             (a) => {
                 if (!quiet) {
-                    const length = 45;
-                    let p = (a.path.length <= length) ? a.path :
-                        a.path.substr(a.path.length - length);
                     barUpdater({
-                        id: p,
+                        id: a.path,
                         current: n,
-                        params: { title: format(t, p) }
+                        params: { title: format(t, getProgressBarTitle(a.path)) }
                     });
                 }
             },
