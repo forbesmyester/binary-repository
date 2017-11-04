@@ -69,7 +69,7 @@ class ConsoleWritable extends Writable<Object> {
 
 class EndWritable extends Writable<Object> {
     constructor() { super({objectMode: true}); }
-    _write(ob, encoding, cb) { process.stdout.write("."); cb(); }
+    _write(ob, encoding, cb) { cb(); }
 }
 
 

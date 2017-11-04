@@ -2,73 +2,51 @@ import { Callback, Filename, S3BucketName } from './Types';
 import { Readable } from 'stronger-typed-streams'
 import { S3 } from 'aws-sdk';
 
-export abstract class EasyReadable<T> extends Readable<T> {
-
-    private readCount = 0;
-    private buffer: (null|T)[] = [];
-    private ended = false;
-    private waiting = false;
-
-    constructor(opts = {}) {
-        super(opts);
-    }
-
-    push(t: T|null, encoding?: string): boolean {
-        this.readCount = this.readCount - 1;
-        return super.push(t);
-    }
-
-    abstract __read(count: number, next: Callback<(null|T)[]>);
-
-    private processBuffer() {
-        while ((this.readCount > 0) && (this.buffer.length)) {
-            this.push(<T>this.buffer.shift());
-        }
-    }
-
-    private doRead() {
-        if (this.ended || this.waiting) {
-            return;
-        }
-        this.waiting = true;
-        this.processBuffer();
-        if (this.readCount > 0) {
-            this.__read(this.readCount, (e, ts) => {
-                this.waiting = false;
-                if (e) { return this.emit('error', e); }
-                if (ts) {
-                    ts.forEach(t => {
-                        if (t === null) {
-                            this.ended = true;
-                            this.buffer.push(t);
-                        }
-                        if (!this.ended) { this.buffer.push(t); }
-                    });
-                }
-                this.processBuffer();
-                if (this.readCount > 0) {
-                    process.nextTick(() => { this.doRead(); });
-                }
-            });
-        }
-    }
-
-
-    _read(count) {
-        this.readCount = this.readCount + count;
-        this.doRead();
-    }
+abstract class EasyReadable<T> {
 }
 
 
-export default class S3CommitList extends EasyReadable<Filename> {
+export default class S3CommitList extends Readable<Filename> {
 
     private nextMarker: string|false = false;
+    private ended = false;
+    private waiting = false;
+    private count = 0;
+
 
     constructor(private s3: S3, private s3BucketName: S3BucketName, opts = {}) {
         super(Object.assign({objectMode: true}, opts));
     }
 
+    private doRead() {
+        this.__read(16, (e, ts) => {
+            if (e) {
+                this.ended = true;
+                return this.emit('error', e);
+            }
+            if (ts) {
+                ts.forEach(t => {
+                    if (t === null) {
+                        this.ended = true;
+                        this.push(t);
+                    }
+                    if (!this.ended) { this.count++; this.push(t); }
+                });
+            }
+            if (!this.ended) {
+                process.nextTick(() => {
+                    this.doRead();
+                });
+            }
+        });
+    }
+
+
+    _read(count) {
+        if (this.waiting) { return; }
+        this.waiting = true;
+        this.doRead();
+    }
 
     map(c: S3.Object[]): Filename[] {
         return c.map(cc => {
