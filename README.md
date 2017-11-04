@@ -130,7 +130,7 @@ To re-import the keys do something like the following:
     gpg:       secret keys read: 1
     gpg:   secret keys imported: 1
     
-    $ gpg --import /tmp/secret.gpg.pub 
+    $ gpg --import binary-repository-key.gpg.pub 
     gpg: key 3F4B6EDD9CE5E240: "Matthew Forrester (Key for use with binary-repository)" not changed
     gpg: Total number processed: 1
     gpg:              unchanged: 1
