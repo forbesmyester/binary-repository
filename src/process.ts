@@ -352,6 +352,7 @@ function getOverallBar(barUpdater, quiet, useStartForTitle=false): OverallBar {
             if (!quiet) {
                 let p = "Overall";
                 if (a && a.path && a.path.substr) {
+                    p = getProgressBarTitle(a.path, useStartForTitle);
                 }
                 currentTitle = "Finished: " + p;
                 barUpdater({
