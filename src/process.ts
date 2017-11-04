@@ -315,7 +315,7 @@ interface OverallBar {
 }
 
 function getOverallBar(barUpdater, quiet): OverallBar {
-    const length = 60;
+    const length = 45;
     let totalItems = 0,
         currentItem = 0,
         currentTitle = 'Overall';
@@ -444,11 +444,11 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
         return new Spy(
             (a) => {
                 if (!quiet) {
-                    const length = 60;
+                    const length = 45;
                     let p = (a.path.length <= length) ? a.path :
                         a.path.substr(a.path.length - length);
                     barUpdater({
-                        id: a.path,
+                        id: p,
                         current: n,
                         params: { title: format(t, p) }
                     });
@@ -707,11 +707,11 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
         return new Spy(
             (a) => {
                 if (!quiet) {
-                    const length = 60;
+                    const length = 45;
                     let p = (a.path.length <= length) ? a.path :
                         a.path.substr(a.path.length - length);
                     barUpdater({
-                        id: a.path,
+                        id: p,
                         current: n,
                         params: { title: format(t, p) }
                     });
