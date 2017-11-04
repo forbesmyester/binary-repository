@@ -74,14 +74,21 @@ class EndWritable extends Writable<Object> {
 
 
 class Spy<A> extends Transform<A, A> {
+
     constructor(private onPassedThrough, opts) {
         super(opts);
     }
+
     _transform(a, encoding, cb) {
         this.push(a);
+        try {
         this.onPassedThrough(a);
+        } catch (e) {
+            return cb(e);
+        }
         cb();
     }
+
 }
 
 
@@ -443,6 +450,9 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
     function getFileSpy(t, n) {
         return new Spy(
             (a) => {
+                if (!a.path) {
+                    throw new Error("getFileSpy: Everything should derive from Filename");
+                }
                 if (!quiet) {
                     const length = 45;
                     let p = (a.path.length <= length) ? a.path :
