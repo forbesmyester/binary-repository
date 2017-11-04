@@ -1,6 +1,6 @@
 {
   "name": "binary-repository",
-  "version": "0.12.5",
+  "version": "0.12.6",
   "description": "Encrypted backups on AWS (or other)",
   "directories": {
     "src": "src",
