@@ -529,7 +529,7 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
 
 
     if (remoteType == RemoteType.LOCAL_FILES) {
-        cmd = 'bash/download-cat'
+        cmd = join(bashDir, 'download-cat');
         repositoryCommitFiles = preparePipe(new CommitFilenameLocalFiles(
             {glob: globber},
             removeProtocol(config['remote']),
@@ -539,7 +539,7 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
 
 
     if (remoteType == RemoteType.S3) {
-        cmd = 'bash/download-s3'
+        cmd = join(bashDir, 'download-s3');
         repositoryCommitFiles = preparePipe(new CommitFilenameS3(
             new S3(),
             removeProtocol(config['remote']),
