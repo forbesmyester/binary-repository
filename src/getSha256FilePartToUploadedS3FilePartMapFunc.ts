@@ -117,7 +117,7 @@ export default function getSha256FilePartToUploadedS3FilePartMapFunc({cmdSpawner
 
             let cmdRunner = new CmdRunner(
                 { cmdSpawner: cmdSpawner },
-                Object.assign({}, process.env, getEnv(filePartByteCountThreshold, a)),
+                Object.assign({}, <{[k :string]: string}>process.env, getEnv(filePartByteCountThreshold, a)),
                 ".",
                 cmd,
                 [],

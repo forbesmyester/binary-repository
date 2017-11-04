@@ -70,9 +70,10 @@ export default function getCommittedToUploadedCommittedMapFunc(
 
     return function(a: CommitFilename, cb) {
 
+        let env = getEnv(gpgKey, s3Bucket, configDir, a);
         let cmdRunner = new CmdRunner(
             { cmdSpawner },
-            Object.assign({}, process.env, getEnv(gpgKey, s3Bucket, configDir, a)),
+            Object.assign({}, <{ [k: string]: string}>process.env, env),
             ".",
             cmd,
             [],

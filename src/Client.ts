@@ -89,6 +89,7 @@ export default {
 
         let cmdSpawner = CmdRunner.getCmdSpawner();
 
+            console.log(join(getBashRoot(__dirname), 'decrypt'));
         let cmdRunner = new CmdRunner(
             { cmdSpawner },
             Object.assign({}, process.env, getEnv(gpgKey, src, dst)),

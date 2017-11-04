@@ -22,7 +22,7 @@
     "@types/filesize": "^3.2.15",
     "@types/glob": "^5.0.30",
     "@types/mkdirp": "^0.5.0",
-    "@types/node": "^7.0.15",
+    "@types/node": "^8.0.47",
     "@types/progress": "^2.0.0",
     "@types/ramda": "0.0.11",
     "@types/yargs": "^8.0.2",

@@ -623,7 +623,7 @@ export function listDownloadImpl(rootDir: AbsoluteDirectoryPath, configDir: Abso
 
     let toBackupCheckDatabaseFinal = preparePipe(new FinalDuplex(stdPipeOptions));
 
-    processedCommitStream
+    let backupCheckDatabaseFinal = processedCommitStream
         .pipe(toBackupCheckDatabaseScan)
         .pipe(toBackupCheckDatabaseFinal);
 
@@ -643,7 +643,7 @@ export function listDownloadImpl(rootDir: AbsoluteDirectoryPath, configDir: Abso
         );
 
     remotePendingCommitStream.pipe(remotePendingCommitLocalInfoStream.right);
-    processedCommitStream.pipe(remotePendingCommitLocalInfoStream.left);
+    backupCheckDatabaseFinal.pipe(remotePendingCommitLocalInfoStream.left);
 
     let toRemotePendingCommitDecider = preparePipe(
         new MapTransform(

@@ -51,9 +51,13 @@ function getStatResult(size): Stats {
         size: size,
         blksize: -1,
         blocks: -1,
+        birthtimeMs: 0,
         atime: new Date(),
+        atimeMs: 0,
         mtime: new Date(),
+        mtimeMs: 0,
         ctime: new Date(),
+        ctimeMs: 0,
         birthtime: new Date()
     };
 }

@@ -29,7 +29,11 @@ function getResult(size, mtime): Stats {
         atime: new Date(),
         mtime: mtime,
         ctime: new Date(),
-        birthtime: new Date()
+        birthtime: new Date(),
+        birthtimeMs: 0,
+        atimeMs: 0,
+        mtimeMs: 0,
+        ctimeMs: 0,
     };
 }
 

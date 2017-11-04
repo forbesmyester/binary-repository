@@ -67,7 +67,7 @@ export default function getRepositoryCommitToRemoteCommitMapFunc(
 
         let cmdRunner = new CmdRunner(
             { cmdSpawner: dependencies.cmdSpawner },
-            Object.assign({}, process.env, env),
+            Object.assign({}, <{[k: string]: string}>process.env, env),
             ".",
             cmd,
             [],
