@@ -351,6 +351,9 @@ function getOverallBar(barUpdater, quiet, useStartForTitle=false): OverallBar {
         (a) => {
             if (!quiet) {
                 let p = "Overall";
+                if (a && a.commitId) {
+                    p = getProgressBarTitle(a.commitId);
+                }
                 if (a && a.path && a.path.substr) {
                     p = getProgressBarTitle(a.path, useStartForTitle);
                 }
