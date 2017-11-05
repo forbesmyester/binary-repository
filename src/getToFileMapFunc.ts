@@ -1,4 +1,4 @@
-import { RemotePendingCommitDownloadedRecord, RemotePendingCommitDownloaded, GpgKey, Callback, AbsoluteDirectoryPath, AbsoluteFilePath } from './Types';
+import { NotificationHandler, RemotePendingCommitDownloadedRecord, RemotePendingCommitDownloaded, GpgKey, Callback, AbsoluteDirectoryPath, AbsoluteFilePath } from './Types';
 import Client from './Client';
 import { MapFunc } from 'streamdash';
 import { streamDataCollector } from 'streamdash';
@@ -94,7 +94,13 @@ let myUnlink = (realUnlink, f, next) => {
     });
 };
 
-export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, decrypt}: Dependencies, configDir: AbsoluteDirectoryPath, rootDir: AbsoluteDirectoryPath): MapFunc<RemotePendingCommitDownloaded, RemotePendingCommitDownloaded> {
+export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, decrypt}: Dependencies, configDir: AbsoluteDirectoryPath, rootDir: AbsoluteDirectoryPath, notificationHandler?: NotificationHandler): MapFunc<RemotePendingCommitDownloaded, RemotePendingCommitDownloaded> {
+
+    function notify(id, status) {
+        if (notificationHandler) {
+            notificationHandler(id, status);
+        }
+    }
 
     function generateDecryptedFilename(rec: RemotePendingCommitDownloadedRecord) {
         return join(configDir, 'tmp', rec.sha256 + '.ebak.dec');
@@ -123,7 +129,9 @@ export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, dec
         function convert(d: Date) { return Math.floor(d.getTime() / 1000); }
         let mtime = convert(rec.modifiedDate),
             atime = convert(rec.modifiedDate);
+        notify(rec.path, 'Copying');
         utimes(generateFinalFilename(rec), atime, mtime, (e) => {
+            notify(rec.path, 'Copied');
             next(e, rec);
         });
     }
@@ -134,12 +142,15 @@ export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, dec
             return assoc('part', [part0, rec.part[1]], rec);
         }, range(1, rec.part[1] + 1));
 
+        notify(rec.path, 'Decrypting');
         decrypt(
             rec.gpgKey,
             map(generateOriginalEncryptedFilename, recs),
             generateDecryptedFilename(rec),
             rec.path,
             (e) => {
+                if (e) { return next(e); }
+                notify(rec.path, 'Decrypted');
                 next(e, rec);
             }
         );
@@ -160,6 +171,7 @@ export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, dec
 
     function doUnlinkOne(rec: RemotePendingCommitDownloadedRecord, next) {
         myUnlink(unlink, generateOriginalEncryptedFilename(rec), (e) => {
+            notify(rec.path, 'Finished');
             next(e, rec);
         });
     }
@@ -178,7 +190,9 @@ export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, dec
         );
 
         mapLimit(recs, 10, doUnlinkOne, (e: Error|null) => {
-            next(e, rec);
+            myUnlink(unlink, generateDecryptedFilename(rec), (e) => {
+                next(e, rec);
+            });
         });
     }
 
@@ -228,7 +242,7 @@ export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, dec
     return function(a: RemotePendingCommitDownloaded, next: Callback<RemotePendingCommitDownloaded>) {
         mapLimit(a.record, 3, process, (e, r) => {
             if (e) { return next(e); }
-            mapLimit(a.record, 9, doUnlink, (e2, r2) => {
+            mapLimit(a.record, 3, doUnlink, (e2, r2) => {
                 if (e2) { return next(e2); }
                 finalize(a, next);
             });

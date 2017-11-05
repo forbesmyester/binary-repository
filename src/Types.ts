@@ -8,6 +8,8 @@ export interface Callback2<R> {
     (e: Error|null|undefined, r: R): void;
 }
 
+export type NotificationHandler = (id: string, status: string) => void;
+
 export enum UserErrorCode {
     BLOCKED_BY_FILE = 1,
     FILE_MODIFIED_BEFORE_LOCAL_COMMIT = 2,
@@ -224,4 +226,3 @@ export interface RemotePendingCommitDownloadedRecord extends RemotePendingCommit
 export interface RemotePendingCommitDownloaded extends RemotePendingCommitStatDecided {
     readonly record: RemotePendingCommitDownloadedRecord[];
 }
-

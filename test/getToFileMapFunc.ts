@@ -126,7 +126,8 @@ test.cb('Can unencrypt local FilePart', (tst) => {
         unlink: (path: AbsoluteFilePath, next: Callback<void>) => {
             let expected = [
                 '/store/.ebak/remote-encrypted-filepart/f-sha-1-1KB-gpg--key.ebak',
-                '/store/.ebak/remote-encrypted-filepart/f-sha-2-1KB-gpg--key.ebak'
+                '/store/.ebak/remote-encrypted-filepart/f-sha-2-1KB-gpg--key.ebak',
+                '/store/.ebak/tmp/sha.ebak.dec'
             ];
             tst.deepEqual(path, expected[done.unlink]);
             done.unlink = done.unlink + 1;
@@ -151,7 +152,7 @@ test.cb('Can unencrypt local FilePart', (tst) => {
         tst.is(done.decrypt, 1);
         tst.is(done.mkdirp, 2);
         tst.is(done.copyFile, 1);
-        tst.is(done.unlink, 2);
+        tst.is(done.unlink, 3);
         tst.is(null, e);
         tst.deepEqual(r, getInput('Docs/a.txt', [2, 2]));
         tst.end();

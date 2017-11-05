@@ -6,7 +6,7 @@ import { join } from 'path';
 import { MapFunc } from 'streamdash';
 import throat = require('throat');
 import { flatten, pipe, range, assoc, dissoc, map } from 'ramda';
-import { GpgKey, RemoteType, FilePartIndex, S3Object, S3Location, RemotePendingCommitStatRecordDecided, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, ByteCount } from './Types';
+import { NotificationHandler, GpgKey, RemoteType, FilePartIndex, S3Object, S3Location, RemotePendingCommitStatRecordDecided, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, ByteCount } from './Types';
 import * as mkdirp from 'mkdirp';
 import RepositoryLocalfiles from './repository/RepositoryLocalfiles';
 import RepositoryS3 from './repository/RepositoryS3';
@@ -52,10 +52,16 @@ export function getDependencies(mode: RemoteType): Dependencies {
 
 }
 
-export default function getToDownloadedParts({ constructFilepartLocalLocation, constructFilepartS3Location, mkdirp, stat, downloadSize, download }: Dependencies, configDir: AbsoluteDirectoryPath, s3Bucket: S3BucketName): MapFunc<RemotePendingCommitStat, RemotePendingCommitStat> {
+export default function getToDownloadedParts({ constructFilepartLocalLocation, constructFilepartS3Location, mkdirp, stat, downloadSize, download }: Dependencies, configDir: AbsoluteDirectoryPath, s3Bucket: S3BucketName, notificationHandler?: NotificationHandler): MapFunc<RemotePendingCommitStat, RemotePendingCommitStat> {
 
     let tmpDir = join(configDir, 'tmp'),
         filepartDir = join(configDir, 'remote-encrypted-filepart');
+
+    function notify(id, status) {
+        if (notificationHandler) {
+            notificationHandler(id, status);
+        }
+    }
 
     function pDownloadSize(l: S3Location): Promise<ByteCount|null> {
         return new Promise((resolve, reject) => {
@@ -78,7 +84,11 @@ export default function getToDownloadedParts({ constructFilepartLocalLocation, c
 
     function doDownloaded(a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
         // TODO: Yeh Yeh, it's a Christmas tree... do something about it!
-        if (!a.proceed) return Promise.resolve(a);
+        if (!a.proceed) {
+            notify(a.path, 'Skipping');
+            return Promise.resolve(a);
+        }
+        notify(a.path, 'Downloading');
         return new Promise((resolve, reject) => {
             mkdirp(tmpDir, (e) => {
                 if (e) { return reject(e); }
@@ -90,6 +100,7 @@ export default function getToDownloadedParts({ constructFilepartLocalLocation, c
                         constructFilepartLocalLocation(configDir, a.gpgKey, a),
                         (e, r) => {
                             if (e) { return reject(e); }
+                            notify(a.path, 'Downloaded');
                             resolve(a);
                         }
                     );
@@ -110,6 +121,7 @@ export default function getToDownloadedParts({ constructFilepartLocalLocation, c
     function checkDownloaded(a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
         // TODO: Derive arg for pDonwloadSize from Driver
 
+        notify(a.path, 'Analyzing');
         if (!a.proceed) return Promise.resolve(a);
         return Promise.all([
             pMyStat(join(filepartDir, constructFilepart(a))),
