@@ -6,7 +6,7 @@ import { dirname, join } from 'path';
 import * as mkdirp from 'mkdirp';
 import { utimes, rename, copyFile, unlink } from 'fs';
 import { parallelLimit, mapLimit, waterfall } from 'async';
-import { assoc, map, range } from 'ramda';
+import { append, reduce, assoc, map, range } from 'ramda';
 import { ExitStatus, CmdOutput, CmdSpawner, CmdRunner } from './CmdRunner';
 
 
@@ -19,26 +19,29 @@ interface DecryptionEnvironment {
     OPT_GPG_KEY: GpgKey;
     OPT_DST: AbsoluteFilePath;
     OPT_IS_FIRST: string; // "1" or "0"
+    OPT_INFO: string;
 }
 
 function getBashRoot(d: AbsoluteFilePath): AbsoluteDirectoryPath {
     return join(dirname(dirname(d)), 'bash');
 }
 
-function _getDependenciesDecryptMapper(gpgKey, src, dst, isFirst) {
+function _getDependenciesDecryptMapper(gpgKey, src, dst, isFirst, info) {
     return function(next) {
         let cmdSpawner: CmdSpawner = CmdRunner.getCmdSpawner();
         let env: DecryptionEnvironment = {
             OPT_SRC: src,
             OPT_DST: dst,
             OPT_GPG_KEY: gpgKey,
-            OPT_IS_FIRST: isFirst ? "1": "0"
+            OPT_IS_FIRST: isFirst ? "1": "0",
+            OPT_INFO: info
         };
         let cmdRunner = new CmdRunner(
             { cmdSpawner: cmdSpawner },
             Object.assign(
-                env,
-                <{[k:string]: string}>process.env
+                {},
+                <{[k:string]: string}>process.env,
+                env
             ),
             ".",
             join(getBashRoot(__dirname), 'decrypt'),
@@ -47,7 +50,11 @@ function _getDependenciesDecryptMapper(gpgKey, src, dst, isFirst) {
         );
         let sdc = streamDataCollector(
             cmdRunner
-        ).then((lines) => { next(null); }).catch(next);
+        ).then((lines) => {
+            next(null);
+        }).catch((e) => {
+            next(e);
+        });
     }
 }
 
@@ -58,13 +65,12 @@ export function getDependencies(): Dependencies {
         rename,
         mkdirp,
         unlink: unlink,
-        decrypt: (gpgKey, srcs, dst, next) => {
+        decrypt: (gpgKey, srcs, dst, info, next) => {
             let acc: ((n: Callback<Error>) => void)[] = []; 
-            let tasks = srcs.reduce((acc, s) => {
-                let r = _getDependenciesDecryptMapper(gpgKey, s, dst, acc.length == 0);
-                acc.push(r);
-                return acc;
-            }, acc );
+            let tasks = reduce((acc, s) => {
+                let r = _getDependenciesDecryptMapper(gpgKey, s, dst, acc.length == 0, info);
+                return append(r, acc);
+            }, acc, srcs);
             waterfall(tasks, (e: Error|null) => { next(e) });
         }
     }
@@ -77,7 +83,7 @@ export interface Dependencies {
     rename: (oldFn: AbsoluteFilePath, newFn: AbsoluteFilePath, next: Callback<void>) => void;
     mkdirp: MkdirP;
     unlink: (path: AbsoluteFilePath, next: Callback<void>) => void;
-    decrypt: (gpgKey: GpgKey, src: AbsoluteFilePath[], dst: AbsoluteFilePath, next: Callback<void>) => void;
+    decrypt: (gpgKey: GpgKey, src: AbsoluteFilePath[], dst: AbsoluteFilePath, info: string, next: Callback<void>) => void;
 }
 
 
@@ -132,12 +138,16 @@ export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, dec
             rec.gpgKey,
             map(generateOriginalEncryptedFilename, recs),
             generateDecryptedFilename(rec),
-            (e) => { next(e, rec); }
+            rec.path,
+            (e) => {
+                next(e, rec);
+            }
         );
     }
 
-    function doRename(rec: RemotePendingCommitDownloadedRecord, next) {
+    function doCopy(rec: RemotePendingCommitDownloadedRecord, next) {
         copyFile(generateDecryptedFilename(rec), generateFinalFilename(rec), (e) => {
+            if (e) { return next(e); }
             next(e, rec);
         });
     }
@@ -182,7 +192,7 @@ export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, dec
             },
             doDecrypt,
             doMkdir,
-            doRename,
+            doCopy,
             doUtimes,
         ];
         waterfall(tasks, next);
@@ -218,7 +228,7 @@ export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, dec
     return function(a: RemotePendingCommitDownloaded, next: Callback<RemotePendingCommitDownloaded>) {
         mapLimit(a.record, 3, process, (e, r) => {
             if (e) { return next(e); }
-            mapLimit(a.record, 3, doUnlink, (e2, r2) => {
+            mapLimit(a.record, 9, doUnlink, (e2, r2) => {
                 if (e2) { return next(e2); }
                 finalize(a, next);
             });

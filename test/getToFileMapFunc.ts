@@ -132,7 +132,7 @@ test.cb('Can unencrypt local FilePart', (tst) => {
             done.unlink = done.unlink + 1;
             next(null);
         },
-        decrypt: (gpgKey: GpgKey, src: AbsoluteFilePath[], dst: AbsoluteFilePath, next: Callback<void>) => {
+        decrypt: (gpgKey: GpgKey, src: AbsoluteFilePath[], dst: AbsoluteFilePath, info: string, next: Callback<void>) => {
             tst.is(gpgKey, 'gpg-key');
             tst.is(dst, '/store/.ebak/tmp/sha.ebak.dec');
             tst.deepEqual(src, [
