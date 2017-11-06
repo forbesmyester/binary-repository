@@ -157,5 +157,34 @@ if [ $(./bin/binary-repository list-upload --quiet=$QUIET integration-test-temp-
     exit 1
 fi
 
+cp -R test/data/other-cool-projects integration-test-temp-files/ebak-data/matt_first
+
+if [ $(./bin/binary-repository list-upload --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first | wc -l) -ne "3" ]; then
+    echo "Second upload should only be three files"
+    exit 1
+fi
+
+./bin/binary-repository upload --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first
+./bin/binary-repository push --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first
+
+./bin/binary-repository fetch --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/jim_leach integration-test-temp-files/ebak-data/jim_leach
+
+ls integration-test-temp-files/ebak-config/jim_leach/remote-pending-commit/ > integration-test-temp-files/new-commit
+ls integration-test-temp-files/ebak-config/jim_leach/remote-commit/ > integration-test-temp-files/old-commit
+
+if [ $(cat integration-test-temp-files/new-commit | wc -l) -lt 1 ]; then
+    echo "Should probably have fetched remote commits"
+    exit 1
+fi
+
+
+if [ $(cat integration-test-temp-files/new-commit integration-test-temp-files/old-commit | sort | uniq | wc -l) -ne $(cat integration-test-temp-files/new-commit integration-test-temp-files/old-commit | wc -l) ]; then
+    echo "Second upload probably should not have had anything in from first"
+    exit 1
+fi
+
 echo "Tests Passed."
+
+
+
 

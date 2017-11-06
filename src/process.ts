@@ -38,6 +38,7 @@ import getFileNotBackedUpRightAfterLeftMapFunc from './getFileNotBackedUpRightAf
 import getToRemotePendingCommitInfoRightAfterLeftMapFunc from './getToRemotePendingCommitInfoRightAfterLeftMapFunc';
 import { mapObjIndexed } from 'ramda';
 import getRepositoryCommitToRemoteCommitMapFunc from './getRepositoryCommitToRemoteCommitMapFunc';
+import getNotInLeft from './getNotInLeftRightAfterLeftMapFunc';
 import * as mkdirp from 'mkdirp';
 import { S3 } from 'aws-sdk';
 
@@ -503,7 +504,10 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
         remoteType = getRemoteType(config.remote),
         globber = RootReadable.getGlobFunc(),
         repositoryCommitFiles: null|Readable<Filename> = null,
-        cmd: string = '';
+        cmd: string = '',
+        commitDir = 'commit',
+        remoteCommitDir = 'remote-commit',
+        pendingCommitDir = 'pending-commit';
 
     let barUpdater = managedMultiProgress(
             5,
@@ -548,6 +552,12 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
         throw new Error("Could not identify repository type");
     }
 
+    let existingCommitFilename = getSortedCommitFilenamePipe(configDir, [pendingCommitDir, commitDir, remoteCommitDir]);
+    let notInLeft = new RightAfterLeft(getNotInLeft({}), stdPipeOptions);
+
+    existingCommitFilename.pipe(notInLeft.left);
+    repositoryCommitFiles.pipe(notInLeft.right);
+
     let toRemoteCommit = preparePipe(new MapTransform(
         getRepositoryCommitToRemoteCommitMapFunc(
             {cmdSpawner: cmdSpawner, rename: rename, mkdirp},
@@ -559,7 +569,10 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
         { objectMode: true }
     ));
 
-    repositoryCommitFiles
+    // console.log("Must check what is already downloaded + integration test");
+    // process.exit(1);
+
+    notInLeft
         .pipe(overallBar.plus)
         .pipe(toRemoteCommit)
         .pipe(overallBar.minus)
