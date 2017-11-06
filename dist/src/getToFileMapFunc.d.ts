@@ -1,4 +1,4 @@
-import { RemotePendingCommitDownloaded, GpgKey, Callback, AbsoluteDirectoryPath, AbsoluteFilePath } from './Types';
+import { NotificationHandler, RemotePendingCommitDownloaded, GpgKey, Callback, AbsoluteDirectoryPath, AbsoluteFilePath } from './Types';
 import { MapFunc } from 'streamdash';
 export interface MkdirP {
     (path: AbsoluteDirectoryPath, next: (e: Error | null) => void): void;
@@ -6,9 +6,10 @@ export interface MkdirP {
 export declare function getDependencies(): Dependencies;
 export interface Dependencies {
     utimes: (filename: AbsoluteFilePath, atime: number, mtime: number, next: Callback<void>) => void;
+    copyFile: (src: AbsoluteFilePath, dest: AbsoluteFilePath, next: Callback<void>) => void;
     rename: (oldFn: AbsoluteFilePath, newFn: AbsoluteFilePath, next: Callback<void>) => void;
     mkdirp: MkdirP;
     unlink: (path: AbsoluteFilePath, next: Callback<void>) => void;
-    decrypt: (gpgKey: GpgKey, src: AbsoluteFilePath[], dst: AbsoluteFilePath, next: Callback<void>) => void;
+    decrypt: (gpgKey: GpgKey, src: AbsoluteFilePath[], dst: AbsoluteFilePath, info: string, next: Callback<void>) => void;
 }
-export default function getToFile({utimes, rename, mkdirp, unlink, decrypt}: Dependencies, configDir: AbsoluteDirectoryPath, rootDir: AbsoluteDirectoryPath): MapFunc<RemotePendingCommitDownloaded, RemotePendingCommitDownloaded>;
+export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, decrypt}: Dependencies, configDir: AbsoluteDirectoryPath, rootDir: AbsoluteDirectoryPath, notificationHandler?: NotificationHandler): MapFunc<RemotePendingCommitDownloaded, RemotePendingCommitDownloaded>;

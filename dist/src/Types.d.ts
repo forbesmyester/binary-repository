@@ -5,6 +5,7 @@ export interface Callback<R> {
 export interface Callback2<R> {
     (e: Error | null | undefined, r: R): void;
 }
+export declare type NotificationHandler = (id: string, status: string) => void;
 export declare enum UserErrorCode {
     BLOCKED_BY_FILE = 1,
     FILE_MODIFIED_BEFORE_LOCAL_COMMIT = 2,

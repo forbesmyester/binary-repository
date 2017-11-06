@@ -321,16 +321,16 @@ interface OverallBar {
 }
 
 
-function getProgressBarTitle(path, useStartForTitle = false) {
+function getProgressBarTitle(path, useStartForTitle = true) {
     const progressBarTitleLength = 42;
     return (path.length <= progressBarTitleLength) ?
         path :
         useStartForTitle ?
-            ('...' + path.substr(path.length - progressBarTitleLength)) :
-            (path.substr(0, progressBarTitleLength) + '...');
+            (path.substr(0, progressBarTitleLength) + '...') :
+            ('...' + path.substr(path.length - progressBarTitleLength));
 }
 
-function getOverallBar(barUpdater, quiet, useStartForTitle=false): OverallBar {
+function getOverallBar(barUpdater, quiet, useStartForTitle = true): OverallBar {
     let totalItems = 0,
         currentItem = 0,
         currentTitle = 'Overall';
@@ -352,6 +352,9 @@ function getOverallBar(barUpdater, quiet, useStartForTitle=false): OverallBar {
         (a) => {
             if (!quiet) {
                 let p = "Overall";
+                if (a && a.commitId) {
+                    p = getProgressBarTitle(a.commitId, useStartForTitle);
+                }
                 if (a && a.path && a.path.substr) {
                     p = getProgressBarTitle(a.path, useStartForTitle);
                 }
@@ -459,7 +462,7 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
                     barUpdater({
                         id: a.path,
                         current: n,
-                        params: { title: format(t, getProgressBarTitle(a.path)) }
+                        params: { title: format(t, getProgressBarTitle(a.path, false)) }
                     });
                 }
             },
@@ -637,7 +640,7 @@ export function listDownloadImpl(rootDir: AbsoluteDirectoryPath, configDir: Abso
 
     let toBackupCheckDatabaseFinal = preparePipe(new FinalDuplex(stdPipeOptions));
 
-    processedCommitStream
+    let backupCheckDatabaseFinal = processedCommitStream
         .pipe(toBackupCheckDatabaseScan)
         .pipe(toBackupCheckDatabaseFinal);
 
@@ -657,7 +660,7 @@ export function listDownloadImpl(rootDir: AbsoluteDirectoryPath, configDir: Abso
         );
 
     remotePendingCommitStream.pipe(remotePendingCommitLocalInfoStream.right);
-    processedCommitStream.pipe(remotePendingCommitLocalInfoStream.left);
+    backupCheckDatabaseFinal.pipe(remotePendingCommitLocalInfoStream.left);
 
     let toRemotePendingCommitDecider = preparePipe(
         new MapTransform(
@@ -714,7 +717,7 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
             incomplete: '-',
         },
         {
-            total: 3,
+            total: 9,
             width: 9,
             format: '[:bar] :current/:total - :title',
         }
@@ -722,27 +725,36 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
 
     let overallBar = getOverallBar(barUpdater, quiet, true);
 
-
-    function getFileSpy(t, n) {
-        return new Spy(
-            (a) => {
-                if (!quiet) {
-                    barUpdater({
-                        id: a.path,
-                        current: n,
-                        params: { title: format(t, getProgressBarTitle(a.path)) }
-                    });
-                }
-            },
-            stdPipeOptions
-        );
+    function notificationHandler(id, status) {
+        if (quiet) { return; }
+        let statuses = {
+            Analyzing: 1,
+            Downloading: 2,
+            Skipping: 3,
+            Downloaded: 4,
+            Decrypting: 5,
+            Decrypted: 6,
+            Copying: 7,
+            Copied: 8,
+            Finished: 9,
+        }
+        if (!statuses.hasOwnProperty(status)) {
+            throw new Error("notificationHandler: Could not find status '" + status + "'");
+        }
+        let d = {
+            id,
+            current: statuses[status],
+            params: { title: `${status}: ${getProgressBarTitle(id, false)}` }
+        }
+        barUpdater(d);
     }
 
     let toDownloadedParts = preparePipe(new MapTransform(
         getToDownloadedPartsMapFunc(
             getToDownloadedPartsMapFuncDependencies(remoteType),
             configDir,
-            removeProtocol(config.remote)
+            removeProtocol(config.remote),
+            notificationHandler
         ),
         stdPipeOptions
     ));
@@ -751,7 +763,8 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
         getToFileMapFunc(
             getToFileMapFuncDependencies(),
             configDir,
-            rootDir
+            rootDir,
+            notificationHandler
         ),
         stdPipeOptions
     ));
@@ -759,8 +772,8 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
     listDownloadImpl(rootDir, configDir)
         .pipe(overallBar.plus) // TODO: Make per file not commit
         .pipe(toDownloadedParts)
-        .pipe(overallBar.minus)
         .pipe(toFile)
+        .pipe(overallBar.minus)
         .pipe(preparePipe(new EndWritable()))
         .on('finish', () => {
             if (!quiet) {

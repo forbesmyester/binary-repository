@@ -44,6 +44,7 @@ test.cb('Will skip if not proceed', (tst) => {
 
     let deps = {
         utimes: e,
+        copyFile: e,
         unlink: e,
         decrypt: e,
         rename: (s, d, n) => {
@@ -78,6 +79,7 @@ test.cb('Can unencrypt local FilePart', (tst) => {
 
     let done = {
         rename: 0,
+        copyFile: 0,
         decrypt: 0,
         mkdirp: 0,
         unlink: 0,
@@ -92,20 +94,24 @@ test.cb('Can unencrypt local FilePart', (tst) => {
             tst.is(mtime, 1500742968);
             next(null);
         },
+        copyFile: (oldFn: AbsoluteFilePath, newFn: AbsoluteFilePath, next: Callback<void>) => {
+            let expected = {
+                oldFn: '/store/.ebak/tmp/sha.ebak.dec',
+                newFn: '/store/Docs/a.txt',
+            };
+            done.copyFile = done.copyFile + 1;
+            tst.is(oldFn, expected.oldFn);
+            tst.is(newFn, expected.newFn);
+            next(null);
+        },
         rename: (oldFn: AbsoluteFilePath, newFn: AbsoluteFilePath, next: Callback<void>) => {
             let expected = {
-                oldFn: [
-                    '/store/.ebak/tmp/sha.ebak.dec',
-                    '/store/.ebak/remote-pending-commit/c-Xb-commit--gpg--key-notme.commit'
-                ],
-                newFn: [
-                    '/store/Docs/a.txt',
-                    '/store/.ebak/remote-commit/c-Xb-commit--gpg--key-notme.commit'
-                ]
+                oldFn: '/store/.ebak/remote-pending-commit/c-Xb-commit--gpg--key-notme.commit',
+                newFn: '/store/.ebak/remote-commit/c-Xb-commit--gpg--key-notme.commit'
             };
-            tst.is(oldFn, expected.oldFn[done.rename]);
-            tst.is(newFn, expected.newFn[done.rename]);
             done.rename = done.rename + 1;
+            tst.is(oldFn, expected.oldFn);
+            tst.is(newFn, expected.newFn);
             next(null);
         },
         mkdirp: (p, n) => {
@@ -120,13 +126,14 @@ test.cb('Can unencrypt local FilePart', (tst) => {
         unlink: (path: AbsoluteFilePath, next: Callback<void>) => {
             let expected = [
                 '/store/.ebak/remote-encrypted-filepart/f-sha-1-1KB-gpg--key.ebak',
-                '/store/.ebak/remote-encrypted-filepart/f-sha-2-1KB-gpg--key.ebak'
+                '/store/.ebak/remote-encrypted-filepart/f-sha-2-1KB-gpg--key.ebak',
+                '/store/.ebak/tmp/sha.ebak.dec'
             ];
             tst.deepEqual(path, expected[done.unlink]);
             done.unlink = done.unlink + 1;
             next(null);
         },
-        decrypt: (gpgKey: GpgKey, src: AbsoluteFilePath[], dst: AbsoluteFilePath, next: Callback<void>) => {
+        decrypt: (gpgKey: GpgKey, src: AbsoluteFilePath[], dst: AbsoluteFilePath, info: string, next: Callback<void>) => {
             tst.is(gpgKey, 'gpg-key');
             tst.is(dst, '/store/.ebak/tmp/sha.ebak.dec');
             tst.deepEqual(src, [
@@ -144,8 +151,8 @@ test.cb('Can unencrypt local FilePart', (tst) => {
         tst.is(done.utimes, 1);
         tst.is(done.decrypt, 1);
         tst.is(done.mkdirp, 2);
-        tst.is(done.rename, 2);
-        tst.is(done.unlink, 2);
+        tst.is(done.copyFile, 1);
+        tst.is(done.unlink, 3);
         tst.is(null, e);
         tst.deepEqual(r, getInput('Docs/a.txt', [2, 2]));
         tst.end();

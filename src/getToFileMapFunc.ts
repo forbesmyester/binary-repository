@@ -1,12 +1,12 @@
-import { RemotePendingCommitDownloadedRecord, RemotePendingCommitDownloaded, GpgKey, Callback, AbsoluteDirectoryPath, AbsoluteFilePath } from './Types';
+import { NotificationHandler, RemotePendingCommitDownloadedRecord, RemotePendingCommitDownloaded, GpgKey, Callback, AbsoluteDirectoryPath, AbsoluteFilePath } from './Types';
 import Client from './Client';
 import { MapFunc } from 'streamdash';
 import { streamDataCollector } from 'streamdash';
 import { dirname, join } from 'path';
 import * as mkdirp from 'mkdirp';
-import { utimes, rename, unlink } from 'fs';
+import { utimes, rename, copyFile, unlink } from 'fs';
 import { parallelLimit, mapLimit, waterfall } from 'async';
-import { assoc, map, range } from 'ramda';
+import { append, reduce, assoc, map, range } from 'ramda';
 import { ExitStatus, CmdOutput, CmdSpawner, CmdRunner } from './CmdRunner';
 
 
@@ -19,47 +19,58 @@ interface DecryptionEnvironment {
     OPT_GPG_KEY: GpgKey;
     OPT_DST: AbsoluteFilePath;
     OPT_IS_FIRST: string; // "1" or "0"
+    OPT_INFO: string;
 }
 
-function _getDependenciesDecryptMapper(gpgKey, src, dst, isFirst) {
+function getBashRoot(d: AbsoluteFilePath): AbsoluteDirectoryPath {
+    return join(dirname(dirname(d)), 'bash');
+}
+
+function _getDependenciesDecryptMapper(gpgKey, src, dst, isFirst, info) {
     return function(next) {
         let cmdSpawner: CmdSpawner = CmdRunner.getCmdSpawner();
         let env: DecryptionEnvironment = {
             OPT_SRC: src,
             OPT_DST: dst,
             OPT_GPG_KEY: gpgKey,
-            OPT_IS_FIRST: isFirst ? "1": "0"
+            OPT_IS_FIRST: isFirst ? "1": "0",
+            OPT_INFO: info
         };
         let cmdRunner = new CmdRunner(
             { cmdSpawner: cmdSpawner },
             Object.assign(
-                env,
-                process.env
+                {},
+                <{[k:string]: string}>process.env,
+                env
             ),
             ".",
-            'bash/decrypt',
+            join(getBashRoot(__dirname), 'decrypt'),
             [],
             {}
         );
         let sdc = streamDataCollector(
             cmdRunner
-        ).then((lines) => { next(null); }).catch(next);
+        ).then((lines) => {
+            next(null);
+        }).catch((e) => {
+            next(e);
+        });
     }
 }
 
 export function getDependencies(): Dependencies {
     return {
         utimes,
+        copyFile,
         rename,
         mkdirp,
         unlink: unlink,
-        decrypt: (gpgKey, srcs, dst, next) => {
+        decrypt: (gpgKey, srcs, dst, info, next) => {
             let acc: ((n: Callback<Error>) => void)[] = []; 
-            let tasks = srcs.reduce((acc, s) => {
-                let r = _getDependenciesDecryptMapper(gpgKey, s, dst, acc.length == 0);
-                acc.push(r);
-                return acc;
-            }, acc );
+            let tasks = reduce((acc, s) => {
+                let r = _getDependenciesDecryptMapper(gpgKey, s, dst, acc.length == 0, info);
+                return append(r, acc);
+            }, acc, srcs);
             waterfall(tasks, (e: Error|null) => { next(e) });
         }
     }
@@ -68,10 +79,11 @@ export function getDependencies(): Dependencies {
 
 export interface Dependencies {
     utimes: (filename: AbsoluteFilePath, atime: number, mtime: number, next: Callback<void>) => void;
+    copyFile: (src: AbsoluteFilePath, dest: AbsoluteFilePath, next: Callback<void>) => void;
     rename: (oldFn: AbsoluteFilePath, newFn: AbsoluteFilePath, next: Callback<void>) => void;
     mkdirp: MkdirP;
     unlink: (path: AbsoluteFilePath, next: Callback<void>) => void;
-    decrypt: (gpgKey: GpgKey, src: AbsoluteFilePath[], dst: AbsoluteFilePath, next: Callback<void>) => void;
+    decrypt: (gpgKey: GpgKey, src: AbsoluteFilePath[], dst: AbsoluteFilePath, info: string, next: Callback<void>) => void;
 }
 
 
@@ -82,7 +94,13 @@ let myUnlink = (realUnlink, f, next) => {
     });
 };
 
-export default function getToFile({utimes, rename, mkdirp, unlink, decrypt}: Dependencies, configDir: AbsoluteDirectoryPath, rootDir: AbsoluteDirectoryPath): MapFunc<RemotePendingCommitDownloaded, RemotePendingCommitDownloaded> {
+export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, decrypt}: Dependencies, configDir: AbsoluteDirectoryPath, rootDir: AbsoluteDirectoryPath, notificationHandler?: NotificationHandler): MapFunc<RemotePendingCommitDownloaded, RemotePendingCommitDownloaded> {
+
+    function notify(id, status) {
+        if (notificationHandler) {
+            notificationHandler(id, status);
+        }
+    }
 
     function generateDecryptedFilename(rec: RemotePendingCommitDownloadedRecord) {
         return join(configDir, 'tmp', rec.sha256 + '.ebak.dec');
@@ -111,7 +129,9 @@ export default function getToFile({utimes, rename, mkdirp, unlink, decrypt}: Dep
         function convert(d: Date) { return Math.floor(d.getTime() / 1000); }
         let mtime = convert(rec.modifiedDate),
             atime = convert(rec.modifiedDate);
+        notify(rec.path, 'Copying');
         utimes(generateFinalFilename(rec), atime, mtime, (e) => {
+            notify(rec.path, 'Copied');
             next(e, rec);
         });
     }
@@ -122,16 +142,23 @@ export default function getToFile({utimes, rename, mkdirp, unlink, decrypt}: Dep
             return assoc('part', [part0, rec.part[1]], rec);
         }, range(1, rec.part[1] + 1));
 
+        notify(rec.path, 'Decrypting');
         decrypt(
             rec.gpgKey,
             map(generateOriginalEncryptedFilename, recs),
             generateDecryptedFilename(rec),
-            (e) => { next(e, rec); }
+            rec.path,
+            (e) => {
+                if (e) { return next(e); }
+                notify(rec.path, 'Decrypted');
+                next(e, rec);
+            }
         );
     }
 
-    function doRename(rec: RemotePendingCommitDownloadedRecord, next) {
-        rename(generateDecryptedFilename(rec), generateFinalFilename(rec), (e) => {
+    function doCopy(rec: RemotePendingCommitDownloadedRecord, next) {
+        copyFile(generateDecryptedFilename(rec), generateFinalFilename(rec), (e) => {
+            if (e) { return next(e); }
             next(e, rec);
         });
     }
@@ -144,18 +171,28 @@ export default function getToFile({utimes, rename, mkdirp, unlink, decrypt}: Dep
 
     function doUnlinkOne(rec: RemotePendingCommitDownloadedRecord, next) {
         myUnlink(unlink, generateOriginalEncryptedFilename(rec), (e) => {
+            notify(rec.path, 'Finished');
             next(e, rec);
         });
     }
 
-    function doUnlink(rec: RemotePendingCommitDownloadedRecord, next) {
+    function doUnlink(rec: RemotePendingCommitDownloadedRecord, next: Callback<RemotePendingCommitDownloadedRecord>) {
 
-        let recs = map(part0 => {
-            return assoc('part', [part0, rec.part[1]], rec);
-        }, range(1, rec.part[1] + 1));
+        if (!rec.proceed) {
+            return next(null, rec);
+        }
 
-        mapLimit(recs, 10, doUnlinkOne, (e) => {
-            next(e, rec);
+        let recs = map(
+            part0 => {
+                return assoc('part', [part0, rec.part[1]], rec);
+            },
+            range(1, rec.part[1] + 1)
+        );
+
+        mapLimit(recs, 10, doUnlinkOne, (e: Error|null) => {
+            myUnlink(unlink, generateDecryptedFilename(rec), (e) => {
+                next(e, rec);
+            });
         });
     }
 
@@ -169,9 +206,8 @@ export default function getToFile({utimes, rename, mkdirp, unlink, decrypt}: Dep
             },
             doDecrypt,
             doMkdir,
-            doRename,
+            doCopy,
             doUtimes,
-            doUnlink
         ];
         waterfall(tasks, next);
     }
@@ -206,7 +242,10 @@ export default function getToFile({utimes, rename, mkdirp, unlink, decrypt}: Dep
     return function(a: RemotePendingCommitDownloaded, next: Callback<RemotePendingCommitDownloaded>) {
         mapLimit(a.record, 3, process, (e, r) => {
             if (e) { return next(e); }
-            finalize(a, next);
+            mapLimit(a.record, 3, doUnlink, (e2, r2) => {
+                if (e2) { return next(e2); }
+                finalize(a, next);
+            });
         });
     };
 }

@@ -61,7 +61,7 @@ export class CmdRunner extends Readable<CmdOutput> {
                 this.emit(
                     'error',
                     new ExitStatusError(
-                        `Command exited with exit code ${exitStatus}`,
+                        `Command ${cmd} with environment ${JSON.stringify(env)} exited with exit code ${exitStatus}`,
                         exitStatus,
                         this.outForError
                     )

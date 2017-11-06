@@ -6,7 +6,7 @@ test('Can do basic test', (tst) => {
 
     let cmdRunner = new CmdRunner(
         { cmdSpawner: CmdRunner.getCmdSpawner({ NAME: "Matt"}) },
-        process.env,
+        <{[k: string]: string}>process.env,
         "./test/data",
         "./hello_command",
         ["Hello"],
@@ -28,7 +28,7 @@ test.cb('Can do fail test', (tst) => {
 
     let cmdRunner = new CmdRunner(
         { cmdSpawner: CmdRunner.getCmdSpawner() },
-        process.env,
+        <{[k: string]: string}>process.env,
         "./test/data",
         "./error_command",
         [],

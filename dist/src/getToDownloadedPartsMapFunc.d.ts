@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { Stats } from 'fs';
 import { MapFunc } from 'streamdash';
-import { GpgKey, RemoteType, S3Location, RemotePendingCommitStatRecordDecided, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, ByteCount } from './Types';
+import { NotificationHandler, GpgKey, RemoteType, S3Location, RemotePendingCommitStatRecordDecided, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, ByteCount } from './Types';
 export interface MkdirP {
     (path: AbsoluteDirectoryPath, next: (e: Error | null) => void): void;
 }
@@ -14,4 +14,4 @@ export interface Dependencies {
     constructFilepartLocalLocation: (configDir: AbsoluteDirectoryPath, gpgKey: GpgKey, rec: RemotePendingCommitStatRecordDecided) => AbsoluteFilePath;
 }
 export declare function getDependencies(mode: RemoteType): Dependencies;
-export default function getToDownloadedParts({constructFilepartLocalLocation, constructFilepartS3Location, mkdirp, stat, downloadSize, download}: Dependencies, configDir: AbsoluteDirectoryPath, s3Bucket: S3BucketName): MapFunc<RemotePendingCommitStat, RemotePendingCommitStat>;
+export default function getToDownloadedParts({constructFilepartLocalLocation, constructFilepartS3Location, mkdirp, stat, downloadSize, download}: Dependencies, configDir: AbsoluteDirectoryPath, s3Bucket: S3BucketName, notificationHandler?: NotificationHandler): MapFunc<RemotePendingCommitStat, RemotePendingCommitStat>;
