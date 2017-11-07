@@ -36,7 +36,7 @@ import { stat } from 'fs';
 import getFileNotBackedUpRightAfterLeftMapFunc from './getFileNotBackedUpRightAfterLeftMapFunc';
 // import getRemotePendingCommitToRemotePendingCommitLocalInfoRightAfterLeftMapFunc from './getRemotePendingCommitToRemotePendingCommitLocalInfoRightAfterLeftMapFunc';
 import getToRemotePendingCommitInfoRightAfterLeftMapFunc from './getToRemotePendingCommitInfoRightAfterLeftMapFunc';
-import { mapObjIndexed } from 'ramda';
+import { mapObjIndexed, join as joinArray, sortBy, keys } from 'ramda';
 import getRepositoryCommitToRemoteCommitMapFunc from './getRepositoryCommitToRemoteCommitMapFunc';
 import getNotInLeft from './getNotInLeftRightAfterLeftMapFunc';
 import * as mkdirp from 'mkdirp';
@@ -590,6 +590,29 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
 
 }
 
+function getCommitStream(configDir: AbsoluteDirectoryPath, subDirs: string[]) {
+
+    let stdPipeOptions = { objectMode: true, highWaterMark: 1};
+    let sortedPendingCommitFilenameStream = getSortedCommitFilenamePipe(
+        configDir,
+        subDirs
+    );
+
+    let toCommitStream = preparePipe(
+        new MapTransform(
+            getLocalCommitFilenameToCommitMapFunc(
+                { readFile },
+                configDir
+            ),
+            stdPipeOptions
+        )
+    );
+
+    return sortedPendingCommitFilenameStream
+        .pipe(toCommitStream);
+}
+
+
 export function listDownloadImpl(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
     let stdPipeOptions = { objectMode: true, highWaterMark: 1};
     let config: ConfigFile = readConfig(configDir);
@@ -597,39 +620,15 @@ export function listDownloadImpl(rootDir: AbsoluteDirectoryPath, configDir: Abso
     let remoteType = getRemoteType(config.remote);
 
 
-    function getCommitStream(configDir: AbsoluteDirectoryPath, subDirs: string[], onlyFirst: boolean) {
-
-
-        let sortedPendingCommitFilenameStream = getSortedCommitFilenamePipe(
-            configDir,
-            subDirs
-        );
-
-        let toCommitStream = preparePipe(
-            new MapTransform(
-                getLocalCommitFilenameToCommitMapFunc(
-                    { readFile },
-                    configDir
-                ),
-                stdPipeOptions
-            )
-        );
-
-        return sortedPendingCommitFilenameStream
-            .pipe(toCommitStream);
-    }
-
 
     let remotePendingCommitStream = getCommitStream(
         configDir,
         ['remote-pending-commit'],
-        false
     );
 
     let processedCommitStream = getCommitStream(
             configDir,
             ['commit', 'remote-commit'],
-            false
         );
 
     let toBackupCheckDatabaseScan = preparePipe(new ScanTransform(
@@ -674,8 +673,34 @@ export function listDownloadImpl(rootDir: AbsoluteDirectoryPath, configDir: Abso
 
 }
 
+export function listExisting(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
+
+    let stdPipeOptions = { objectMode: true, highWaterMark: 1};
+    let commitStream = getCommitStream(
+        configDir,
+        ['commit', 'remote-commit']
+    );
+    let toBackupCheckDatabaseScan = preparePipe(new ScanTransform(
+        getCommitToBackupCheckDatabaseScanFunc({}),
+        {},
+        stdPipeOptions
+    ));
+
+    commitStream
+        .pipe(toBackupCheckDatabaseScan)
+        .pipe(new FinalDuplex(stdPipeOptions))
+        .pipe(new ConsoleWritable(
+            { out: (n, o) => {
+                let r = joinArray("\n", sortBy(a => a, keys(o)));
+                console.log(r);
+            } },
+            "Error: "
+        ));
+}
+
 export function listDownload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
 
+    let stdPipeOptions = { objectMode: true, highWaterMark: 1};
 
     function toFileListScanFunc(acc: string[], a: RemotePendingCommitStatDecided, next): void {
         let cPaths = a.record.filter(rec => { return rec.proceed }).map(rec => rec.path);
@@ -691,7 +716,7 @@ export function listDownload(rootDir: AbsoluteDirectoryPath, configDir: Absolute
 
     listDownloadImpl(rootDir, configDir)
         .pipe(viewTransform)
-        .pipe(new FinalDuplex({objectMode: true}))
+        .pipe(new FinalDuplex(stdPipeOptions))
         .pipe(new FlattenTransform({objectMode: true}))
         .pipe(new ConsoleWritable(
             { out: (n, o) => { console.log(`${o}`); }},
@@ -782,5 +807,4 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
         });
 
 }
-
 

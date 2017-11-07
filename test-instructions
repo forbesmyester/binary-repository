@@ -79,6 +79,13 @@ fi
 
 ./bin/binary-repository push --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first
 
+./bin/binary-repository list-existing --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first > integration-test-temp-files/existing
+
+if [ $(diff integration-test-temp-files/the_files integration-test-temp-files/existing | wc -l) -ne 0 ]; then
+    echo "Items existing should be same as files"
+    exit 1
+fi
+
 if [ $(find integration-test-temp-files/ebak-config/matt_first/pending-commit -type f | wc -l) -ne 0 ]; then
     echo "Was expecting zero matt_first pending-commit"
     exit 1
@@ -88,6 +95,7 @@ if [ $(find integration-test-temp-files/ebak-config/matt_first/commit -type f | 
     echo "Was expecting one matt_first commit"
     exit 1
 fi
+
 
 if [ $(echo "$REMOTE" | grep '^file' | wc -c) -gt 0 ]; then
     if [ $(gpg --batch --list-packets integration-test-temp-files/ebak-repo/c-X* 2>&1 | grep '^ \+"' | sed 's/ \+"//' | sed 's/"$//') != "$GPGKEY_COMMIT" ]; then
@@ -166,7 +174,6 @@ fi
 
 ./bin/binary-repository upload --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first
 ./bin/binary-repository push --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first
-
 ./bin/binary-repository fetch --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/jim_leach integration-test-temp-files/ebak-data/jim_leach
 
 ls integration-test-temp-files/ebak-config/jim_leach/remote-pending-commit/ > integration-test-temp-files/new-commit
