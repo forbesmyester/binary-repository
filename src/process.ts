@@ -346,7 +346,7 @@ function getOverallBar(barUpdater, quiet, useStartForTitle = true): OverallBar {
                 });
             }
         },
-        { objectMode: true }
+        { highWaterMark: 999999, objectMode: true }
     );
     let minus = new Spy(
         (a) => {
@@ -367,7 +367,7 @@ function getOverallBar(barUpdater, quiet, useStartForTitle = true): OverallBar {
                 });
             }
         },
-        { objectMode: true }
+        { highWaterMark: 1, objectMode: true }
     );
 
     return { minus, plus };
