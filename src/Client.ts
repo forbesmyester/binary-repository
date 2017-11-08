@@ -35,10 +35,10 @@ let tlIdEncoderDecoder = getTlIdEncoderDecoder(BASE_TLID_TIMESTAMP, BASE_TLID_UN
 
 export default {
     constructFilepartFilename,
-    constructFilepartLocalLocation: (configDir: AbsoluteDirectoryPath, gpgKey: GpgKey, rec: RemotePendingCommitStatRecordDecided): AbsoluteFilePath => {
+    constructFilepartLocalLocation: (configDir: AbsoluteDirectoryPath, gpgKey: GpgKey, commitId: CommitId, rec: RemotePendingCommitStatRecordDecided): AbsoluteFilePath => {
         return join(
             join(configDir, 'remote-encrypted-filepart'),
-            constructFilepartFilename(
+            `c-${commitId}-` + constructFilepartFilename(
                 rec.sha256,
                 rec.part,
                 rec.filePartByteCountThreshold,

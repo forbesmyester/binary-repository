@@ -1,7 +1,7 @@
 import { RemotePendingCommitStatRecordDecided, Callback } from './Types';
 declare const _default: {
     constructFilepartFilename: (sha256: string, filePartIndex: [number, number], filePartByteCountThreshold: number, gpgKey: string) => string;
-    constructFilepartLocalLocation: (configDir: string, gpgKey: string, rec: RemotePendingCommitStatRecordDecided) => string;
+    constructFilepartLocalLocation: (configDir: string, gpgKey: string, commitId: string, rec: RemotePendingCommitStatRecordDecided) => string;
     infoFromCommitFilename(filename: string): {
         createdAt: Date;
         commitId: string;

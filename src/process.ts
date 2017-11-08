@@ -795,7 +795,7 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
     ));
 
     listDownloadImpl(rootDir, configDir)
-        .pipe(overallBar.plus) // TODO: Make per file not commit
+        .pipe(overallBar.plus)
         .pipe(toDownloadedParts)
         .pipe(toFile)
         .pipe(overallBar.minus)

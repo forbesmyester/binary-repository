@@ -1,4 +1,4 @@
-import { NotificationHandler, RemotePendingCommitDownloadedRecord, RemotePendingCommitDownloaded, GpgKey, Callback, AbsoluteDirectoryPath, AbsoluteFilePath } from './Types';
+import { CommitId, NotificationHandler, RemotePendingCommitDownloadedRecord, RemotePendingCommitDownloaded, GpgKey, Callback, AbsoluteDirectoryPath, AbsoluteFilePath } from './Types';
 import Client from './Client';
 import { MapFunc } from 'streamdash';
 import { streamDataCollector } from 'streamdash';
@@ -106,16 +106,12 @@ export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, dec
         return join(configDir, 'tmp', rec.sha256 + '.ebak.dec');
     }
 
-    function generateOriginalEncryptedFilename(rec: RemotePendingCommitDownloadedRecord) {
-        return join(
+    function generateOriginalEncryptedFilename(commitId: CommitId, rec: RemotePendingCommitDownloadedRecord) {
+        return Client.constructFilepartLocalLocation(
             configDir,
-            'remote-encrypted-filepart',
-            Client.constructFilepartFilename(
-                rec.sha256,
-                rec.part,
-                rec.filePartByteCountThreshold,
-                rec.gpgKey
-            )
+            rec.gpgKey,
+            commitId,
+            rec
         );
     };
 
@@ -136,7 +132,7 @@ export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, dec
         });
     }
 
-    function doDecrypt(rec: RemotePendingCommitDownloadedRecord, next) {
+    function doDecrypt(commitId: CommitId, rec: RemotePendingCommitDownloadedRecord, next) {
 
         let recs = map(part0 => {
             return assoc('part', [part0, rec.part[1]], rec);
@@ -145,7 +141,13 @@ export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, dec
         notify(rec.path, 'Decrypting');
         decrypt(
             rec.gpgKey,
-            map(generateOriginalEncryptedFilename, recs),
+            map(
+                generateOriginalEncryptedFilename.bind(
+                    null,
+                    commitId
+                ),
+                recs
+            ),
             generateDecryptedFilename(rec),
             rec.path,
             (e) => {
@@ -169,14 +171,14 @@ export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, dec
         });
     }
 
-    function doUnlinkOne(rec: RemotePendingCommitDownloadedRecord, next) {
-        myUnlink(unlink, generateOriginalEncryptedFilename(rec), (e) => {
-            notify(rec.path, 'Finished');
-            next(e, rec);
-        });
-    }
+    function doUnlink(commitId: CommitId, rec: RemotePendingCommitDownloadedRecord, next: Callback<RemotePendingCommitDownloadedRecord>) {
 
-    function doUnlink(rec: RemotePendingCommitDownloadedRecord, next: Callback<RemotePendingCommitDownloadedRecord>) {
+        function doUnlinkOne(r: RemotePendingCommitDownloadedRecord, next) {
+            myUnlink(unlink, generateOriginalEncryptedFilename(commitId, r), (e) => {
+                notify(r.path, 'Finished');
+                next(e, r);
+            });
+        }
 
         if (!rec.proceed) {
             return next(null, rec);
@@ -196,7 +198,7 @@ export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, dec
         });
     }
 
-    function process(rec: RemotePendingCommitDownloadedRecord, next: Callback<RemotePendingCommitDownloadedRecord>) {
+    function process(commitId: CommitId, rec: RemotePendingCommitDownloadedRecord, next: Callback<RemotePendingCommitDownloadedRecord>) {
         let tasks = [
             (innerNext) => {
                 if (!rec.proceed) {
@@ -204,7 +206,7 @@ export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, dec
                 }
                 innerNext(null, rec);
             },
-            doDecrypt,
+            doDecrypt.bind(null, commitId),
             doMkdir,
             doCopy,
             doUtimes,
@@ -240,12 +242,23 @@ export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, dec
     }
 
     return function(a: RemotePendingCommitDownloaded, next: Callback<RemotePendingCommitDownloaded>) {
-        mapLimit(a.record, 3, process, (e, r) => {
-            if (e) { return next(e); }
-            mapLimit(a.record, 3, doUnlink, (e2, r2) => {
-                if (e2) { return next(e2); }
-                finalize(a, next);
-            });
-        });
+        let du = (rec, cb: Callback<RemotePendingCommitDownloadedRecord>) => {
+            doUnlink(a.commitId, rec, cb);
+        };
+        let p = (rec, cb: Callback<RemotePendingCommitDownloadedRecord>) => {
+            process(a.commitId, rec, cb);
+        };
+        mapLimit(
+            a.record,
+            3,
+            p,
+            (e, r) => {
+                if (e) { return next(e); }
+                mapLimit(a.record, 3, du, (e2, r2) => {
+                    if (e2) { return next(e2); }
+                    finalize(a, next);
+                });
+            }
+        );
     };
 }

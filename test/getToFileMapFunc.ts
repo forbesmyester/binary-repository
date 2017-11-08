@@ -12,7 +12,7 @@ function getInput(path: RelativeFilePath, part: FilePartIndex, proceed = true): 
         gpgKey: 'commit-gpg-key',
         clientId: 'notme',
         createdAt: d,
-        commitId: 'Xb',
+        commitId: 'cid',
         record: [{
             gpgKey: 'gpg-key',
             sha256: 'sha',
@@ -48,8 +48,8 @@ test.cb('Will skip if not proceed', (tst) => {
         unlink: e,
         decrypt: e,
         rename: (s, d, n) => {
-            tst.is(s, '/store/.ebak/remote-pending-commit/c-Xb-commit--gpg--key-notme.commit');
-            tst.is(d, '/store/.ebak/remote-commit/c-Xb-commit--gpg--key-notme.commit');
+            tst.is(s, '/store/.ebak/remote-pending-commit/c-cid-commit--gpg--key-notme.commit');
+            tst.is(d, '/store/.ebak/remote-commit/c-cid-commit--gpg--key-notme.commit');
             done.rename = done.rename + 1;
             n(null);
         },
@@ -106,8 +106,8 @@ test.cb('Can unencrypt local FilePart', (tst) => {
         },
         rename: (oldFn: AbsoluteFilePath, newFn: AbsoluteFilePath, next: Callback<void>) => {
             let expected = {
-                oldFn: '/store/.ebak/remote-pending-commit/c-Xb-commit--gpg--key-notme.commit',
-                newFn: '/store/.ebak/remote-commit/c-Xb-commit--gpg--key-notme.commit'
+                oldFn: '/store/.ebak/remote-pending-commit/c-cid-commit--gpg--key-notme.commit',
+                newFn: '/store/.ebak/remote-commit/c-cid-commit--gpg--key-notme.commit'
             };
             done.rename = done.rename + 1;
             tst.is(oldFn, expected.oldFn);
@@ -125,8 +125,8 @@ test.cb('Can unencrypt local FilePart', (tst) => {
         },
         unlink: (path: AbsoluteFilePath, next: Callback<void>) => {
             let expected = [
-                '/store/.ebak/remote-encrypted-filepart/f-sha-1-1KB-gpg--key.ebak',
-                '/store/.ebak/remote-encrypted-filepart/f-sha-2-1KB-gpg--key.ebak',
+                '/store/.ebak/remote-encrypted-filepart/c-cid-f-sha-1-1KB-gpg--key.ebak',
+                '/store/.ebak/remote-encrypted-filepart/c-cid-f-sha-2-1KB-gpg--key.ebak',
                 '/store/.ebak/tmp/sha.ebak.dec'
             ];
             tst.deepEqual(path, expected[done.unlink]);
@@ -137,8 +137,8 @@ test.cb('Can unencrypt local FilePart', (tst) => {
             tst.is(gpgKey, 'gpg-key');
             tst.is(dst, '/store/.ebak/tmp/sha.ebak.dec');
             tst.deepEqual(src, [
-                '/store/.ebak/remote-encrypted-filepart/f-sha-1-1KB-gpg--key.ebak',
-                '/store/.ebak/remote-encrypted-filepart/f-sha-2-1KB-gpg--key.ebak'
+                '/store/.ebak/remote-encrypted-filepart/c-cid-f-sha-1-1KB-gpg--key.ebak',
+                '/store/.ebak/remote-encrypted-filepart/c-cid-f-sha-2-1KB-gpg--key.ebak'
             ]);
             done['decrypt'] = done['decrypt'] + 1;
             next(null);

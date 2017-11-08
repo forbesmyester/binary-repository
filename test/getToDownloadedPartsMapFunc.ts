@@ -14,7 +14,7 @@ function getInput(path: RelativeFilePath, part: FilePartIndex, proceed: boolean 
         gpgKey: 'gg',
         clientId: 'notme',
         createdAt: d,
-        commitId: 'b',
+        commitId: 'cid',
         record: [{
             gpgKey: 'my-gpg-key',
             filePartByteCountThreshold: 1024,
@@ -86,7 +86,7 @@ test.cb("Can do everything inc. download", (tst) => {
                 f,
                 ['s3://mister-bucket', 'f-sha-1-1KB-my--gpg--key.ebak']
             );
-            tst.deepEqual(d, '/store/.ebak/remote-encrypted-filepart/f-sha-1-1KB-my--gpg--key.ebak');
+            tst.deepEqual(d, '/store/.ebak/remote-encrypted-filepart/c-cid-f-sha-1-1KB-my--gpg--key.ebak');
             downloadDone = downloadDone + 1;
             next(null);
         },

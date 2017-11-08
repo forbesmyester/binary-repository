@@ -2,11 +2,11 @@ import myStat from './myStats';
 import Client from './Client';
 import { rename, createReadStream, createWriteStream, Stats, stat as realStat} from 'fs';
 import { mapLimit } from 'async';
-import { join } from 'path';
+import { dirname, join } from 'path';
 import { MapFunc } from 'streamdash';
 import throat = require('throat');
 import { flatten, pipe, range, assoc, dissoc, map } from 'ramda';
-import { NotificationHandler, GpgKey, RemoteType, FilePartIndex, S3Object, S3Location, RemotePendingCommitStatRecordDecided, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, ByteCount } from './Types';
+import { CommitId, NotificationHandler, GpgKey, RemoteType, FilePartIndex, S3Object, S3Location, RemotePendingCommitStatRecordDecided, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, ByteCount } from './Types';
 import * as mkdirp from 'mkdirp';
 import RepositoryLocalfiles from './repository/RepositoryLocalfiles';
 import RepositoryS3 from './repository/RepositoryS3';
@@ -21,7 +21,7 @@ export interface Dependencies {
     downloadSize: (loc: S3Location, next: Callback<ByteCount>) => void;
     mkdirp: MkdirP;
     constructFilepartS3Location: (s3Bucket: S3BucketName, gpgKey: GpgKey, rec: RemotePendingCommitStatRecordDecided) => S3Location;
-    constructFilepartLocalLocation: (configDir: AbsoluteDirectoryPath, gpgKey: GpgKey, rec: RemotePendingCommitStatRecordDecided) => AbsoluteFilePath;
+    constructFilepartLocalLocation: (configDir: AbsoluteDirectoryPath, gpgKey: GpgKey, commitId: CommitId, rec: RemotePendingCommitStatRecordDecided) => AbsoluteFilePath;
 }
 
 export function getDependencies(mode: RemoteType): Dependencies {
@@ -82,22 +82,28 @@ export default function getToDownloadedParts({ constructFilepartLocalLocation, c
     }
 
 
-    function doDownloaded(a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
+    function doDownloaded(commitId: CommitId, a: RemotePendingCommitStatRecordDecided): Promise<RemotePendingCommitStatRecordDecided> {
         // TODO: Yeh Yeh, it's a Christmas tree... do something about it!
         if (!a.proceed) {
             notify(a.path, 'Skipping');
             return Promise.resolve(a);
         }
         notify(a.path, 'Downloading');
+        let finalFilename = constructFilepartLocalLocation(
+            configDir,
+            a.gpgKey,
+            commitId,
+            a
+        );
         return new Promise((resolve, reject) => {
             mkdirp(tmpDir, (e) => {
                 if (e) { return reject(e); }
-                mkdirp(filepartDir, (e) => {
+                mkdirp(dirname(finalFilename), (e) => {
                     if (e) { return reject(e); }
                     download(
                         tmpDir,
                         constructFilepartS3Location(s3Bucket, a.gpgKey, a),
-                        constructFilepartLocalLocation(configDir, a.gpgKey, a),
+                        finalFilename,
                         (e, r) => {
                             if (e) { return reject(e); }
                             notify(a.path, 'Downloaded');
@@ -156,22 +162,22 @@ export default function getToDownloadedParts({ constructFilepartLocalLocation, c
         };
     }
 
-    function process(a: RemotePendingCommitStatRecordDecided, next: Callback<RemotePendingCommitStatRecordDecided>) {
+    function process(commitId: CommitId, a: RemotePendingCommitStatRecordDecided, next: Callback<RemotePendingCommitStatRecordDecided>) {
         let max = a.part[1];
         spawnPartsIfLast(a)
             .then(multi(checkDownloaded.bind(null)))
-            .then(multi(doDownloaded.bind(null)))
+            .then(multi(doDownloaded.bind(null, commitId)))
             .then((aa: RemotePendingCommitStatRecordDecided[]) => {
                 next(null, a);
             })
             .catch((e) => { next(e); });
     }
 
-    return function(input, next) {
+    return function(input: RemotePendingCommitStat, next) {
         mapLimit(
             input.record,
             2,
-            process,
+            process.bind(null, input.commitId),
             (e: Error|null) => { next(e, input); }
         );
     };
