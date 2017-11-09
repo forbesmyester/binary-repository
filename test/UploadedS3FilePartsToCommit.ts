@@ -1,5 +1,4 @@
 import test from 'ava';
-import { inspect } from 'util';
 import { Operation, FilePartIndex, Callback, Commit, UploadedS3FilePart } from '../src/Types';
 import { MapTransform, ArrayReadable, streamDataCollector } from 'streamdash';
 import { adjust, reduce, assoc, map, pipe, range } from 'ramda';

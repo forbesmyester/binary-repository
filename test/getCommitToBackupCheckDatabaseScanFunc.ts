@@ -1,6 +1,6 @@
 import test from 'ava';
 import getCommitToBackupCheckDatabaseScanFunc from '../src/getCommitToBackupCheckDatabaseScanFunc';
-import { BackupRecord, Operation, Callback, Commit, BackupCheckDatabaseValue, BackupCheckDatabase } from '../src/Types';
+import { BackupRecord, Operation, Commit, BackupCheckDatabaseValue, BackupCheckDatabase } from '../src/Types';
 import { merge, mapObjIndexed } from 'ramda';
 
 test.cb("Can buildCheckDatabase", (tst) => {

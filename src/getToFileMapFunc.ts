@@ -5,9 +5,9 @@ import { streamDataCollector } from 'streamdash';
 import { dirname, join } from 'path';
 import * as mkdirp from 'mkdirp';
 import { utimes, rename, copyFile, unlink } from 'fs';
-import { parallelLimit, mapLimit, waterfall } from 'async';
+import { mapLimit, waterfall } from 'async';
 import { append, reduce, assoc, map, range } from 'ramda';
-import { ExitStatus, CmdOutput, CmdSpawner, CmdRunner } from './CmdRunner';
+import { CmdSpawner, CmdRunner } from './CmdRunner';
 
 
 export interface MkdirP {
@@ -48,7 +48,7 @@ function _getDependenciesDecryptMapper(gpgKey, src, dst, isFirst, info) {
             [],
             {}
         );
-        let sdc = streamDataCollector(
+        streamDataCollector(
             cmdRunner
         ).then((lines) => {
             next(null);

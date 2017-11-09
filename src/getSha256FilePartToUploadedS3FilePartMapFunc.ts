@@ -1,11 +1,10 @@
-import { S3Object, ClientId, FilePartIndex, RemoteType, S3Location, Callback, ByteCount, Sha256, FilePart, AbsoluteFilePath, AbsoluteDirectoryPath, GpgKey, Sha256FilePart, S3BucketName, CommandName, UploadedS3FilePart } from  './Types';
+import { S3Object, RemoteType, S3Location, Callback, AbsoluteFilePath, AbsoluteDirectoryPath, GpgKey, Sha256FilePart, S3BucketName, CommandName, UploadedS3FilePart } from  './Types';
 import Client from './Client';
 import { MapFunc } from 'streamdash';
 import { join } from 'path';
-import { ExitStatus, CmdOutput, CmdSpawner, CmdRunner } from './CmdRunner';
+import { CmdSpawner, CmdRunner } from './CmdRunner';
 import { streamDataCollector } from 'streamdash';
 import { merge, assoc } from 'ramda';
-import padLeadingZero from './padLeadingZero';
 import RepositoryLocalfiles from './repository/RepositoryLocalfiles';
 import RepositoryS3 from './repository/RepositoryS3';
 
@@ -124,7 +123,7 @@ export default function getSha256FilePartToUploadedS3FilePartMapFunc({cmdSpawner
                 {}
             );
 
-            let sdc = streamDataCollector(cmdRunner)
+            streamDataCollector(cmdRunner)
                 .then((lines) => {
                     cb(
                         null,

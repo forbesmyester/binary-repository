@@ -1,6 +1,6 @@
-import { RemotePendingCommitStatRecordDecided, RemotePendingCommitStatRecord, RelativeFilePath, UserErrorCode, UserError, RemotePendingCommitStat } from './Types';
+import { RemotePendingCommitStatRecordDecided, RemotePendingCommitStatRecord, UserErrorCode, UserError, RemotePendingCommitStat } from './Types';
 import { MapFunc } from 'streamdash';
-import { reduce, assoc, dissoc, filter, merge, map, concat } from 'ramda';
+import { reduce, assoc, dissoc, filter, merge, map } from 'ramda';
 
 export interface Dependencies {}
 
@@ -8,11 +8,6 @@ export class DeciderUserError extends UserError {
     constructor(msg, code, public paths) {
         super(msg, code);
     }
-}
-
-interface Acc {
-    blocker: RelativeFilePath[];
-    proceed: RelativeFilePath[];
 }
 
 export interface RemotePendingCommitStatRecordDecidedX extends RemotePendingCommitStatRecordDecided {

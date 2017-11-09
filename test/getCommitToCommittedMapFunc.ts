@@ -1,9 +1,7 @@
 import test from 'ava';
-import { basename, dirname, join } from 'path';
+import { basename, dirname } from 'path';
 import { MkdirP, getCommitToCommittedMapFunc } from '../src/getCommitToCommittedMapFunc';
-import { AtomicFileWrite } from '../src/atomicFileWrite';
 import { Operation, AbsoluteDirectoryPath, AbsoluteFilePath, Committed, Commit } from '../src/Types';
-import { MapFunc } from 'streamdash';
 
 test.cb("Can map", (tst) => {
 

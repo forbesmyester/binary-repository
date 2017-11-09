@@ -1,12 +1,11 @@
 import myStat from './myStats';
-import { RemotePendingCommitStatRecordStat, ByteCount, Callback, RemotePendingCommitInfo, RemotePendingCommitInfoRecord, RemotePendingCommitStat, RemotePendingCommitStatRecord, AbsoluteFilePath, AbsoluteDirectoryPath } from '../src/Types';
+import { RemotePendingCommitStatRecordStat, Callback, RemotePendingCommitInfo, RemotePendingCommitInfoRecord, RemotePendingCommitStat, RemotePendingCommitStatRecord, AbsoluteFilePath, AbsoluteDirectoryPath } from '../src/Types';
 import { asyncMap, MapFunc } from 'streamdash';
 import { assoc } from 'ramda';
 import { CmdRunner } from './CmdRunner';
-import { getFileToSha256FileMapFunc, getRunner } from './getFileToSha256FileMapFunc';
+import { getRunner } from './getFileToSha256FileMapFunc';
 import { stat } from 'fs';
 import { Stats } from 'fs';
-import { singleLineCmdRunner } from './singleLineCmdRunner';
 import { join } from 'path';
 import { Sha256 } from './Types';
 

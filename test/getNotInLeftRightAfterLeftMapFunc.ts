@@ -1,6 +1,4 @@
 import test from 'ava';
-import { asyncMap } from 'streamdash';
-import { File } from '../src/Types';
 import getNotInLeft from '../src/getNotInLeftRightAfterLeftMapFunc';
 import { map } from 'ramda';
 

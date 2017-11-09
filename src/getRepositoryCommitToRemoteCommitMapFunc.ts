@@ -1,7 +1,6 @@
 import { MapFunc } from 'streamdash';
 import { CmdRunner, CmdSpawner } from './CmdRunner';
 import { Callback, AbsoluteFilePath, S3Object, AbsoluteDirectoryPath, S3BucketName, GpgKey, CommandName, Filename, CommitFilename, CmdResult } from '../src/Types';
-import { merge, assoc } from 'ramda';
 import { streamDataCollector } from 'streamdash';
 import { join } from 'path';
 import { rename } from 'fs';
@@ -74,7 +73,7 @@ export default function getRepositoryCommitToRemoteCommitMapFunc(
             {}
         );
 
-        let sdc = streamDataCollector(cmdRunner)
+        streamDataCollector(cmdRunner)
             .then((lines) => {
                 return {
                     result: { exitStatus: 0, output: lines },

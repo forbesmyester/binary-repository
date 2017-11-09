@@ -1,7 +1,6 @@
-import { ExitStatusError, CmdSpawner, CmdRunner, CmdOutput } from '../src/CmdRunner';
+import { CmdRunner } from '../src/CmdRunner';
 import { CmdOutputDidNotMatchError, singleLineCmdRunner } from '../src/singleLineCmdRunner';
 import test from 'ava';
-import { streamDataCollector } from 'streamdash';
 
 test.cb('Can do basic test', (tst) => {
     let cmdSpawner = CmdRunner.getCmdSpawner({});

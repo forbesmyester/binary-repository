@@ -1,6 +1,5 @@
 import test from 'ava';
-import { assoc, reduce } from 'ramda';
-import { RemotePendingCommitInfoRecord, Operation, CommitId, ClientId, BackupRecord, Commit, RemotePendingCommit, RemotePendingCommitInfo, BackupCheckDatabase } from '../src/Types';
+import { RemotePendingCommitInfoRecord, Operation, BackupRecord, RemotePendingCommit, RemotePendingCommitInfo, BackupCheckDatabase } from '../src/Types';
 import getToRemotePendingCommitInfoRightAfterLeftMapFunc from '../src/getToRemotePendingCommitInfoRightAfterLeftMapFunc';
 
 

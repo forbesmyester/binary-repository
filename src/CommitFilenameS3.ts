@@ -2,16 +2,12 @@ import { Callback, Filename, S3BucketName } from './Types';
 import { Readable } from 'stronger-typed-streams'
 import { S3 } from 'aws-sdk';
 
-abstract class EasyReadable<T> {
-}
-
 
 export default class S3CommitList extends Readable<Filename> {
 
     private nextMarker: string|false = false;
     private ended = false;
     private waiting = false;
-    private count = 0;
 
 
     constructor(private s3: S3, private s3BucketName: S3BucketName, opts = {}) {
@@ -30,7 +26,7 @@ export default class S3CommitList extends Readable<Filename> {
                         this.ended = true;
                         this.push(t);
                     }
-                    if (!this.ended) { this.count++; this.push(t); }
+                    if (!this.ended) { this.push(t); }
                 });
             }
             if (!this.ended) {

@@ -1,10 +1,6 @@
 import test from 'ava';
-import { assoc } from 'ramda';
-import { Stats } from 'fs';
-import { MapFunc } from 'streamdash';
 import getToFile from '../src/getToFileMapFunc';
-import { Dependencies } from '../src/getToFileMapFunc';
-import { GpgKey, FilePartIndex, RelativeFilePath, Operation, Sha256, RemotePendingCommitDownloaded, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, S3Object, ByteCount } from '../src/Types';
+import { GpgKey, FilePartIndex, RelativeFilePath, Operation, RemotePendingCommitDownloaded, AbsoluteFilePath, Callback } from '../src/Types';
 
 function getInput(path: RelativeFilePath, part: FilePartIndex, proceed = true): RemotePendingCommitDownloaded {
     let d = new Date('2017-07-22T17:02:48.000Z');

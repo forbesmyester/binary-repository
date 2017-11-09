@@ -1,4 +1,4 @@
-import { RemotePendingCommitStatDecided, RemoteType, S3BucketName, RemoteUri, GpgKey, UploadedS3FilePart, Sha256FilePart, CommitType, ConfigFile, AbsoluteDirectoryPath, RelativeFilePath, Sha256, ByteCount, ModifiedDate, Callback, Sha256File, File, Filename, CommitFilename, Commit } from './Types';
+import { RemotePendingCommitStatDecided, RemoteType, S3BucketName, RemoteUri, GpgKey, UploadedS3FilePart, Sha256FilePart, ConfigFile, AbsoluteDirectoryPath, RelativeFilePath, Filename, CommitFilename } from './Types';
 import { format } from 'util';
 import { rename, readFileSync, readFile } from 'fs';
 import getToRemotePendingCommitStatsMapFunc from './getToRemotePendingCommitStatsMapFunc';
@@ -19,7 +19,7 @@ import { RootReadable } from './RootReadable';
 import { dirname, join } from 'path';
 import commitSortFunction from './commitFilenameSorter';
 import { getMergeInCommitType } from './getMergeInCommitType';
-import { FlattenTransform, RightAfterLeft, FirstDuplex, FinalDuplex, ScanTransform, SortDuplex, ErrorStream, MapFunc, MapTransform, ParallelJoin } from 'streamdash';
+import { FlattenTransform, RightAfterLeft, FinalDuplex, ScanTransform, SortDuplex, ErrorStream, MapFunc, MapTransform, ParallelJoin } from 'streamdash';
 import getLocalCommitFilenameToCommitMapFunc from './getLocalCommitFilenameToCommitMapFunc';
 import { getFilenameToFileMapFunc } from './getFilenameToFileMapFunc';
 import { getFileToSha256FileMapFunc, getRunner } from './getFileToSha256FileMapFunc';
@@ -28,19 +28,21 @@ import { getDependencies as getSha256FilePartToUploadedS3FilePartDependencies } 
 import getSha256FilePartToUploadedS3FilePartMapFunc from './getSha256FilePartToUploadedS3FilePartMapFunc';
 import { getCommitToCommittedMapFuncDependencies, getCommitToCommittedMapFunc } from './getCommitToCommittedMapFunc';
 import { UploadedS3FilePartsToCommit } from './UploadedS3FilePartsToCommit';
-import { Duplex, Readable, Transform, Writable } from 'stronger-typed-streams';
+import { Readable, Transform, Writable } from 'stronger-typed-streams';
 import { CmdRunner } from './CmdRunner';
 import getCommittedToUploadedS3CommittedMapFunc from './getCommittedToUploadedCommittedMapFunc';
-import getCommittedToUploadedS3CommittedFakeMapFunc from './getCommittedToUploadedCommittedFakeMapFunc';
 import { stat } from 'fs';
 import getFileNotBackedUpRightAfterLeftMapFunc from './getFileNotBackedUpRightAfterLeftMapFunc';
 // import getRemotePendingCommitToRemotePendingCommitLocalInfoRightAfterLeftMapFunc from './getRemotePendingCommitToRemotePendingCommitLocalInfoRightAfterLeftMapFunc';
 import getToRemotePendingCommitInfoRightAfterLeftMapFunc from './getToRemotePendingCommitInfoRightAfterLeftMapFunc';
-import { mapObjIndexed, join as joinArray, sortBy, keys } from 'ramda';
+import { join as joinArray, sortBy, keys } from 'ramda';
 import getRepositoryCommitToRemoteCommitMapFunc from './getRepositoryCommitToRemoteCommitMapFunc';
 import getNotInLeft from './getNotInLeftRightAfterLeftMapFunc';
 import * as mkdirp from 'mkdirp';
 import { S3 } from 'aws-sdk';
+
+
+const stdPipeOptions = { objectMode: true, highWaterMark: 1};
 
 const bashDir = join(dirname(dirname(__dirname)), 'bash');
 
@@ -223,8 +225,7 @@ export function push(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirector
         throw new Error("NO_REMOTE_PROTOCOL: Cannot figure out where to copy file parts");
     }
 
-    let stdPipeOptions = { objectMode: true, highWaterMark: 1},
-        config: ConfigFile = readConfig(configDir),
+    let config: ConfigFile = readConfig(configDir),
         gpgKey = config['gpg-key'],
         pendingCommitDir = 'pending-commit',
         s3Bucket = config.remote;
@@ -236,13 +237,6 @@ export function push(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirector
                 gpgKey,
             ),
             {objectMode: true}
-        ),
-        localCommitFileToCommit = new MapTransform(
-            getLocalCommitFilenameToCommitMapFunc(
-                { readFile },
-                configDir
-            ),
-            stdPipeOptions
         );
 
     getSortedCommitFilenamePipe(configDir, [pendingCommitDir])
@@ -256,8 +250,7 @@ export function push(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirector
 }
 
 function getNotBackedUp(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
-    let stdPipeOptions = { objectMode: true, highWaterMark: 1},
-        commitDir = 'commit',
+    let commitDir = 'commit',
         remoteCommitDir = 'remote-commit',
         pendingCommitDir = 'pending-commit';
 
@@ -297,7 +290,7 @@ function getNotBackedUp(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirec
         .pipe(preparePipe(fileNotBackedUpRightAfterLeft.left));
 
 
-    let listFiles = preparePipe(rootReader)
+    preparePipe(rootReader)
         .pipe(preparePipe(filenameToFile))
         .pipe(preparePipe(fileNotBackedUpRightAfterLeft.right));
 
@@ -405,14 +398,8 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
         throw new Error(`The size ${commitFileByteCountThreshold} is not a safe size`);
     }
 
-    let stdPipeOptions = { objectMode: true, highWaterMark: 1},
-        tmpDir = join(configDir, "tmp"),
-        commitDir = 'commit',
-        remoteCommitDir = 'remote-commit',
-        pendingCommitDir = 'pending-commit',
-        config: ConfigFile = readConfig(configDir),
+    let config: ConfigFile = readConfig(configDir),
         clientId = config['client-id'],
-        s3Bucket = config.remote,
         gpgKey = config['gpg-key'],
         fpGpgKey = config['filepart-gpg-key'],
         fileToSha256File = new MapTransform(
@@ -423,7 +410,6 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
             stdPipeOptions
         ),
         fileToSha256FilePart = new Sha256FileToSha256FilePart(
-            rootDir,
             filePartByteCountThreshold,
             stdPipeOptions
         ),
@@ -472,9 +458,6 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
 
     let overallBar = getOverallBar(barUpdater, quiet);
 
-    let totalItems = 0;
-    let currentItem = 0;
-
     getNotBackedUp(rootDir, configDir)
         .pipe(overallBar.plus)
         .pipe(getFileSpy("%s: SHA summing...", 1))
@@ -501,8 +484,7 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
 export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath, { quiet }) {
 
 
-    let stdPipeOptions = { objectMode: true, highWaterMark: 1},
-        cmdSpawner = CmdRunner.getCmdSpawner({}),
+    let cmdSpawner = CmdRunner.getCmdSpawner({}),
         config: ConfigFile = readConfig(configDir),
         remoteType = getRemoteType(config.remote),
         globber = RootReadable.getGlobFunc(),
@@ -592,7 +574,6 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
 
 function getCommitStream(configDir: AbsoluteDirectoryPath, subDirs: string[]) {
 
-    let stdPipeOptions = { objectMode: true, highWaterMark: 1};
     let sortedPendingCommitFilenameStream = getSortedCommitFilenamePipe(
         configDir,
         subDirs
@@ -614,12 +595,6 @@ function getCommitStream(configDir: AbsoluteDirectoryPath, subDirs: string[]) {
 
 
 export function listDownloadImpl(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
-    let stdPipeOptions = { objectMode: true, highWaterMark: 1};
-    let config: ConfigFile = readConfig(configDir);
-    const quiet = false;
-    let remoteType = getRemoteType(config.remote);
-
-
 
     let remotePendingCommitStream = getCommitStream(
         configDir,
@@ -675,7 +650,6 @@ export function listDownloadImpl(rootDir: AbsoluteDirectoryPath, configDir: Abso
 
 export function listExisting(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
 
-    let stdPipeOptions = { objectMode: true, highWaterMark: 1};
     let commitStream = getCommitStream(
         configDir,
         ['commit', 'remote-commit']
@@ -699,8 +673,6 @@ export function listExisting(rootDir: AbsoluteDirectoryPath, configDir: Absolute
 }
 
 export function listDownload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
-
-    let stdPipeOptions = { objectMode: true, highWaterMark: 1};
 
     function toFileListScanFunc(acc: string[], a: RemotePendingCommitStatDecided, next): void {
         let cPaths = a.record.filter(rec => { return rec.proceed }).map(rec => rec.path);
@@ -726,7 +698,6 @@ export function listDownload(rootDir: AbsoluteDirectoryPath, configDir: Absolute
 
 export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath, { quiet }) {
 
-    let stdPipeOptions = { objectMode: true, highWaterMark: 1};
     let config: ConfigFile = readConfig(configDir);
     let remoteType = getRemoteType(config.remote);
 

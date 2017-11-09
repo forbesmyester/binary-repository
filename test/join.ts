@@ -1,7 +1,7 @@
 import test from 'ava';
 import { Callback } from '../src/Types';
-import { JoinTransformOut, InnerJoinTransform, JoinTransform, LeftOrRight, MemoryKVStore, MemoryJoinStorage, LeftOrRightDecider } from '../src/join';
-import { RightAfterLeft, streamDataCollector, CollectorTransform, ScanTransform, MapTransform, ErrorStream, FilterTransform, Transform, Readable, Writable, ArrayReadable } from 'streamdash';
+import { JoinTransformOut, InnerJoinTransform, JoinTransform, LeftOrRight, MemoryJoinStorage, LeftOrRightDecider } from '../src/join';
+import { Writable, ArrayReadable } from 'streamdash';
 
 interface Thing { name: string; type: string; }
 
@@ -57,7 +57,6 @@ test.cb('Can find things in storage', function(tst) {
 
 });
 
-const ORDER = "order";
 const CUSTOMER = "customer";
 
 interface Item { customerId: string; type: string; item: string; }
@@ -148,9 +147,6 @@ test.cb('Can get as inner join', function(tst) {
         { customerId: "B", name: "Jane", item: "Ruler" },
         { customerId: "A", name: "Jack", item: "Car" }
     ];
-
-    let customerIdGenerator = (c: Customer) => c.id;
-    let itemIdGenerator = (i: Item) => `${i.customerId}:${i.item}`;
 
     let makeOrder = new InnerJoinTransform<Customer, Item, Order, string>(
         (l: Customer, r: Item): Order => {

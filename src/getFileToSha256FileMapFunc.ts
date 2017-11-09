@@ -1,11 +1,10 @@
-import { Callback, AbsoluteFilePath, AbsoluteDirectoryPath, Sha256, ByteCount, ModifiedDate, File, Sha256File } from  './Types';
-import { CmdSpawner, CmdRunner } from './CmdRunner';
+import { Callback, AbsoluteFilePath, AbsoluteDirectoryPath, Sha256, File, Sha256File } from  './Types';
+import { CmdArgument, CmdSpawner } from './CmdRunner';
 import { MapFunc } from 'streamdash';
-import { singleLineCmdRunner } from './singleLineCmdRunner';
+import { SingleLineCmdResult, singleLineCmdRunner } from './singleLineCmdRunner';
 import { join } from 'path';
-import { stat } from 'fs';
 
-export function getRunner({ cmdSpawner }: {cmdSpawner: CmdSpawner}) {
+export function getRunner({ cmdSpawner }: {cmdSpawner: CmdSpawner}): (inArg: CmdArgument, next: Callback<SingleLineCmdResult>) => void {
     return singleLineCmdRunner({ cmdSpawner }, "sha256sum", /^([a-z0-9]{64})/);
 }
 

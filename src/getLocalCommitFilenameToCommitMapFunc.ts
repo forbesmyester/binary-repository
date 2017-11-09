@@ -1,6 +1,5 @@
-import test from 'ava';
 import { MapFunc } from 'streamdash';
-import { GpgKey, BackupRecord, Operation, Callback2, Callback, CommitFilename, ClientId, Commit, AbsoluteDirectoryPath } from '../src/Types';
+import { BackupRecord, Callback2, Callback, CommitFilename, Commit, AbsoluteDirectoryPath } from '../src/Types';
 import { join } from 'path';
 import Client from './Client';
 

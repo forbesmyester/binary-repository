@@ -1,4 +1,4 @@
-import { GpgKey, RemotePendingCommitStatRecordDecided, S3Location, S3BucketName, S3Object, AbsoluteDirectoryPath, AbsoluteFilePath, ByteCount, Callback } from '../Types';
+import { GpgKey, RemotePendingCommitStatRecordDecided, S3Location, S3BucketName, AbsoluteDirectoryPath, AbsoluteFilePath, ByteCount, Callback } from '../Types';
 
 export default interface RepositoryLocalfiles {
 

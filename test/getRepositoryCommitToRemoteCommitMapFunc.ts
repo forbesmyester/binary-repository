@@ -1,12 +1,8 @@
 import test from 'ava';
 import getRepositoryCommitToRemoteCommitMapFunc from '../src/getRepositoryCommitToRemoteCommitMapFunc';
-import { MapFunc } from 'streamdash';
-import { Filename, CommitFilename, CmdResult, Committed, UploadedCommitted, Operation } from '../src/Types';
-import { CmdOutput } from '../src/CmdRunner';
+import { Filename, CommitFilename, CmdResult } from '../src/Types';
 
 test.cb("Download Generate Environment (base)", (tst) => {
-
-    let modifiedDate = new Date("2017-06-19T06:20:05.168Z");
 
     let input: Filename = { path: "c-X3aeit8p000-mattfirst.commit" };
 

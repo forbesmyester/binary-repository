@@ -1,4 +1,4 @@
-import { Sha256File, AbsoluteDirectoryPath, AbsoluteFilePath, File, Filename } from '../src/Types';
+import { AbsoluteDirectoryPath, AbsoluteFilePath, File, Filename } from '../src/Types';
 import { MapFunc } from 'streamdash';
 import { Stats } from 'fs';
 import { join } from 'path';

@@ -1,5 +1,4 @@
 import test from 'ava';
-import { asyncMap } from 'streamdash';
 import { File } from '../src/Types';
 import getFileNotBackedUpRightAfterLeftMapFunc from '../src/getFileNotBackedUpRightAfterLeftMapFunc';
 import { map } from 'ramda';
