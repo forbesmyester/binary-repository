@@ -417,7 +417,7 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
         fpGpgKey = config['filepart-gpg-key'],
         fileToSha256File = new MapTransform(
             getFileToSha256FileMapFunc(
-                { runner: getRunner({ cmdSpawner: CmdRunner.getCmdSpawner({}) }) },
+                { runner: getRunner() },
                 rootDir
             ),
             stdPipeOptions
@@ -731,7 +731,7 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
     let remoteType = getRemoteType(config.remote);
 
     let barUpdater = managedMultiProgress(
-        5,
+        9,
         {
             current: 0,
             total: 0,

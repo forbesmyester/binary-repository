@@ -1,12 +1,29 @@
 import { Callback, AbsoluteFilePath, AbsoluteDirectoryPath, Sha256, ByteCount, ModifiedDate, File, Sha256File } from  './Types';
-import { CmdSpawner, CmdRunner } from './CmdRunner';
 import { MapFunc } from 'streamdash';
-import { singleLineCmdRunner } from './singleLineCmdRunner';
 import { join } from 'path';
-import { stat } from 'fs';
+import { createReadStream, stat } from 'fs';
+import { createHash } from 'crypto';
 
-export function getRunner({ cmdSpawner }: {cmdSpawner: CmdSpawner}) {
-    return singleLineCmdRunner({ cmdSpawner }, "sha256sum", /^([a-z0-9]{64})/);
+export function getRunner() {
+    return function(fullPath: AbsoluteFilePath, next: Callback<Sha256>) {
+        let hash = createHash('sha256');
+        let strm = createReadStream(fullPath);
+        let finished = false;
+        strm.on('data', (d) => {
+            hash.update(d, 'utf8')
+        });
+        strm.on('error', (e) => {
+            if (!finished) {
+                finished = true;
+                next(e);
+            }
+        });
+        strm.on('end', () => {
+            if (finished) { return; }
+            finished = true;
+            next(null, hash.digest('hex'));
+        });
+    }
 }
 
 export function getFileToSha256FileMapFunc({ runner }: { runner: MapFunc<AbsoluteFilePath, Sha256> }, rootPath: AbsoluteDirectoryPath): MapFunc<File, Sha256File> {

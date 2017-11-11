@@ -190,6 +190,12 @@ if [ $(cat integration-test-temp-files/new-commit integration-test-temp-files/ol
     exit 1
 fi
 
+
+if [ $(cat integration-test-temp-files/ebak-repo/f-806666aa36f2d65362a85fb19578babfc271ddcff6ef36265223dc0562d53f14-1-64MB-ebak--fp1.ebak | gpg -d | head -n1) != '# t-fp-merge' ]; then
+    echo "t-fp-merge README.md was expected to be in f-806666aa36f2d65362a85fb19578babfc271ddcff6ef36265223dc0562d53f14-1-64MB-ebak--fp1.ebak but it was not"
+    exit 1
+fi
+
 echo "Tests Passed."
 
 

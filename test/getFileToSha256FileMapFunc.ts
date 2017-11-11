@@ -6,8 +6,7 @@ import { MapFunc } from 'streamdash';
 
 test.cb("Can get a command runner", (tst) => {
 
-    let cmdSpawner = CmdRunner.getCmdSpawner({});
-    let runner = getRunner({ cmdSpawner });
+    let runner = getRunner();
 
     runner(__filename, (err, result: Sha256) => {
         tst.is(err, null);

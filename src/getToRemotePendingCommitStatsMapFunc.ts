@@ -2,7 +2,6 @@ import myStat from './myStats';
 import { RemotePendingCommitStatRecordStat, ByteCount, Callback, RemotePendingCommitInfo, RemotePendingCommitInfoRecord, RemotePendingCommitStat, RemotePendingCommitStatRecord, AbsoluteFilePath, AbsoluteDirectoryPath } from '../src/Types';
 import { asyncMap, MapFunc } from 'streamdash';
 import { assoc } from 'ramda';
-import { CmdRunner } from './CmdRunner';
 import { getFileToSha256FileMapFunc, getRunner } from './getFileToSha256FileMapFunc';
 import { stat } from 'fs';
 import { Stats } from 'fs';
@@ -26,9 +25,7 @@ export interface Dependencies {
 
 export function getDependencies(): Dependencies {
 
-    let cmdSpawner = CmdRunner.getCmdSpawner({}),
-    runner = getRunner({ cmdSpawner });
-
+    let runner = getRunner();
     return { stat, runner };
 }
 
