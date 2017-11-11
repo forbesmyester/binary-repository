@@ -1,10 +1,18 @@
 #!/bin/bash
 
 IFS=$'\n\t'
-set -euo pipefail
+set -uo pipefail
+
+# Find the cmd to use for GPG
+which gpg2 && PROG=gpg2
+if [ $? -ne 0 ]; then
+    which gpg && PROG=gpg
+fi
+
+set -e
 
 if [ $OPT_IS_FIRST -eq 1 ]; then
-    cat "${OPT_SRC}" | gpg -d -r "${OPT_GPG_KEY}" > "${OPT_DST}"
+    cat "${OPT_SRC}" | ${PROG} -d -r "${OPT_GPG_KEY}" > "${OPT_DST}"
 else
-    cat "${OPT_SRC}" | gpg -d -r "${OPT_GPG_KEY}" >> "${OPT_DST}"
+    cat "${OPT_SRC}" | ${PROG} -d -r "${OPT_GPG_KEY}" >> "${OPT_DST}"
 fi
