@@ -1,6 +1,6 @@
 import test from 'ava';
 import getRepositoryCommitToRemoteCommitMapFunc from '../src/getRepositoryCommitToRemoteCommitMapFunc';
-import { Filename, CommitFilename, CmdResult } from '../src/Types';
+import { AbsoluteDirectoryPath, AbsoluteFilePath, S3Location, Callback, Filename, CommitFilename, CmdResult } from '../src/Types';
 
 test.cb("Download Generate Environment (base)", (tst) => {
 
@@ -13,29 +13,55 @@ test.cb("Download Generate Environment (base)", (tst) => {
             exitStatus: 0,
             output: [{
                 name: 'stdout',
-                text: 'dd if="/repos/ebak-commit-bucket/c-X3aeit8p000-mattfirst.commit" | gpg -d -r "ebak" | cat > "/tmp/x/.ebak/tmp/c-X3aeit8p000-mattfirst.commit"'
+                text: 'Some Command'
             }]
         }
+    };
+
+    let done = {
+        download: false,
+        spawned: false,
+        rename: false,
+        mkdirp: false
     };
 
 // export interface CmdSpawner {
     // (env, cwd: string, cmd: Cmd, args: CmdArgument[], out: (s: string) => void, err: (s: string) => void, next: Callback<ExitStatus>): void;
 // }
 
+    let mkdirPass = 0;
+
     let dependencies = {
+        download: (tmpDir: AbsoluteDirectoryPath, loc: S3Location, downloadTo: AbsoluteFilePath, next: Callback<void>) => {
+            done.download = true;
+            tst.is(tmpDir, "/tmp/x/.ebak/tmp");
+            tst.is(downloadTo, "/tmp/x/.ebak/tmp/c-X3aeit8p000-mattfirst.commit.enc");
+            tst.deepEqual(loc, ['/repos/ebak-commit-bucket', "c-X3aeit8p000-mattfirst.commit"]);
+            next(null);
+        },
         cmdSpawner: (env, cwd, cmd, args, stdOutEvtHnd, stdErrEvtHnd, next) => {
-            stdOutEvtHnd(
-                `dd if="${env.OPT_S3_BUCKET}/${env.OPT_S3_OBJECT}" | gpg -d -r "${env.OPT_GPG_KEY}" | cat > "${env.OPT_DESTINATION}"`
-            );
+            tst.regex(cmd, /bash\/decrypt/);
+            tst.is(env.OPT_IS_FIRST, "1");
+            tst.is(env.OPT_SRC, "/tmp/x/.ebak/tmp/c-X3aeit8p000-mattfirst.commit.enc");
+            tst.is(env.OPT_DST, "/tmp/x/.ebak/tmp/c-X3aeit8p000-mattfirst.commit");
+            tst.is(env.OPT_GPG_KEY, "ebak");
+            done.spawned = true;
+            stdOutEvtHnd(`Some Command`);
             next(null, 0);
         },
         rename: (src, dest, next) => {
+            done.rename = true;
             tst.is(src, "/tmp/x/.ebak/tmp/c-X3aeit8p000-mattfirst.commit");
             tst.is(dest, "/tmp/x/.ebak/remote-pending-commit/c-X3aeit8p000-mattfirst.commit");
             next(null);
         },
         mkdirp: (dest, next) => {
-            tst.is(dest, "/tmp/x/.ebak/remote-pending-commit");
+            let expected = [
+                "/tmp/x/.ebak/tmp",
+                "/tmp/x/.ebak/remote-pending-commit"
+            ];
+            done.mkdirp = true;
+            tst.is(dest, expected[mkdirPass++]);
             next(null);
         }
     };
@@ -44,11 +70,16 @@ test.cb("Download Generate Environment (base)", (tst) => {
         dependencies,
         '/tmp/x/.ebak',
         '/repos/ebak-commit-bucket',
-        'ebak',
-        'bash/test-download-cat'
+        'ebak'
     );
 
     mapFunc(input, (err, result) => {
+        tst.deepEqual(done, {
+            download: true,
+            spawned: true,
+            rename: true,
+            mkdirp: true
+        });
         tst.deepEqual(result, expected);
         tst.end();
     });

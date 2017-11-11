@@ -37,6 +37,7 @@ import getFileNotBackedUpRightAfterLeftMapFunc from './getFileNotBackedUpRightAf
 import getToRemotePendingCommitInfoRightAfterLeftMapFunc from './getToRemotePendingCommitInfoRightAfterLeftMapFunc';
 import { join as joinArray, sortBy, keys } from 'ramda';
 import getRepositoryCommitToRemoteCommitMapFunc from './getRepositoryCommitToRemoteCommitMapFunc';
+import { getDependencies as getRepositoryCommitToRemoteCommitMapFuncDependencies } from './getRepositoryCommitToRemoteCommitMapFunc';
 import getNotInLeft from './getNotInLeftRightAfterLeftMapFunc';
 import * as mkdirp from 'mkdirp';
 import { S3 } from 'aws-sdk';
@@ -484,8 +485,7 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
 export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath, { quiet }) {
 
 
-    let cmdSpawner = CmdRunner.getCmdSpawner({}),
-        config: ConfigFile = readConfig(configDir),
+    let config: ConfigFile = readConfig(configDir),
         remoteType = getRemoteType(config.remote),
         globber = RootReadable.getGlobFunc(),
         repositoryCommitFiles: null|Readable<Filename> = null,
@@ -545,11 +545,10 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
 
     let toRemoteCommit = preparePipe(new MapTransform(
         getRepositoryCommitToRemoteCommitMapFunc(
-            {cmdSpawner: cmdSpawner, rename: rename, mkdirp},
+            getRepositoryCommitToRemoteCommitMapFuncDependencies(remoteType),
             configDir,
             removeProtocol(config['remote']),
-            config['gpg-key'],
-            cmd
+            config['gpg-key']
         ),
         { objectMode: true }
     ));
