@@ -1,6 +1,6 @@
 {
   "name": "binary-repository",
-  "version": "0.12.10",
+  "version": "0.12.13",
   "description": "Encrypted backups on AWS (or other)",
   "directories": {
     "src": "src",
@@ -8,7 +8,8 @@
   },
   "main": "./dist/src/index.js",
   "scripts": {
-    "test": "rm -rf dist ; tsc && ava ./dist/test/*.js && tslint src/**/*.ts test/**/*.ts"
+    "test": "rm -rf dist ; node_modules/.bin/tsc && node_modules/.bin/ava ./dist/test/*.js && node_modules/.bin/tslint src/**/*.ts test/**/*.ts",
+    "prepare": "./test-instructions"
   },
   "repository": {
     "type": "git",
