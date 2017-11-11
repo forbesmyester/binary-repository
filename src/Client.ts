@@ -1,5 +1,5 @@
 import { BASE_TLID_TIMESTAMP, BASE_TLID_UNIQUENESS, FilePartIndex, Sha256, ClientId, CommitId, RemotePendingCommitStatRecordDecided, GpgKey, Callback, AbsoluteDirectoryPath, AbsoluteFilePath } from './Types';
-import { ExitStatus, CmdOutput, CmdSpawner, CmdRunner } from './CmdRunner';
+import { CmdRunner } from './CmdRunner';
 import { dirname, join } from 'path';
 import * as filesize from 'filesize';
 import { streamDataCollector } from 'streamdash';
@@ -99,7 +99,7 @@ export default {
             {}
         );
 
-        let sdc = streamDataCollector(cmdRunner)
+        streamDataCollector(cmdRunner)
             .then((lines) => {
                 next(null);
             })

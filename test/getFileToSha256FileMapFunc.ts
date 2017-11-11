@@ -1,6 +1,5 @@
 import test from 'ava';
 import { getFileToSha256FileMapFunc, getRunner } from '../src/getFileToSha256FileMapFunc';
-import { CmdRunner } from '../src/CmdRunner';
 import { AbsoluteFilePath, Sha256 } from '../src/Types';
 import { MapFunc } from 'streamdash';
 

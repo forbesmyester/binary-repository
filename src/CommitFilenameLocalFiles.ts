@@ -1,10 +1,7 @@
-import { AbsoluteDirectoryPath, Callback, Filename } from './Types';
+import { AbsoluteDirectoryPath } from './Types';
 export { AbsoluteDirectoryPath } from './Types';
 export { Callback } from './Types';
-import { Readable } from 'stronger-typed-streams';
-import { GlobFunc, RootReadable, Dependencies } from './RootReadable';
-
-import * as glob from 'glob';
+import { RootReadable, Dependencies } from './RootReadable';
 
 export default class RemoteCommitLocalFiles extends RootReadable {
 

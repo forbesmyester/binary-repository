@@ -7,7 +7,6 @@ export default class S3CommitList extends Readable<Filename> {
     private nextMarker;
     private ended;
     private waiting;
-    private count;
     constructor(s3: S3, s3BucketName: S3BucketName, opts?: {});
     private doRead();
     _read(count: any): void;

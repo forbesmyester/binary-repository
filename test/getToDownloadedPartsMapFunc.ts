@@ -1,11 +1,9 @@
 import test from 'ava';
-import { assoc } from 'ramda';
 import Client from '../src/Client';
 import { Stats } from 'fs';
-import { MapFunc } from 'streamdash';
 import getToDownloadedParts from '../src/getToDownloadedPartsMapFunc';
 import { Dependencies } from '../src/getToDownloadedPartsMapFunc';
-import { FilePartIndex, RelativeFilePath, Operation, Sha256, RemotePendingCommitDownloaded, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, S3Object, ByteCount } from '../src/Types';
+import { FilePartIndex, RelativeFilePath, Operation, RemotePendingCommitDownloaded } from '../src/Types';
 import RepositoryLocalfiles from '../src/repository/RepositoryLocalfiles';
 
 function getInput(path: RelativeFilePath, part: FilePartIndex, proceed: boolean = true): RemotePendingCommitDownloaded {
@@ -111,18 +109,6 @@ test.cb("Can do everything inc. download", (tst) => {
         'a/code.txt',
         [2, 2]
     );
-
-    let input0 = getInput(
-        'a/code.txt',
-        [1, 2]
-    );
-
-    let wasExpected = assoc(
-        'record',
-        input0.record.concat(input.record),
-        input
-    );
-
 
     mapFunc(input, (err, result) => {
         tst.is(err, null);

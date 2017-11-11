@@ -1,9 +1,8 @@
-import { Commit, Committed, AbsoluteDirectoryPath, RelativeFilePath } from './Types';
+import { Commit, Committed, AbsoluteDirectoryPath } from './Types';
 import atomicFileWrite, { AtomicFileWrite } from './atomicFileWrite';
 import * as mkdirp from 'mkdirp';
 import Client from './Client';
 import { MapFunc } from 'streamdash';
-import * as filesize from 'filesize';
 import { basename, dirname, join } from 'path';
 
 export interface MkdirP {

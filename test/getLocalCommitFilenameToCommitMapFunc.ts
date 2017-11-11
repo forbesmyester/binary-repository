@@ -1,8 +1,7 @@
 import test from 'ava';
-import { MapFunc } from 'streamdash';
-import { Operation, Filename, BackupRecord, Commit } from '../src/Types';
+import { Operation, BackupRecord, Commit } from '../src/Types';
 import getLocalCommitFilenameToCommitMapFunc from '../src/getLocalCommitFilenameToCommitMapFunc';
-import { pipe, path, lensPath, map, assoc } from 'ramda';
+import { pipe, path, map, assoc } from 'ramda';
 
 test.cb("Can map", (tst) => {
 

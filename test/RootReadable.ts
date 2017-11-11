@@ -1,7 +1,6 @@
 import { Callback, RootReadable } from '../src/RootReadable';
 import test from 'ava';
 import { range } from 'ramda';
-import * as glob from 'glob';
 
 test.cb('Can scan a directory', (tst) => {
 

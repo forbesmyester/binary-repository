@@ -33,7 +33,7 @@ test("Can break parts", (tst) => {
         path: "//error_command"
     }]);
 
-    let parter = new Sha256FileToSha256FilePart('./test/data', 1024, {objectMode: true});
+    let parter = new Sha256FileToSha256FilePart(1024, {objectMode: true});
     shaFiles.pipe(parter);
 
     return streamDataCollector<Sha256FilePart>(parter)

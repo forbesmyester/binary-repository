@@ -1,7 +1,6 @@
 import test from 'ava';
 import { getFilenameToFileMapFunc } from '../src/getFilenameToFileMapFunc';
-import { AbsoluteFilePath, File, Filename } from '../src/Types';
-import { MapFunc } from 'streamdash';
+import { File } from '../src/Types';
 import { stat } from 'fs';
 import { basename } from 'path';
 

@@ -1,4 +1,4 @@
-import { ExitStatusError, CmdSpawner, CmdRunner, CmdOutput } from '../src/CmdRunner';
+import { ExitStatusError, CmdRunner, CmdOutput } from '../src/CmdRunner';
 import test from 'ava';
 import { streamDataCollector } from 'streamdash';
 

@@ -2,8 +2,6 @@ import { GpgKey, AbsoluteFilePath, S3Location, S3BucketName, S3Object, RemotePen
 import { createReadStream, createWriteStream, rename, stat } from 'fs';
 import Client from '../Client';
 import RepositoryAbstract from './RepositoryAbstract';
-import padLeadingZero from '../padLeadingZero';
-import * as filesize from 'filesize';
 import { join } from 'path';
 
 function constructObject(gpgKey: GpgKey, a: RemotePendingCommitStatRecordDecided): S3Object {

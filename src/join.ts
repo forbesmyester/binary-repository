@@ -1,6 +1,6 @@
-import { Callback, Callback2 } from './Types';
+import { Callback } from './Types';
 import { flatten, xprod, merge, equals } from 'ramda';
-import { Duplex, Writable, Transform, Readable } from 'stronger-typed-streams';
+import { Transform } from 'stronger-typed-streams';
 export { Duplex, Writable, Transform, Readable } from 'stronger-typed-streams';
 import { asyncMap } from 'streamdash';
 

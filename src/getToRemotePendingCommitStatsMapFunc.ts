@@ -1,20 +1,12 @@
 import myStat from './myStats';
-import { RemotePendingCommitStatRecordStat, ByteCount, Callback, RemotePendingCommitInfo, RemotePendingCommitInfoRecord, RemotePendingCommitStat, RemotePendingCommitStatRecord, AbsoluteFilePath, AbsoluteDirectoryPath } from '../src/Types';
+import { RemotePendingCommitStatRecordStat, Callback, RemotePendingCommitInfo, RemotePendingCommitInfoRecord, RemotePendingCommitStat, RemotePendingCommitStatRecord, AbsoluteFilePath, AbsoluteDirectoryPath } from '../src/Types';
 import { asyncMap, MapFunc } from 'streamdash';
 import { assoc } from 'ramda';
-import { getFileToSha256FileMapFunc, getRunner } from './getFileToSha256FileMapFunc';
+import { getRunner } from './getFileToSha256FileMapFunc';
 import { stat } from 'fs';
 import { Stats } from 'fs';
-import { singleLineCmdRunner } from './singleLineCmdRunner';
 import { join } from 'path';
 import { Sha256 } from './Types';
-
-
-// export function getRunner({ cmdSpawner }: {cmdSpawner: CmdSpawner}) {
-//     return singleLineCmdRunner({ cmdSpawner }, "sha256sum", /^([a-z0-9]{64})/);
-// }
-
-// export function getFileToSha256FileMapFunc({ runner }: { runner: MapFunc<AbsoluteFilePath, Sha256> }, rootPath: AbsoluteDirectoryPath): MapFunc<File, Sha256File> {
 
 
 export interface Dependencies {
@@ -24,10 +16,9 @@ export interface Dependencies {
 
 
 export function getDependencies(): Dependencies {
-
-    let runner = getRunner();
-    return { stat, runner };
+    return { stat, runner: getRunner() };
 }
+
 
 export default function getToRemotePendingCommitStatsMapFunc({ stat, runner }: Dependencies, rootPath: AbsoluteDirectoryPath): MapFunc<RemotePendingCommitInfo, RemotePendingCommitStat> {
 
@@ -93,4 +84,5 @@ export default function getToRemotePendingCommitStatsMapFunc({ stat, runner }: D
     };
 
 }
+
 

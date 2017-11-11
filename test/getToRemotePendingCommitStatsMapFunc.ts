@@ -1,7 +1,6 @@
 import test from 'ava';
 import { AbsoluteFilePath, Callback, Sha256, RemotePendingCommitInfo, RemotePendingCommitStat, Operation } from '../src/Types';
 import { dissoc } from 'ramda';
-import { Dependencies } from '../src/getToRemotePendingCommitStatsMapFunc';
 import getToRemotePendingCommitStatsMapFunc from '../src/getToRemotePendingCommitStatsMapFunc';
 import { Stats } from 'fs';
 

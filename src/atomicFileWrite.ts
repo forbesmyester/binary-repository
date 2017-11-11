@@ -16,5 +16,3 @@ export default function atomicFileWrite(tmpPath: AbsoluteFilePath, finalPath: Ab
         });
     });
 }
-
-let f: AtomicFileWrite = atomicFileWrite; // Just to check that we meet the interface

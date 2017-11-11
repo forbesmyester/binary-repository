@@ -1,7 +1,7 @@
 import test from 'ava';
 import CommitFilenameS3 from '../src/CommitFilenameS3';
 import { Filename } from '../src/Types';
-import { S3, AWSError, Request } from 'aws-sdk';
+import { S3, AWSError } from 'aws-sdk';
 import { streamDataCollector } from 'streamdash';
 
 test('Can list S3 Commits', (tst) => {

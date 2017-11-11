@@ -10,7 +10,8 @@
         "declaration": true,
         "target": "es6",
         "outDir": "dist",
-        "alwaysStrict": true
+        "alwaysStrict": true,
+        "noUnusedLocals": true
     },
     "include": [
         "src/**/*.ts",

@@ -1,5 +1,5 @@
 import { ScanFunc } from 'streamdash';
-import { BackupRecord, Operation, Callback2, Commit, BackupCheckDatabase } from '../src/Types';
+import { Callback2, Commit, BackupCheckDatabase } from '../src/Types';
 import { reduce, assoc, pick, merge } from 'ramda';
 
 export interface Dependencies {

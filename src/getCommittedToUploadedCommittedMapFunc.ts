@@ -1,10 +1,8 @@
 import { CommitFilename, Callback, AbsoluteFilePath, AbsoluteDirectoryPath, GpgKey, S3Object, S3BucketName, CommandName } from  './Types';
 import { dirname, join } from 'path';
-import { ExitStatus, CmdOutput, CmdSpawner, CmdRunner } from './CmdRunner';
+import { CmdSpawner, CmdRunner } from './CmdRunner';
 import { rename } from 'fs';
-import { MapFunc, streamDataCollector, Transform } from 'streamdash';
-import {} from "./UploadedS3FilePartsToCommit";
-import { assoc } from 'ramda';
+import { MapFunc, streamDataCollector } from 'streamdash';
 import * as mkdirp from 'mkdirp';
 
 export interface MkdirP {
@@ -80,7 +78,7 @@ export default function getCommittedToUploadedCommittedMapFunc(
             {}
         );
 
-        let sdc = streamDataCollector(cmdRunner)
+        streamDataCollector(cmdRunner)
             .then((lines) => {
                 myRename(
                     mkdirp,

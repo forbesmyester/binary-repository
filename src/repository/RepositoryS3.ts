@@ -1,10 +1,8 @@
 import { GpgKey, AbsoluteFilePath, S3Location, S3BucketName, S3Object, RemotePendingCommitStatRecordDecided, Callback, AbsoluteDirectoryPath, ByteCount } from '../Types';
-import { createReadStream, createWriteStream, rename, stat } from 'fs';
+import { createReadStream, createWriteStream, rename } from 'fs';
 import RepositoryAbstract from './RepositoryAbstract';
-import padLeadingZero from '../padLeadingZero';
 import { join } from 'path';
 import { S3 } from 'aws-sdk';
-import * as filesize from 'filesize';
 import Client from '../Client';
 import * as NodeStream from 'stream';
 

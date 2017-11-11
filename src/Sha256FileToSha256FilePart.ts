@@ -1,14 +1,12 @@
-import { AbsoluteDirectoryPath, ByteOffset, ByteCount, IsLast, File, Sha256File, Sha256FilePart, Callback, FilePartIndex } from  './Types';
+import { ByteOffset, ByteCount, IsLast, Sha256File, Sha256FilePart, FilePartIndex } from  './Types';
 import { Transform } from 'streamdash';
-import { open, read } from 'fs';
-import { join } from 'path';
-import { addIndex, adjust, range, map, pipe, merge } from 'ramda';
+import { addIndex, range, map, pipe, merge } from 'ramda';
 
 export type Triple = [ByteOffset, ByteCount, IsLast, FilePartIndex, ByteCount];
 
 export class Sha256FileToSha256FilePart extends Transform<Sha256File, Sha256FilePart> {
 
-    constructor(private rootPath: AbsoluteDirectoryPath, private filePartByteCountThreshold: ByteCount, opts = {}) {
+    constructor(private filePartByteCountThreshold: ByteCount, opts = {}) {
         super(Object.assign({objectMode: true}, opts));
     }
 

@@ -1,7 +1,7 @@
-import { Callback, AbsoluteFilePath, AbsoluteDirectoryPath, Sha256, ByteCount, ModifiedDate, File, Sha256File } from  './Types';
+import { Callback, AbsoluteFilePath, AbsoluteDirectoryPath, Sha256, File, Sha256File } from  './Types';
 import { MapFunc } from 'streamdash';
 import { join } from 'path';
-import { createReadStream, stat } from 'fs';
+import { createReadStream } from 'fs';
 import { createHash } from 'crypto';
 
 export function getRunner() {
@@ -23,7 +23,7 @@ export function getRunner() {
             finished = true;
             next(null, hash.digest('hex'));
         });
-    }
+    };
 }
 
 export function getFileToSha256FileMapFunc({ runner }: { runner: MapFunc<AbsoluteFilePath, Sha256> }, rootPath: AbsoluteDirectoryPath): MapFunc<File, Sha256File> {

@@ -1,12 +1,12 @@
 import myStat from './myStats';
 import Client from './Client';
-import { rename, createReadStream, createWriteStream, Stats, stat as realStat} from 'fs';
+import { Stats, stat as realStat} from 'fs';
 import { mapLimit } from 'async';
 import { dirname, join } from 'path';
 import { MapFunc } from 'streamdash';
 import throat = require('throat');
-import { flatten, pipe, range, assoc, dissoc, map } from 'ramda';
-import { CommitId, NotificationHandler, GpgKey, RemoteType, FilePartIndex, S3Object, S3Location, RemotePendingCommitStatRecordDecided, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, ByteCount } from './Types';
+import { range, assoc, map } from 'ramda';
+import { CommitId, NotificationHandler, GpgKey, RemoteType, S3Object, S3Location, RemotePendingCommitStatRecordDecided, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, ByteCount } from './Types';
 import * as mkdirp from 'mkdirp';
 import RepositoryLocalfiles from './repository/RepositoryLocalfiles';
 import RepositoryS3 from './repository/RepositoryS3';
@@ -163,7 +163,6 @@ export default function getToDownloadedParts({ constructFilepartLocalLocation, c
     }
 
     function process(commitId: CommitId, a: RemotePendingCommitStatRecordDecided, next: Callback<RemotePendingCommitStatRecordDecided>) {
-        let max = a.part[1];
         spawnPartsIfLast(a)
             .then(multi(checkDownloaded.bind(null)))
             .then(multi(doDownloaded.bind(null, commitId)))

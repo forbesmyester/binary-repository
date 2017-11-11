@@ -1,13 +1,9 @@
 import test from 'ava';
 import getCommittedToUploadedCommittedMapFunc from '../src/getCommittedToUploadedCommittedMapFunc';
 import { CmdRunner } from '../src/CmdRunner';
-import { MapFunc } from 'streamdash';
-import { CommitFilename, Operation } from '../src/Types';
-import { CmdOutput } from '../src/CmdRunner';
+import { CommitFilename } from '../src/Types';
 
 test.cb("do it", (tst) => {
-
-    let modifiedDate = new Date("2017-06-19T06:20:05.168Z");
 
     let input: CommitFilename = {
         path: 'zzz001-ClientId.commit',
