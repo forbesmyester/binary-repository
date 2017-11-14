@@ -369,11 +369,28 @@ function getOverallBar(barUpdater, quiet, useStartForTitle = true): OverallBar {
     return { minus, plus };
 }
 
+function getThresholds() {
+    if (process.env.hasOwnProperty('BINARY_REPOSITORY_USE_DEV_THRESHOLDS')) {
+    return {
+        filePartByteCountThreshold: 1024, // 1K
+        commitFileByteCountThreshold: 1024, // 1K
+        commitMaxTimeThreshold: 1000 * 60
+    };
+    }
+    return {
+        filePartByteCountThreshold: 1024 * 1024 * 64, // 64MB
+        commitFileByteCountThreshold: 1024 * 1024 * 256, // 256MB
+        commitMaxTimeThreshold: 1000 * 60
+    };
+}
+
 export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath, { quiet }) {
 
-    const filePartByteCountThreshold = 1024 * 1024 * 64, // 64MB
-        commitFileByteCountThreshold = 1024 * 1024 * 256, // 256MB
-        commitMaxDelay = 1000 * 60 * 5;
+    const {
+        filePartByteCountThreshold,
+        commitFileByteCountThreshold,
+        commitMaxTimeThreshold
+    } = getThresholds();
 
     let barUpdater = managedMultiProgress(
         5,
@@ -421,7 +438,7 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
             clientId,
             gpgKey,
             commitFileByteCountThreshold,
-            commitMaxDelay,
+            commitMaxTimeThreshold,
             stdPipeOptions
         ),
         sha256FilePartToUploadedS3FilePart = new MapTransform(
@@ -492,7 +509,6 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
         remoteType = getRemoteType(config.remote),
         globber = RootReadable.getGlobFunc(),
         repositoryCommitFiles: null|Readable<Filename> = null,
-        cmd: string = '',
         commitDir = 'commit',
         remoteCommitDir = 'remote-commit',
         pendingCommitDir = 'pending-commit';
@@ -518,7 +534,6 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
 
 
     if (remoteType == RemoteType.LOCAL_FILES) {
-        cmd = join(bashDir, 'download-cat');
         repositoryCommitFiles = preparePipe(new CommitFilenameLocalFiles(
             {glob: globber},
             removeProtocol(config['remote']),
@@ -528,7 +543,6 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
 
 
     if (remoteType == RemoteType.S3) {
-        cmd = join(bashDir, 'download-s3');
         repositoryCommitFiles = preparePipe(new CommitFilenameS3(
             new S3(),
             removeProtocol(config['remote']),

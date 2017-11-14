@@ -5,7 +5,8 @@ IFS=$'\n\t'
 GPGKEY_COMMIT='ebak'
 REMOTE="s3://${GPGKEY_COMMIT}-$(date +%F)"
 REMOTE="file://integration-test-temp-files/${GPGKEY_COMMIT}-repo" # Comment this line for AWS testing
-QUIET="true"
+QUIET="false"
+export BINARY_REPOSITORY_USE_DEV_THRESHOLDS=1 # Warning, only for testing
 
 GPGKEY_FILEPART1='ebak-fp1'
 
