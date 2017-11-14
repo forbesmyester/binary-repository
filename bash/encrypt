@@ -1,0 +1,17 @@
+#!/bin/bash
+
+IFS=$'\n\t'
+set -uo pipefail
+
+# Find the cmd to use for GPG
+which gpg2 && PROG=gpg2
+if [ $? -ne 0 ]; then
+    which gpg && PROG=gpg
+fi
+
+set -e
+if [ ${OPT_DD_IS_LAST} -eq "1" ]; then
+    dd if="${OPT_SRC}" bs="${OPT_DD_BS}" skip="${OPT_DD_SKIP}" | ${PROG} -e -r "${OPT_GPG_KEY}" > "${OPT_DST}"
+else
+    dd if="${OPT_SRC}" count="${OPT_DD_COUNT}" bs="${OPT_DD_BS}" skip="${OPT_DD_SKIP}" | ${PROG} -e -r "${OPT_GPG_KEY}" > "${OPT_DST}"
+fi

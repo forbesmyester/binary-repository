@@ -52,6 +52,11 @@ export function getDependencies(mode: RemoteType): Dependencies {
 
 }
 
+/**
+ * NOTE: Paralleism is set to 1 here, because temp files are named after SHA and
+ *       if there are multiple files in a commit with the same SHA...
+ */
+
 export default function getToDownloadedParts({ constructFilepartLocalLocation, constructFilepartS3Location, mkdirp, stat, downloadSize, download }: Dependencies, configDir: AbsoluteDirectoryPath, s3Bucket: S3BucketName, notificationHandler?: NotificationHandler): MapFunc<RemotePendingCommitStat, RemotePendingCommitStat> {
 
     let tmpDir = join(configDir, 'tmp'),
@@ -154,7 +159,7 @@ export default function getToDownloadedParts({ constructFilepartLocalLocation, c
     }
 
     function multi(f: (a: RemotePendingCommitStatRecordDecided) => Promise<RemotePendingCommitStatRecordDecided>) {
-        let ff = throat(3, f);
+        let ff = throat(1, f);
         return function(inputs: RemotePendingCommitStatRecordDecided[]) {
             return Promise.all(
                 map(ff, inputs)
@@ -175,7 +180,7 @@ export default function getToDownloadedParts({ constructFilepartLocalLocation, c
     return function(input: RemotePendingCommitStat, next) {
         mapLimit(
             input.record,
-            2,
+            1,
             process.bind(null, input.commitId),
             (e: Error|null) => { next(e, input); }
         );

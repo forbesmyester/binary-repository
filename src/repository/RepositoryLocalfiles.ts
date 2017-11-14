@@ -59,7 +59,7 @@ let RepositoryLocalfiles: RepositoryAbstract = {
 
     upload: (tmpDir: AbsoluteDirectoryPath, src: AbsoluteFilePath, loc: S3Location, next: Callback<void>) => {
         let nexted = false;
-        let tmp = join(tmpDir, src.replace(/[^a-zA-Z0-9]/, '_'));
+        let tmp = join(tmpDir, src.replace(/[^a-zA-Z0-9]/g, '_'));
         let read = createReadStream(src);
         let write = createWriteStream(tmp);
         read.on('error', (e) => { nexted ? null : next(e); nexted = true; });

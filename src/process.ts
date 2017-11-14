@@ -1,6 +1,6 @@
 import { RemotePendingCommitStatDecided, RemoteType, S3BucketName, RemoteUri, GpgKey, UploadedS3FilePart, Sha256FilePart, ConfigFile, AbsoluteDirectoryPath, RelativeFilePath, Filename, CommitFilename } from './Types';
 import { format } from 'util';
-import { rename, readFileSync, readFile } from 'fs';
+import { readFileSync, readFile } from 'fs';
 import getToRemotePendingCommitStatsMapFunc from './getToRemotePendingCommitStatsMapFunc';
 import safeSize from './safeSize';
 import getToRemotePendingCommitDeciderMapFunc from './getToRemotePendingCommitDeciderMapFunc';
@@ -29,7 +29,6 @@ import getSha256FilePartToUploadedS3FilePartMapFunc from './getSha256FilePartToU
 import { getCommitToCommittedMapFuncDependencies, getCommitToCommittedMapFunc } from './getCommitToCommittedMapFunc';
 import { UploadedS3FilePartsToCommit } from './UploadedS3FilePartsToCommit';
 import { Readable, Transform, Writable } from 'stronger-typed-streams';
-import { CmdRunner } from './CmdRunner';
 import getCommittedToUploadedS3CommittedMapFunc from './getCommittedToUploadedCommittedMapFunc';
 import { stat } from 'fs';
 import getFileNotBackedUpRightAfterLeftMapFunc from './getFileNotBackedUpRightAfterLeftMapFunc';
@@ -39,7 +38,6 @@ import { join as joinArray, sortBy, keys } from 'ramda';
 import getRepositoryCommitToRemoteCommitMapFunc from './getRepositoryCommitToRemoteCommitMapFunc';
 import { getDependencies as getRepositoryCommitToRemoteCommitMapFuncDependencies } from './getRepositoryCommitToRemoteCommitMapFunc';
 import getNotInLeft from './getNotInLeftRightAfterLeftMapFunc';
-import * as mkdirp from 'mkdirp';
 import { S3 } from 'aws-sdk';
 
 
@@ -160,27 +158,27 @@ function getRemoteType(remote: RemoteUri) {
     throw new Error("Cannot figure out remote type from RemoteUri: " + remote);
 }
 
-function getSha256FilePartToUploadedFilePart(rootDir: AbsoluteDirectoryPath, remote: RemoteUri, gpgKey: GpgKey, filePartByteCountThreshold: number): MapFunc<Sha256FilePart, UploadedS3FilePart> {
+function getSha256FilePartToUploadedFilePart(configDir: AbsoluteDirectoryPath, rootDir: AbsoluteDirectoryPath, remote: RemoteUri, gpgKey: GpgKey, filePartByteCountThreshold: number): MapFunc<Sha256FilePart, UploadedS3FilePart> {
 
     if (remote.match(/^s3\:\/\//)) {
         return getSha256FilePartToUploadedS3FilePartMapFunc(
             getSha256FilePartToUploadedS3FilePartDependencies(RemoteType.S3),
+            configDir,
             rootDir,
             removeProtocol(remote),
             gpgKey,
             filePartByteCountThreshold,
-            join(bashDir, 'upload-s3')
         );
     }
 
     if (remote.match(/^file\:\/\//)) {
         return getSha256FilePartToUploadedS3FilePartMapFunc(
             getSha256FilePartToUploadedS3FilePartDependencies(RemoteType.LOCAL_FILES),
+            configDir,
             rootDir,
             removeProtocol(remote),
             gpgKey,
             filePartByteCountThreshold,
-            join(bashDir, 'upload-cat')
         );
     }
 
@@ -205,7 +203,9 @@ export function push(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirector
 
         if (remote.match(/^s3\:\/\//)) {
             return getCommittedToUploadedS3CommittedMapFunc(
-                { mkdirp, cmdSpawner: CmdRunner.getCmdSpawner({}), rename },
+                getCommittedToUploadedS3CommittedMapFunc.getDependencies(
+                    getRemoteType(config.remote),
+                ),
                 configDir,
                 removeProtocol(remote),
                 gpgKey,
@@ -215,7 +215,9 @@ export function push(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirector
 
         if (remote.match(/^file\:\/\//)) {
             return getCommittedToUploadedS3CommittedMapFunc(
-                { mkdirp, cmdSpawner: CmdRunner.getCmdSpawner({}), rename },
+                getCommittedToUploadedS3CommittedMapFunc.getDependencies(
+                    getRemoteType(config.remote),
+                ),
                 configDir,
                 removeProtocol(remote),
                 gpgKey,
@@ -424,6 +426,7 @@ export function upload(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirect
         ),
         sha256FilePartToUploadedS3FilePart = new MapTransform(
             getSha256FilePartToUploadedFilePart(
+                configDir,
                 rootDir,
                 config.remote,
                 fpGpgKey,

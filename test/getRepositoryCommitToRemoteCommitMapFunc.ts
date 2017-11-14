@@ -19,6 +19,7 @@ test.cb("Download Generate Environment (base)", (tst) => {
     };
 
     let done = {
+        unlink: false,
         download: false,
         spawned: false,
         rename: false,
@@ -32,6 +33,7 @@ test.cb("Download Generate Environment (base)", (tst) => {
     let mkdirPass = 0;
 
     let dependencies = {
+        unlink: (f, n) => { done.unlink = true; n(null); },
         download: (tmpDir: AbsoluteDirectoryPath, loc: S3Location, downloadTo: AbsoluteFilePath, next: Callback<void>) => {
             done.download = true;
             tst.is(tmpDir, "/tmp/x/.ebak/tmp");
@@ -74,7 +76,9 @@ test.cb("Download Generate Environment (base)", (tst) => {
     );
 
     mapFunc(input, (err, result) => {
+        tst.is(err, null);
         tst.deepEqual(done, {
+            unlink: true,
             download: true,
             spawned: true,
             rename: true,

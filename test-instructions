@@ -5,7 +5,7 @@ IFS=$'\n\t'
 GPGKEY_COMMIT='ebak'
 REMOTE="s3://${GPGKEY_COMMIT}-$(date +%F)"
 REMOTE="file://integration-test-temp-files/${GPGKEY_COMMIT}-repo" # Comment this line for AWS testing
-QUIET="false"
+QUIET="true"
 
 GPGKEY_FILEPART1='ebak-fp1'
 
@@ -43,6 +43,7 @@ if [ $(echo "$REMOTE" | grep '^s3' | wc -c) -gt 0 ]; then
     aws s3 mb "$REMOTE"
 else
     rm -rf $( echo "$REMOTE" | sed 's%^[a-z0-9]\+\://%%' )
+    mkdir -p integration-test-temp-files/ebak-repo
 fi
 
 ./bin/binary-repository init --quiet=$QUIET --filepart-gpg-key "$GPGKEY_FILEPART1" --local-config=integration-test-temp-files/ebak-config/matt_first --client-id mattfirst --gpg-key "$GPGKEY_COMMIT"  --remote "$REMOTE" integration-test-temp-files/ebak-data/matt_first
@@ -72,10 +73,6 @@ fi
 
 ./bin/binary-repository upload --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first
 
-if [ $(find integration-test-temp-files/ebak-config/matt_first/pending-commit -type f | wc -l) -ne 1 ]; then
-    echo "Was expecting one matt_first pending-commit"
-    exit 1
-fi
 
 ./bin/binary-repository push --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first
 
@@ -91,14 +88,9 @@ if [ $(find integration-test-temp-files/ebak-config/matt_first/pending-commit -t
     exit 1
 fi
 
-if [ $(find integration-test-temp-files/ebak-config/matt_first/commit -type f | wc -l) -ne 1 ]; then
-    echo "Was expecting one matt_first commit"
-    exit 1
-fi
-
 
 if [ $(echo "$REMOTE" | grep '^file' | wc -c) -gt 0 ]; then
-    if [ $(gpg --batch --list-packets integration-test-temp-files/ebak-repo/c-X* 2>&1 | grep '^ \+"' | sed 's/ \+"//' | sed 's/"$//') != "$GPGKEY_COMMIT" ]; then
+    if [ $(gpg --batch --list-packets $(ls integration-test-temp-files/ebak-repo/c-X* | head -n 1) 2>&1 | grep '^ \+"' | sed 's/ \+"//' | sed 's/"$//') != "$GPGKEY_COMMIT" ]; then
         echo "Commit should have been encrypted with $GPGKEY_COMMIT"
         exit 1
     fi
@@ -117,12 +109,7 @@ fi
 
 ./bin/binary-repository fetch --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/jim_leach integration-test-temp-files/ebak-data/jim_leach
 
-if [ $(find integration-test-temp-files/ebak-config/jim_leach/remote-pending-commit -type f | wc -l) -ne 1 ]; then
-    echo "There should be one remote-pending-commit in jim_leach directory"
-    exit 1
-fi
-
-if [ $(diff integration-test-temp-files/ebak-config/jim_leach/remote-pending-commit/* integration-test-temp-files/ebak-config/matt_first/commit/* | wc -l) -ne 0 ]; then
+if [ $(diff integration-test-temp-files/ebak-config/jim_leach/remote-pending-commit integration-test-temp-files/ebak-config/matt_first/commit | wc -l) -ne 0 ]; then
     echo "The remote-pending-commit did not match the commit"
     exit 1
 fi
@@ -136,7 +123,7 @@ fi
 
 ./bin/binary-repository download --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/jim_leach integration-test-temp-files/ebak-data/jim_leach
 
-if [ $(diff integration-test-temp-files/ebak-config/jim_leach/remote-commit/* integration-test-temp-files/ebak-config/matt_first/commit/* | wc -l) -ne 0 ]; then
+if [ $(diff integration-test-temp-files/ebak-config/jim_leach/remote-commit integration-test-temp-files/ebak-config/matt_first/commit | wc -l) -ne 0 ]; then
     echo "The remote-pending-commit should now be in remote-commit"
     exit 1
 fi
@@ -191,7 +178,7 @@ if [ $(cat integration-test-temp-files/new-commit integration-test-temp-files/ol
 fi
 
 
-if [ $(cat integration-test-temp-files/ebak-repo/f-806666aa36f2d65362a85fb19578babfc271ddcff6ef36265223dc0562d53f14-1-64MB-ebak--fp1.ebak | gpg -d | head -n1) != '# t-fp-merge' ]; then
+if [ $(cat $(ls integration-test-temp-files/ebak-repo/f-806666aa36f2d65362a85fb19578babfc271ddcff6ef36265223dc0562d53f14-1-*-ebak--fp1.ebak) | gpg -d | head -n1) != '# t-fp-merge' ]; then
     echo "t-fp-merge README.md was expected to be in f-806666aa36f2d65362a85fb19578babfc271ddcff6ef36265223dc0562d53f14-1-64MB-ebak--fp1.ebak but it was not"
     exit 1
 fi
@@ -199,5 +186,8 @@ fi
 echo "Tests Passed."
 
 
-
+if [ $(find  integration-test-temp-files/ebak-config/*/tmp/ -type f | wc -l) -ne 0 ]; then
+    echo "Mess left in tmp files"
+    exit 1
+fi
 

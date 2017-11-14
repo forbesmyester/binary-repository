@@ -5,7 +5,7 @@ import { streamDataCollector } from 'streamdash';
 import RepositoryS3 from './repository/RepositoryS3';
 import RepositoryLocalfiles from './repository/RepositoryLocalfiles';
 import { dirname, join } from 'path';
-import { rename } from 'fs';
+import { unlink, rename } from 'fs';
 import * as mkdirp from 'mkdirp';
 
 export interface MkdirP {
@@ -13,6 +13,7 @@ export interface MkdirP {
 }
 
 export interface Dependencies {
+    unlink: (path: AbsoluteFilePath, next: Callback<void>) => void;
     download: (tmpDir: AbsoluteDirectoryPath, loc: S3Location, downloadTo: AbsoluteFilePath, next: Callback<void>) => void;
     cmdSpawner: CmdSpawner;
     rename: (src: AbsoluteFilePath, dst: AbsoluteFilePath, next: Callback<void>) => void;
@@ -23,11 +24,11 @@ export interface Dependencies {
 export function getDependencies(mode: RemoteType): Dependencies {
 
     if (mode == RemoteType.S3) {
-        return { download: RepositoryS3.download, rename, mkdirp, cmdSpawner: CmdRunner.getCmdSpawner({}) };
+        return { unlink, download: RepositoryS3.download, rename, mkdirp, cmdSpawner: CmdRunner.getCmdSpawner({}) };
     }
 
     if (mode == RemoteType.LOCAL_FILES) {
-        return { download: RepositoryLocalfiles.download, rename, mkdirp, cmdSpawner: CmdRunner.getCmdSpawner({}) };
+        return { unlink, download: RepositoryLocalfiles.download, rename, mkdirp, cmdSpawner: CmdRunner.getCmdSpawner({}) };
     }
 
     throw new Error("Unsupported");
@@ -113,6 +114,14 @@ export default function getRepositoryCommitToRemoteCommitMapFunc(
                         resolve(r);
                     });
                 });
+            })
+            .then((r: RemotePendingCommitCmdResult) => {
+                return new Promise((resolve, reject) => {
+                    dependencies.unlink(env.OPT_SRC, (e) => {
+                        if (e) { return reject(e); }
+                        resolve(r);
+                    });
+                })
             })
             .then((r: RemotePendingCommitCmdResult) => {
                 let dest = join(configDir, 'remote-pending-commit', input.path);

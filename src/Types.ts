@@ -173,8 +173,6 @@ export interface Sha256FilePart extends Sha256File {
 export interface CmdResult { readonly exitStatus: ExitStatus; readonly output: CmdOutput[]; }
 
 export interface UploadedS3FilePart extends Sha256FilePart {
-    readonly uploadAlreadyExists: boolean;
-    readonly result: CmdResult;
     readonly gpgKey: GpgKey;
 }
 

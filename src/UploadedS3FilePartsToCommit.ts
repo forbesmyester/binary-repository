@@ -1,6 +1,6 @@
 import { BASE_TLID_UNIQUENESS, BASE_TLID_TIMESTAMP, BackupRecord, Commit, GpgKey, Operation, UploadedS3FilePart } from './Types';
 import { Transform } from 'streamdash';
-import { path, reduce } from 'ramda';
+import { reduce } from 'ramda';
 import * as getTlidEncoderDecoder from 'get_tlid_encoder_decoder';
 
 let tLIdEncoderDecoder = getTlidEncoderDecoder(
@@ -45,11 +45,6 @@ export class UploadedS3FilePartsToCommit extends Transform<UploadedS3FilePart, C
 
     _transform(input: UploadedS3FilePart, encoding, cb) {
 
-        let exitStatus = path(['result', 'exitStatus'], input);
-        if (exitStatus !== 0) {
-            // TODO: Replace with proper error.
-            return cb(new Error(`Non zero exit status when uploading (${exitStatus})`));
-        }
         this.records.push({
             gpgKey: input.gpgKey,
             sha256: input.sha256,

@@ -1,7 +1,7 @@
 import test from 'ava';
 import { Operation, FilePartIndex, Callback, Commit, UploadedS3FilePart } from '../src/Types';
 import { MapTransform, ArrayReadable, streamDataCollector } from 'streamdash';
-import { adjust, reduce, assoc, map, pipe, range } from 'ramda';
+import { reduce, assoc, map, pipe, range } from 'ramda';
 import { UploadedS3FilePartsToCommit } from '../src/UploadedS3FilePartsToCommit';
 
 let modifiedDate = new Date("2017-06-19T06:20:05.168Z");
@@ -31,20 +31,10 @@ function getFileParts(low, high, count) {
         filePartByteCountThreshold: 1024,
         length: 100,
         part: [22, 152],
-        uploadAlreadyExists: false,
         offset: 1111,
         modifiedDate,
         path: "//error_command",
-        isLast: true,
-        result: {
-            exitStatus: 0,
-            output: [{
-                name: 'stdout',
-                text: 'dd if="/tmp/x/error_command" bs="1" skip="1111" count="100" | ' +
-                'gpg -e -r "ebak" | ' +
-                'aws s3 cp - "s3://ebak-bucket/c-def8c702e06f7f6ac6576e0d4bbd830303aaa7d6857ee6c81c6d6a1b0a6c3bdf-022-1K.ebak"'
-            }]
-        }
+        isLast: true
     };
 
     let f = pipe(
@@ -66,42 +56,6 @@ function getTransactionIdGenerator() {
         return s;
     };
 }
-
-test("Will error if a non-zero exit code is there (should never be)", (tst) => {
-
-    let getGetDate = function() {
-        let i = 0;
-        return () => commitDates[i++];
-    };
-
-    let input = adjust(
-        assoc('result', { exitStatus: 1 }),
-        3,
-        getFileParts(22, 25, 152)
-    );
-    let src = new ArrayReadable(input);
-    let trn = new UploadedS3FilePartsToCommit(
-        {
-            getDate: getGetDate(),
-            commitIdGenerator: getTransactionIdGenerator()
-        },
-        "ClientId",
-        'gg',
-        2048,
-        1000 * 120,
-        {}
-    );
-
-    src.pipe(trn);
-
-    return streamDataCollector<Commit>(trn)
-        .then((commits) => {
-            tst.fail("The exit code of 1 should have caused failure");
-        })
-        .catch(e => {
-            tst.pass();
-        });
-});
 
 test("Will output at filesize threshold and flush", (tst) => {
 
