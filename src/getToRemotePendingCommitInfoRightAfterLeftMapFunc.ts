@@ -1,8 +1,15 @@
 import { map, assoc } from 'ramda';
 import { RightAfterLeftMapFunc } from 'streamdash';
-import { BackupCheckDatabase, RemotePendingCommit, RemotePendingCommitInfo, RemotePendingCommitInfoRecord } from './Types';
+import { BackupCheckDatabaseValue, BackupCheckDatabase, RemotePendingCommit, RemotePendingCommitInfo, RemotePendingCommitInfoRecord } from './Types';
+import { last } from 'ramda';
 
 export interface Dependencies {}
+
+function excl(i: BackupCheckDatabaseValue) {
+    let r = Object.assign({}, i);
+    delete r.commitId;
+    return r;
+}
 
 export default function getToRemotePendingCommitInfoRightAfterLeftMapFunc(dependencies: Dependencies): RightAfterLeftMapFunc<BackupCheckDatabase, RemotePendingCommit, RemotePendingCommitInfo> {
 
@@ -20,7 +27,7 @@ export default function getToRemotePendingCommitInfoRightAfterLeftMapFunc(depend
                 if (!db.hasOwnProperty(record.path)) {
                     return assoc('local', null, record);
                 }
-                return assoc('local', db[record.path], record);
+                return assoc('local', excl(last(db[record.path])), record);
             },
             rpc.record
         );

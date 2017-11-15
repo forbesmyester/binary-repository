@@ -1,4 +1,4 @@
-import { RemotePendingCommitStatDecided, RemoteType, S3BucketName, RemoteUri, GpgKey, UploadedS3FilePart, Sha256FilePart, ConfigFile, AbsoluteDirectoryPath, RelativeFilePath, Filename, CommitFilename } from './Types';
+import { BackupCheckDatabase, BackupCheckDatabaseValue, RemotePendingCommitStatDecided, RemoteType, S3BucketName, RemoteUri, GpgKey, UploadedS3FilePart, Sha256FilePart, ConfigFile, AbsoluteDirectoryPath, RelativeFilePath, Filename, CommitFilename } from './Types';
 import { format } from 'util';
 import { readFileSync, readFile } from 'fs';
 import getToRemotePendingCommitStatsMapFunc from './getToRemotePendingCommitStatsMapFunc';
@@ -34,7 +34,7 @@ import { stat } from 'fs';
 import getFileNotBackedUpRightAfterLeftMapFunc from './getFileNotBackedUpRightAfterLeftMapFunc';
 // import getRemotePendingCommitToRemotePendingCommitLocalInfoRightAfterLeftMapFunc from './getRemotePendingCommitToRemotePendingCommitLocalInfoRightAfterLeftMapFunc';
 import getToRemotePendingCommitInfoRightAfterLeftMapFunc from './getToRemotePendingCommitInfoRightAfterLeftMapFunc';
-import { join as joinArray, sortBy, keys } from 'ramda';
+import { join as joinArray, sortBy, toPairs, map } from 'ramda';
 import getRepositoryCommitToRemoteCommitMapFunc from './getRepositoryCommitToRemoteCommitMapFunc';
 import { getDependencies as getRepositoryCommitToRemoteCommitMapFuncDependencies } from './getRepositoryCommitToRemoteCommitMapFunc';
 import getNotInLeft from './getNotInLeftRightAfterLeftMapFunc';
@@ -664,7 +664,7 @@ export function listDownloadImpl(rootDir: AbsoluteDirectoryPath, configDir: Abso
 
 }
 
-export function listExisting(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
+export function listExisting(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath, { detail }) {
 
     let commitStream = getCommitStream(
         configDir,
@@ -680,9 +680,21 @@ export function listExisting(rootDir: AbsoluteDirectoryPath, configDir: Absolute
         .pipe(toBackupCheckDatabaseScan)
         .pipe(new FinalDuplex(stdPipeOptions))
         .pipe(new ConsoleWritable(
-            { out: (n, o) => {
-                let r = joinArray("\n", sortBy(a => a, keys(o)));
-                console.log(r);
+            { out: (n, o: BackupCheckDatabase) => {
+                let outs = map(
+                    ([k, vs]: [string, BackupCheckDatabaseValue[]]) => {
+                        if (!detail) { return k; }
+                        let outV = joinArray(" ", map(v => v.commitId, vs));
+                        return `${k} (${outV})`;
+                    },
+                    sortBy(([k1, v1]) => k1, toPairs(o))
+                );
+                console.log(joinArray("\n", outs));
+                // let r = joinArray("\n", sortBy(a => a, keys(o)));
+                // if (detail) {
+
+                // }
+                // console.log(r);
             } },
             "Error: "
         ));

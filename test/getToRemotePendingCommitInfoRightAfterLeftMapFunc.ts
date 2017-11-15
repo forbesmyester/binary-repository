@@ -6,41 +6,48 @@ import getToRemotePendingCommitInfoRightAfterLeftMapFunc from '../src/getToRemot
 test("Can initialize", (tst) => {
 
     let database: BackupCheckDatabase = {
-        "my-projects/getTLIdEncoderDecoder.md": {
+        "my-projects/getTLIdEncoderDecoder.md": [{
+            commitId: 'a',
             modifiedDate : new Date("2017-09-09T17:27:22.730Z"),
             fileByteCount: 1816,
             sha256: "def"
-        },
-        "my-projects/stronger-typed-streams.md": {
+        }],
+        "my-projects/stronger-typed-streams.md": [{
+            commitId: 'a',
             modifiedDate:  new Date("2017-09-09T17:27:22.730Z"),
             fileByteCount: 3832,
             sha256: "8d2"
-        },
-        "my-projects/t-fp-assoc.md": {
+        }],
+        "my-projects/t-fp-assoc.md": [{
+            commitId: 'a',
             modifiedDate:  new Date("2017-09-09T17:27:22.730Z"),
             fileByteCount: 1247,
             sha256: "e42"
-        },
-        "my-projects/t-fp-dissoc.md": {
+        }],
+        "my-projects/t-fp-dissoc.md": [{
+            commitId: 'a',
             modifiedDate:  new Date("2017-09-09T17:27:22.730Z"),
             fileByteCount: 821,
             sha256: "472"
-        },
-        "my-projects/t-fp-merge.md": {
+        }],
+        "my-projects/t-fp-merge.md": [{
+            commitId: 'a',
             modifiedDate:  new Date("2017-09-09T17:27:22.730Z"),
             fileByteCount: 401,
             sha256: "806"
-        },
-        "my-projects/t-fp-to-pairs.md": {
+        }],
+        "my-projects/t-fp-to-pairs.md": [{
+            commitId: 'a',
             modifiedDate:  new Date("2017-09-09T17:27:22.730Z"),
             fileByteCount: 363,
             sha256: "a4f"
-        },
-        "my-projects/t-fp-from-pairs.md": {
+        }],
+        "my-projects/t-fp-from-pairs.md": [{
+            commitId: 'a',
             modifiedDate:  new Date("2017-09-09T17:27:22.730Z"),
             fileByteCount: 359,
             sha256: "3ea"
-        }
+        }]
     };
 
     let remotePending: BackupRecord[] = [

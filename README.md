@@ -155,6 +155,7 @@ To re-import the keys do something like the following:
  * [3] Add GPGKey as part of Filepart to stop name collisions.
  * [5] Allow listing of what would be uploaded / needs backing up.
  * [5] Allow listing of what would be download / restored.
+ * [5] Allow view of Database
 
 ### In Progress
 

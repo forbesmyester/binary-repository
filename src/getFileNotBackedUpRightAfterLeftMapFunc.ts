@@ -1,11 +1,12 @@
 import { RightAfterLeftMapFunc } from 'streamdash';
 import { File, BackupCheckDatabase } from './Types';
+import { last } from 'ramda';
 
 function viaDb(left: BackupCheckDatabase, right: File) {
     return (
         left.hasOwnProperty(right.path) &&
-        left[right.path].fileByteCount == right.fileByteCount &&
-        left[right.path].modifiedDate.toISOString() == right.modifiedDate.toISOString()
+        last(left[right.path]).fileByteCount == right.fileByteCount &&
+        last(left[right.path]).modifiedDate.toISOString() == right.modifiedDate.toISOString()
     );
 }
 

@@ -1,10 +1,10 @@
 import test from 'ava';
 import { assoc, map } from 'ramda';
-import { RemotePendingCommitStatDecided, Sha256, UserErrorCode, Operation, BackupCheckDatabaseValue, RemotePendingCommitStatRecordStat, RemotePendingCommitStat } from '../src/Types';
+import { RemotePendingCommitStatDecided, Sha256, UserErrorCode, Operation, RemotePendingCommitStatRecordStat, RemotePendingCommitStat } from '../src/Types';
 import { DeciderUserError } from '../src/getToRemotePendingCommitDeciderMapFunc';
 import getToRemotePendingCommitDeciderMapFunc from '../src/getToRemotePendingCommitDeciderMapFunc';
 
-function getInput(sha256: Sha256, modifiedDate: Date, local: null|BackupCheckDatabaseValue, stat: null|RemotePendingCommitStatRecordStat, part: number = 2): RemotePendingCommitStat {
+function getInput(sha256: Sha256, modifiedDate: Date, local, stat: null|RemotePendingCommitStatRecordStat, part: number = 2): RemotePendingCommitStat {
     return {
         gpgKey: 'gg',
         clientId: 'notme',
