@@ -156,6 +156,7 @@ To re-import the keys do something like the following:
  * [5] Allow listing of what would be uploaded / needs backing up.
  * [5] Allow listing of what would be download / restored.
  * [5] Allow view of Database
+ * [5] Validate GPG Keys
 
 ### In Progress
 
@@ -163,7 +164,6 @@ To re-import the keys do something like the following:
 
 ### To do
 
- * [5] List encryption / decryption keys in GPG (and add backup methods)
  * [5] Allow skipping over restoration of (some files)... what are the implications?
  * [6] Add a check to that the ClientId id no already used on init
  * [7] Tidy up command line interface output
