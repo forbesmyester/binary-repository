@@ -511,6 +511,7 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
         repositoryCommitFiles: null|Readable<Filename> = null,
         commitDir = 'commit',
         remoteCommitDir = 'remote-commit',
+        remotePendingCommitDir = 'remote-pending-commit',
         pendingCommitDir = 'pending-commit';
 
     let barUpdater = managedMultiProgress(
@@ -554,7 +555,7 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
         throw new Error("Could not identify repository type");
     }
 
-    let existingCommitFilename = getSortedCommitFilenamePipe(configDir, [pendingCommitDir, commitDir, remoteCommitDir]);
+    let existingCommitFilename = getSortedCommitFilenamePipe(configDir, [pendingCommitDir, commitDir, remoteCommitDir, remotePendingCommitDir]);
     let notInLeft = new RightAfterLeft(getNotInLeft({}), stdPipeOptions);
 
     existingCommitFilename.pipe(notInLeft.left);
