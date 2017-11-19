@@ -20,96 +20,21 @@ There is good test coverage as well as a full, bash based backup / restoration t
 
 ## Usage
 
-### Setting up GPG
+### Preperations
 
-This software uses GPG to protect your data. This is good because it has plenty of eyes looking at it to make sure that it is safe to use, but also because there is already a lot of documentation available on the internet.
+First identify the public/private key you wish to backup by using `gpg --list-keys` or create a new one with `gpg --quick--gen-key`.
 
-At the moment I think your reading list should include [Chris Erin's Hashrocket Post](https://hashrocket.com/blog/posts/encryption-with-gpg-a-story-really-a-tutorial) as well as the [Using Stronger Algorithms section](https://futureboy.us/pgp.html#StrongerAlgorithms) of Alan Eliasen GPG Tutorial. You'll also need to pick your encryption algorithm, which at the time of writing (2017-10-19), AES256 looks like a good option.
+You will then also need an writable AWS S3 Bucket, which can be easily created using `aws s3 mb s3://[BUCKET NAME]`. If you do not want to do that you can also back up to local files, which will still be fully encrypted.
 
-If you read the above you will undestand that you need to generate a public key for encrypting the data as well as keeping a private key for decrypting the data.
+### The First Client
 
-First step is to generate the Keys:
+Get the GPG Key Id by using `gpg --list-keys`, which is the long hexadecimal number. Once you have this the next and most difficult step is to initialize the repository, this is done by the following:
 
-    $ gpg --full-gen-key
-    gpg (GnuPG) 2.1.18; Copyright (C) 2017 Free Software Foundation, Inc.
-    This is free software: you are free to change and redistribute it.
-    There is NO WARRANTY, to the extent permitted by law.
-    
-    Please select what kind of key you want:
-       (1) RSA and RSA (default)
-       (2) DSA and Elgamal
-       (3) DSA (sign only)
-       (4) RSA (sign only)
-    Your selection? 1
-    RSA keys may be between 1024 and 4096 bits long.
-    What keysize do you want? (2048) 4096
-    Requested keysize is 4096 bits
-    Please specify how long the key should be valid.
-             0 = key does not expire
-          <n>  = key expires in n days
-          <n>w = key expires in n weeks
-          <n>m = key expires in n months
-          <n>y = key expires in n years
-    Key is valid for? (0) 0
-    Key does not expire at all
-    Is this correct? (y/N) y
-    
-    GnuPG needs to construct a user ID to identify your key.
-    
-    Real name: Matthew Forrester
-    Email address: _____@__________.com
-    Comment: Key for use with binary-repository
-    You selected this USER-ID:
-        "Matthew Forrester (Key for use with binary-repository) <_____@__________.com>"
-    
-    Change (N)ame, (C)omment, (E)mail or (O)kay/(Q)uit? O
+    binary-repository init --client-id "[YOUR NAME]" --gpg-key [YOUR KEY ID] --remote "s3://[BUCKET NAME]" "[DIRECTORY NAME]"
 
-I then wanted to make sure that I'm using a sensibly strong level of encryption:
+Once you have the directory initialized you can use virtually all of the `binary-repository` commands by only referencing the `[DIRECTORY NAME]`, which is much easier.
 
-    $ gpg --interactive --edit-key ____@____________.com
-    gpg (GnuPG) 2.1.18; Copyright (C) 2017 Free Software Foundation, Inc.
-    This is free software: you are free to change and redistribute it.
-    There is NO WARRANTY, to the extent permitted by law.
-    
-    Secret key is available.
-    
-    sec  rsa4096/B22BFB8D3C5790FD
-         created: 2017-09-09  expires: never       usage: SC
-         trust: ultimate      validity: ultimate
-    ssb  rsa4096/EB2BFB03B02164A4
-         created: 2017-10-19  expires: never       usage: E
-    [ultimate] (1). Matthew Forrester (Key for use with binary-repository) <____@____________.com>
-    
-    gpg> showpref
-    [ultimate] (1). Matthew Forrester (Key for use with binary-repository) <____@____________.com>
-         Cipher: AES256, AES192, AES, 3DES
-         Digest: SHA256, SHA384, SHA512, SHA224, SHA1
-         Compression: ZLIB, BZIP2, ZIP, Uncompressed
-         Features: MDC, Keyserver no-modify
-
-It seems that my version of GPG was configured pretty well by default (was looking for AES256), which is great.
-
-#### Important, Make sure you can restore your backups!
-
-Once you've got your keys created. You probably ought to consider backing them up, so you can recover from disaster. I plan to integrate this into `binary-repository` at some point but right now you have to do it manually... fear not, it's not hard!
-
-First identify the public/private key you wish to backup:
-
-    $ gpg --list-keys
-    /home/fozz/.gnupg/pubring.kbx
-    -----------------------------
-    pub   rsa2048 2017-09-09 [SC]
-          D69487B716DAAA4A30D6A090691E0826BF39FE6C
-    uid           [ultimate] Matthew Forrester (Key for use with binary-repository)
-    sub   rsa2048 2017-09-29 [E]
-    
-    $ gpg --list-secret-keys
-    /home/fozz/.gnupg/pubring.kbx
-    -----------------------------
-    sec   rsa2048 2017-09-09 [SC] [expires: 2019-09-09]
-          D69487B716DAAA4A30D6A090691E0826BF39FE6C
-    uid           [ultimate] Matthew Forrester (Key for use with binary-repository) 
-    ssb   rsa2048 2017-09-09 [E]
+## Backing up GPG keys
 
 To back it up you need to export the secret key (for reading your backups) and perhaps your public key (if you wish to keep creating backups after the disaster). This is done like so:
 
@@ -153,26 +78,26 @@ To re-import the keys do something like the following:
  * [2] Check correct encryption / decryption used in integration test
  * [2] Add the FilePartByteCountThreshold to the Filepart name in the repository.
  * [3] Add GPGKey as part of Filepart to stop name collisions.
+ * [4] Time to eat my own dogfood
  * [5] Allow listing of what would be uploaded / needs backing up.
- * [5] Allow listing of what would be download / restored.
- * [5] Allow view of Database
+ * [6] Allow listing of what would be download / restored.
+ * [7] Allow view of Database
 
 ### In Progress
 
- * [4] Time to eat my own dogfood
+ * [8] Present at LNUG
 
 ### To do
 
- * [5] List encryption / decryption keys in GPG (and add backup methods)
- * [5] Allow skipping over restoration of (some files)... what are the implications?
- * [6] Add a check to that the ClientId id no already used on init
- * [7] Tidy up command line interface output
- * [8] Ensure README.md is ready for public consumption and add a user guide
- * [9] Recruit other people to try the dogfood - From this point backwards compatibility will be maintained.
- * [9] Add the ability to remove files
- * [10] Add an option to force SHA256 to be checked for all files.
- * [11] Allow restoration / download of selected files
- * [12] Allow purge of old (removed) FilePart from S3
+ * [9] GPG Key name is used as part of S3Object name, Force to be key id?
+ * [10] Allow skipping over restoration of (some files)... what are the implications?
+ * [11] Do we still need ClientId?
+ * [12] Polish command line interface output
+ * [13] Ensure README.md is ready for public consumption and add a user guide
+ * [14] Add the ability to remove files
+ * [15] Add an option to force SHA256 to be checked for all files.
+ * [16] Allow restoration / download of selected files
+ * [17] Allow purge of old (removed) FilePart from S3
 
 ## Future Plans
 
