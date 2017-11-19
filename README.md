@@ -80,8 +80,8 @@ To re-import the keys do something like the following:
  * [3] Add GPGKey as part of Filepart to stop name collisions.
  * [4] Time to eat my own dogfood
  * [5] Allow listing of what would be uploaded / needs backing up.
- * [6] Allow listing of what would be download / restored.
- * [7] Allow view of Database
+ * [5] Allow listing of what would be download / restored.
+ * [5] Allow view of Database
 
 ### In Progress
 
@@ -89,15 +89,16 @@ To re-import the keys do something like the following:
 
 ### To do
 
- * [9] GPG Key name is used as part of S3Object name, Force to be key id?
- * [10] Allow skipping over restoration of (some files)... what are the implications?
- * [11] Do we still need ClientId?
- * [12] Polish command line interface output
- * [13] Ensure README.md is ready for public consumption and add a user guide
- * [14] Add the ability to remove files
- * [15] Add an option to force SHA256 to be checked for all files.
- * [16] Allow restoration / download of selected files
- * [17] Allow purge of old (removed) FilePart from S3
+ * [5] List encryption / decryption keys in GPG (and add backup methods)
+ * [5] Allow skipping over restoration of (some files)... what are the implications?
+ * [6] Add a check to that the ClientId id no already used on init
+ * [7] Tidy up command line interface output
+ * [8] Ensure README.md is ready for public consumption and add a user guide
+ * [9] Recruit other people to try the dogfood - From this point backwards compatibility will be maintained.
+ * [9] Add the ability to remove files
+ * [10] Add an option to force SHA256 to be checked for all files.
+ * [11] Allow restoration / download of selected files
+ * [12] Allow purge of old (removed) FilePart from S3
 
 ## Future Plans
 

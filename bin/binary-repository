@@ -43,6 +43,16 @@ function resolve(performLcCheck, opts) {
     };
 }
 
+function checkGpgKey(k, args) {
+    if (!args.hasOwnProperty(k)) { return true; }
+    if (args[k] === undefined) { return true; }
+    let s = args[k];
+    if (!s.match(/^[A-Za-z0-9][A-Za-z0-9]*[A-Za-z0-9]$/)) {
+        throw new Error("Error: Your GPG key includes characters that are not allowed. Consider using the Key Id (the 40 character long hex string)");
+    }
+    return true;
+}
+
 yargs.usage('$0 <cmd> [args]')
     // .option('local', {
     //     describe: "The path you wish to backup / synchronize", type: 'string'
@@ -55,6 +65,7 @@ yargs.usage('$0 <cmd> [args]')
         describe: 'Override `gpg-key` when encrypting file data',
         type: 'string'
     })
+    .check(checkGpgKey.bind(null, 'filepart-gpg-key'))
     .option('quiet', {
         describe: 'Whether to run silently or not',
         type: 'boolean',
@@ -67,8 +78,9 @@ yargs.usage('$0 <cmd> [args]')
     })
     .option('gpg-key', {
         describe: 'Encryption key for data',
-        type: 'string'
+        type: 'string',
     })
+    .check(checkGpgKey.bind(null, 'gpg-key'))
     .option('client-id', { describe: 'Unique name to help identify this client', type: 'string' })
     .option('remote', { describe: 'Where you want to upload your encrypted data', type: 'string' })
     .command(
