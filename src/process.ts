@@ -580,12 +580,12 @@ export function fetch(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirecto
         .pipe(overallBar.minus)
         .pipe(preparePipe(new EndWritable()))
         .on('finish', () => {
-        if (!quiet) {
-            barUpdater.terminate(
-                "All commits fetched, you may now `download`"
-            );
-        }
-    });
+            if (!quiet) {
+                barUpdater.terminate(
+                    "All commits fetched, you may now `download`"
+                );
+            }
+        });
 
 }
 
