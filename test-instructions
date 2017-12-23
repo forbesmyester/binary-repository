@@ -91,7 +91,7 @@ fi
 
 
 if [ $(echo "$REMOTE" | grep '^file' | wc -c) -gt 0 ]; then
-    if [ $(gpg --batch --list-packets $(ls integration-test-temp-files/ebak-repo/c-X* | head -n 1) 2>&1 | grep '^ \+"' | sed 's/ \+"//' | sed 's/"$//') != "$GPGKEY_COMMIT" ]; then
+    if [ $(gpg --batch --list-packets $(ls integration-test-temp-files/ebak-repo/c-* | head -n 1) 2>&1 | grep '^ \+"' | sed 's/ \+"//' | sed 's/"$//') != "$GPGKEY_COMMIT" ]; then
         echo "Commit should have been encrypted with $GPGKEY_COMMIT"
         exit 1
     fi
