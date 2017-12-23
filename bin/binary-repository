@@ -47,7 +47,7 @@ function checkGpgKey(k, args) {
     if (!args.hasOwnProperty(k)) { return true; }
     if (args[k] === undefined) { return true; }
     let s = args[k];
-    if (!s.match(/^[A-Za-z0-9][A-Za-z0-9]*[A-Za-z0-9]$/)) {
+    if (!s.match(/^[A-Za-z0-9][\-A-Za-z0-9]*[A-Za-z0-9]$/)) {
         throw new Error("Error: Your GPG key includes characters that are not allowed. Consider using the Key Id (the 40 character long hex string)");
     }
     return true;
