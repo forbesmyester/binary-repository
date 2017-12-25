@@ -16,7 +16,7 @@ test("Can join based on files missing / out of date in db", (tst) => {
             "fileByteCount": 29,
             "sha256": "8cf0f7cceaf3e0cc1d575000f305b2d10fdb6c5d35e5007496b8589e0d7046bb"
         }],
-        "bye_comand": [{
+        "bye_command": [{
             "modifiedDate": new Date("2017-06-27T14:47:13.856Z") ,
             "fileByteCount": 29,
             "sha256": "8cf0f7cceaf3e0cc1d575000f305b2d10fdb6c5d35e5007496b8589e0d7046bb"
