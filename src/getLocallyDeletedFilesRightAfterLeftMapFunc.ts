@@ -1,20 +1,23 @@
 import { RightAfterLeftMapFunc } from 'streamdash';
-import { File, BackupCheckDatabase, Filename } from './Types';
-import { concat, reduce } from 'ramda';
+import { File, BackupRecord, Commit, Filename } from './Types';
+import { map, concat, reduce } from 'ramda';
 
-export default function getLocallyDeletedFilesRightAfterLeftMapFunc(dependencies: {}): RightAfterLeftMapFunc<File, BackupCheckDatabase, Filename> {
+export default function getLocallyDeletedFilesRightAfterLeftMapFunc(dependencies: {}): RightAfterLeftMapFunc<File, Commit, Filename> {
 
     let filepathIndex = new Map();
     let builtFilepathIndex = false;
 
-    return (lefts, right) => {
+    return (lefts: File[], right: Commit) => {
         if (!builtFilepathIndex) {
             for (let i = 0; i < lefts.length; i++) {
                 filepathIndex.set(lefts[i].path, lefts[i]);
             }
         }
 
-        let keys = Object.keys(right); 
+        let cFilenames = map(
+            (r: BackupRecord) => { return r.path; },
+            right.record
+        );
         let reducer = (acc: Filename[], item: string) => {
             if (filepathIndex.has(item)) {
                 return acc;
@@ -22,7 +25,7 @@ export default function getLocallyDeletedFilesRightAfterLeftMapFunc(dependencies
             return concat(acc, [{ path: item }]);
         };
 
-        return reduce(reducer, [], keys);
+        return reduce(reducer, [], cFilenames);
 
     };
 }
