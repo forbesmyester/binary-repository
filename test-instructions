@@ -184,6 +184,19 @@ if [ $(cat $(ls integration-test-temp-files/ebak-repo/f-806666aa36f2d65362a85fb1
     exit 1
 fi
 
+rm integration-test-temp-files/ebak-data/matt_first/my-projects/t-fp-dissoc.md
+./bin/binary-repository list-mark-deleted --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first  integration-test-temp-files/ebak-data/matt_first > integration-test-temp-files/list-mark-deleted
+
+if [ $(cat integration-test-temp-files/list-mark-deleted | wc -l) -ne 1 ]; then
+    echo "Should have one list-mark-deleted file"
+    exit 1
+fi
+
+if [ $(cat integration-test-temp-files/list-mark-deleted | head -n1) != 'my-projects/t-fp-dissoc.md' ]; then
+    echo "list-mark-deleted file listed incorrect data"
+    exit 1
+fi
+
 echo "Tests Passed."
 
 

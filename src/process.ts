@@ -32,6 +32,7 @@ import { Readable, Transform, Writable } from 'stronger-typed-streams';
 import getCommittedToUploadedS3CommittedMapFunc from './getCommittedToUploadedCommittedMapFunc';
 import { stat } from 'fs';
 import getFileNotBackedUpRightAfterLeftMapFunc from './getFileNotBackedUpRightAfterLeftMapFunc';
+import getLocallyDeletedFilesRightAfterLeftMapFunc from '../src/getLocallyDeletedFilesRightAfterLeftMapFunc';
 // import getRemotePendingCommitToRemotePendingCommitLocalInfoRightAfterLeftMapFunc from './getRemotePendingCommitToRemotePendingCommitLocalInfoRightAfterLeftMapFunc';
 import getToRemotePendingCommitInfoRightAfterLeftMapFunc from './getToRemotePendingCommitInfoRightAfterLeftMapFunc';
 import { join as joinArray, sortBy, toPairs, map } from 'ramda';
@@ -808,3 +809,50 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
 
 }
 
+export function listMarkDeleted(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath, { quiet }) {
+
+    let commitDir = 'commit',
+        remoteCommitDir = 'remote-commit',
+        pendingCommitDir = 'pending-commit';
+
+    let rootReader = new RootReadable(
+            {glob: RootReadable.getGlobFunc()},
+            rootDir,
+            []
+        ),
+        filenameToFile = new MapTransform(
+            getFilenameToFileMapFunc({ stat }, rootDir),
+            stdPipeOptions
+        );
+
+    let commitFilenames = getSortedCommitFilenamePipe(
+            configDir,
+            [pendingCommitDir, commitDir, remoteCommitDir]
+        ),
+        commitFilenameToCommit = new MapTransform(
+            getLocalCommitFilenameToCommitMapFunc(
+                { readFile },
+                configDir
+            ),
+            stdPipeOptions
+        );
+
+    let locallyDeletedFilesRightAfterLeft = preparePipe(new RightAfterLeft(
+            getLocallyDeletedFilesRightAfterLeftMapFunc({}),
+            stdPipeOptions
+        ));
+
+    preparePipe(rootReader)
+        .pipe(preparePipe(filenameToFile))
+        .pipe(preparePipe(locallyDeletedFilesRightAfterLeft.left));
+
+    commitFilenames.pipe(preparePipe(commitFilenameToCommit))
+        .pipe(preparePipe(locallyDeletedFilesRightAfterLeft.right));
+
+    locallyDeletedFilesRightAfterLeft.pipe(new ConsoleWritable(
+        { out: (n, o) => { console.log(`${o.path}`); }},
+        "Error: "
+    ));
+
+
+}
