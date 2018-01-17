@@ -4,7 +4,7 @@ import { readFileSync, readFile } from 'fs';
 import getToRemotePendingCommitStatsMapFunc from './getToRemotePendingCommitStatsMapFunc';
 import safeSize from './safeSize';
 import getToRemotePendingCommitDeciderMapFunc from './getToRemotePendingCommitDeciderMapFunc';
-
+import DeletedFilenameToCommit from './DeletedFilenameToCommit';
 import { getDependencies as getToFileMapFuncDependencies } from './getToFileMapFunc';
 import getToFileMapFunc from './getToFileMapFunc';
 import managedMultiProgress from 'managed-multi-progress';
@@ -372,11 +372,11 @@ function getOverallBar(barUpdater, quiet, useStartForTitle = true): OverallBar {
 
 function getThresholds() {
     if (process.env.hasOwnProperty('BINARY_REPOSITORY_USE_DEV_THRESHOLDS')) {
-    return {
-        filePartByteCountThreshold: 1024, // 1K
-        commitFileByteCountThreshold: 1024, // 1K
-        commitMaxTimeThreshold: 1000 * 60
-    };
+        return {
+            filePartByteCountThreshold: 1024, // 1K
+            commitFileByteCountThreshold: 1024, // 1K
+            commitMaxTimeThreshold: 1000 * 60
+        };
     }
     return {
         filePartByteCountThreshold: 1024 * 1024 * 64, // 64MB
@@ -809,7 +809,7 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
 
 }
 
-export function listMarkDeleted(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath, { quiet }) {
+function deletedFileList(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
 
     let commitDir = 'commit',
         remoteCommitDir = 'remote-commit',
@@ -849,10 +849,49 @@ export function listMarkDeleted(rootDir: AbsoluteDirectoryPath, configDir: Absol
     commitFilenames.pipe(preparePipe(commitFilenameToCommit))
         .pipe(preparePipe(locallyDeletedFilesRightAfterLeft.right));
 
-    locallyDeletedFilesRightAfterLeft.pipe(new ConsoleWritable(
+    return locallyDeletedFilesRightAfterLeft;
+}
+
+export function listMarkDeleted(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath, { quiet }) {
+
+    let lister = deletedFileList(rootDir, configDir);
+
+    lister.pipe(new ConsoleWritable(
         { out: (n, o) => { console.log(`${o.path}`); }},
         "Error: "
     ));
 
 
+}
+
+export function markDeleted(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath, { quiet }) {
+
+    let lister = deletedFileList(rootDir, configDir),
+        { commitFileByteCountThreshold } = getThresholds(),
+        config: ConfigFile = readConfig(configDir),
+        clientId = config['client-id'],
+        gpgKey = config['gpg-key'],
+        deletedCommit = new DeletedFilenameToCommit(
+            DeletedFilenameToCommit.getDependencies(),
+            clientId,
+            gpgKey,
+            commitFileByteCountThreshold,
+            stdPipeOptions
+        ),
+        commitToCommitted = new MapTransform(
+            getCommitToCommittedMapFunc(
+                getCommitToCommittedMapFuncDependencies(),
+                configDir
+            ),
+            stdPipeOptions
+        );
+
+        lister
+            .pipe(deletedCommit)
+            .pipe(commitToCommitted)
+            .on('finish', () => {
+                if (!quiet) {
+                    console.log("Marked Deleted");
+                }
+            });
 }

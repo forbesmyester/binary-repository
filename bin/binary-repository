@@ -4,7 +4,7 @@ let { realpathSync, existsSync, writeFileSync } = require('fs');
 let { join } = require('path');
 let { pathOr } = require('ramda');
 let { ConfigFile, BASE_TLID_TIMESTAMP } = require('../dist/src/Types');
-let { listMarkDeleted, listExisting, listDownload, listUpload, upload, download, fetch, push } = require('../dist/src/process');
+let { markDeleted, listMarkDeleted, listExisting, listDownload, listUpload, upload, download, fetch, push } = require('../dist/src/process');
 
 let yargs = require('yargs');
 let mkdirp = require('mkdirp');
@@ -147,6 +147,16 @@ yargs.usage('$0 <cmd> [args]')
             try {
                 let { local, 'local-config': localConfiguration, detail } = resolve(true, args);
                 listMarkDeleted(local, localConfiguration, { detail });
+            } catch (e) { console.log(e.message); process.exit(1) }
+        }
+    )
+    .command(
+        'mark-deleted [local]', 'Marks missing files for deletion',
+        { local: { require: true }, detail: {} },
+        function (args) {
+            try {
+                let { local, 'local-config': localConfiguration, detail } = resolve(true, args);
+                markDeleted(local, localConfiguration, { detail });
             } catch (e) { console.log(e.message); process.exit(1) }
         }
     )

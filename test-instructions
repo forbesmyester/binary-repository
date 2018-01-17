@@ -197,11 +197,18 @@ if [ $(cat integration-test-temp-files/list-mark-deleted | head -n1) != 'my-proj
     exit 1
 fi
 
-echo "Tests Passed."
+./bin/binary-repository mark-deleted --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first  integration-test-temp-files/ebak-data/matt_first
+
+if [ $(find integration-test-temp-files/ebak-config/matt_first/pending-commit -type f | wc -l) -ne 1 ]; then
+    echo "Was expecting one matt_first pending-commit for mark-deleted"
+    exit 1
+fi
 
 
 if [ $(find  integration-test-temp-files/ebak-config/*/tmp/ -type f | wc -l) -ne 0 ]; then
     echo "Mess left in tmp files"
     exit 1
 fi
+
+echo "Tests Passed."
 
