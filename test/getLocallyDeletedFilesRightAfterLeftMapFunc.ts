@@ -39,5 +39,13 @@ test("Can join based on files missing / out of date in db", (tst) => {
 
     tst.deepEqual(result, expected);
 
+    let result2: Filename[][] = map(
+        locallyDeletedRLMF.bind(null, leftFileData),
+        [rightCommit],
+    );
+
+    // It should only output a deleted file once.
+    tst.deepEqual(result2, [[]]);
+
 });
 
