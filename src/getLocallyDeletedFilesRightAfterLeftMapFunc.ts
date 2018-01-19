@@ -1,34 +1,44 @@
 import { RightAfterLeftMapFunc } from 'streamdash';
-import { File, BackupRecord, Commit, Filename } from './Types';
-import { map, concat, reduce } from 'ramda';
+import { Operation, File, BackupRecord, Commit, Filename } from './Types';
+import { reduce } from 'ramda';
 
-export default function getLocallyDeletedFilesRightAfterLeftMapFunc(dependencies: {}): RightAfterLeftMapFunc<File, Commit, Filename> {
+export default function getLocallyDeletedFilesRightAfterLeftMapFunc(dependencies: {}): RightAfterLeftMapFunc<Commit, File, Filename> {
 
-    let filepathIndex = new Map();
+    let committedFileIndex = new Map<string, boolean>();
     let builtFilepathIndex = false;
-    let outputted: Set<string> = new Set([]);
 
-    return (lefts: File[], right: Commit) => {
+    let reducer = (acc: Map<string,boolean>, rec: BackupRecord) => {
+        acc.set(rec.path, false);
+        if (rec.operation == Operation.Delete) {
+            acc.delete(rec.path);
+        }
+        return acc;
+    };
+
+    return (lefts: Commit[], right: File, isLast: boolean) => {
+
         if (!builtFilepathIndex) {
             for (let i = 0; i < lefts.length; i++) {
-                filepathIndex.set(lefts[i].path, lefts[i]);
+                committedFileIndex = reduce(
+                    reducer,
+                    committedFileIndex,
+                    lefts[i].record
+                );
             }
             builtFilepathIndex = true;
         }
 
-        let cFilenames = map(
-            (r: BackupRecord) => { return r.path; },
-            right.record
+        if (committedFileIndex.has(right.path)) {
+            committedFileIndex.delete(right.path);
+        }
+
+        if (!isLast) {
+            return [];
+        }
+
+        return Array.from(committedFileIndex.keys()).map(
+            (a) => { return { path: a }; }
         );
-
-        let reducer = (acc: Filename[], item: string) => {
-            if (filepathIndex.has(item)) { return acc; }
-            if (outputted.has(item)) { return acc; }
-            outputted.add(item);
-            return concat(acc, [{ path: item }]);
-        };
-
-        return reduce(reducer, [], cFilenames);
 
     };
 }

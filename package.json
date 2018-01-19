@@ -49,7 +49,7 @@
     "pretty-bytes": "^4.0.2",
     "progress": "^2.0.0",
     "ramda": "^0.24.1",
-    "streamdash": "^0.10.0",
+    "streamdash": "^0.11.1",
     "stronger-typed-streams": "^0.1.0",
     "throat": "^4.1.0",
     "yargs": "^8.0.2"

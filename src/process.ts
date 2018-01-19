@@ -844,10 +844,10 @@ function deletedFileList(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
 
     preparePipe(rootReader)
         .pipe(preparePipe(filenameToFile))
-        .pipe(preparePipe(locallyDeletedFilesRightAfterLeft.left));
+        .pipe(preparePipe(locallyDeletedFilesRightAfterLeft.right));
 
     commitFilenames.pipe(preparePipe(commitFilenameToCommit))
-        .pipe(preparePipe(locallyDeletedFilesRightAfterLeft.right));
+        .pipe(preparePipe(locallyDeletedFilesRightAfterLeft.left));
 
     return locallyDeletedFilesRightAfterLeft;
 }
