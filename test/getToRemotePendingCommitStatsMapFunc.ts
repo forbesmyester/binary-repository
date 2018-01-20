@@ -89,12 +89,12 @@ test.cb("Can map", (tst) => {
         // First not SHA'd as local size has changed
         tst.deepEqual(
             result.record[0].stat,
-            { modifiedDate: new Date("2018-09-09T17:27:22.730Z"), fileByteCount: 200 }
+            { modifiedDate: new Date("2018-09-09T17:27:22.000Z"), fileByteCount: 200 }
         );
         // However second has same size, but different date... suspicious... do SHA to see if file really has changed.
         tst.deepEqual(
             result.record[1].stat,
-            { sha256: 'zzzSha', modifiedDate: new Date("2018-09-09T17:27:22.730Z"), fileByteCount: 200 }
+            { sha256: 'zzzSha', modifiedDate: new Date("2018-09-09T17:27:22.000Z"), fileByteCount: 200 }
         );
         tst.end();
     });
