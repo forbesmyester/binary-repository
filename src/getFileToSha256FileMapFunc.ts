@@ -1,5 +1,6 @@
 import { Callback, AbsoluteFilePath, AbsoluteDirectoryPath, Sha256, File, Sha256File } from  './Types';
 import { MapFunc } from 'streamdash';
+import Client from './Client';
 import { join } from 'path';
 import { createReadStream } from 'fs';
 import { createHash } from 'crypto';
@@ -35,7 +36,7 @@ export function getFileToSha256FileMapFunc({ runner }: { runner: MapFunc<Absolut
             return next(
                 null,
                 Object.assign(
-                    { sha256: "0000000000000000000000000000000000000000000000000000000000000000" },
+                    { sha256: Client.zeroShaSum },
                     f
                 )
             );

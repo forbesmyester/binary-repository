@@ -26,6 +26,56 @@ function getInput(path: RelativeFilePath, part: FilePartIndex, proceed = true): 
 
 }
 
+test.cb('Can delete', (tst) => {
+
+    let done = {
+        rename: 0,
+        decrypt: 0,
+        mkdirp: 1,
+        unlink: 0,
+        utimes: 0
+    };
+
+    let e = () => { throw new Error("Should not be here"); };
+
+    let deps = {
+        utimes: e,
+        copyFile: e,
+        unlink: (path, n) => {
+            done.unlink = done.unlink + 1;
+            tst.is(path, '/store/Docs/a.txt');
+            n(null);
+        },
+        decrypt: e,
+        rename: (s, d, n) => {
+            tst.is(s, '/store/.ebak/remote-pending-commit/c-cid-commit--gpg--key-notme.commit');
+            tst.is(d, '/store/.ebak/remote-commit/c-cid-commit--gpg--key-notme.commit');
+            done.rename = done.rename + 1;
+            n(null);
+        },
+        mkdirp: (p, n) => {
+            tst.is(p, '/store/.ebak/remote-commit');
+            n(null);
+        }
+    };
+
+    let mf = getToFile(deps, '/store/.ebak', '/store');
+
+    let input = getInput('Docs/a.txt', [2, 2], true);
+    input.record[0] = {...input.record[0], operation: Operation.Delete};
+    mf(input, (e, r) => {
+        tst.is(done.utimes, 0);
+        tst.is(done.decrypt, 0);
+        tst.is(done.mkdirp, 1);
+        tst.is(done.rename, 1);
+        tst.is(done.unlink, 1);
+        tst.is(null, e);
+        tst.deepEqual(r, input);
+        tst.end();
+    });
+
+});
+
 test.cb('Will skip if not proceed', (tst) => {
 
     let done = {

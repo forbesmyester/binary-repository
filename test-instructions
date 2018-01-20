@@ -5,7 +5,7 @@ IFS=$'\n\t'
 GPGKEY_COMMIT='ebak'
 REMOTE="s3://${GPGKEY_COMMIT}-$(date +%F)"
 REMOTE="file://integration-test-temp-files/${GPGKEY_COMMIT}-repo" # Comment this line for AWS testing
-QUIET="false"
+QUIET="true"
 export BINARY_REPOSITORY_USE_DEV_THRESHOLDS=1 # Warning, only for testing
 
 GPGKEY_FILEPART1='ebak-fp1'
@@ -184,11 +184,45 @@ if [ $(cat $(ls integration-test-temp-files/ebak-repo/f-806666aa36f2d65362a85fb1
     exit 1
 fi
 
-echo "Tests Passed."
+rm integration-test-temp-files/ebak-data/matt_first/my-projects/t-fp-dissoc.md
+./bin/binary-repository list-mark-deleted --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first  integration-test-temp-files/ebak-data/matt_first > integration-test-temp-files/list-mark-deleted
+
+if [ $(cat integration-test-temp-files/list-mark-deleted | wc -l) -ne 1 ]; then
+    echo "Should have one list-mark-deleted file"
+    exit 1
+fi
+
+if [ $(cat integration-test-temp-files/list-mark-deleted | head -n1) != 'my-projects/t-fp-dissoc.md' ]; then
+    echo "list-mark-deleted file listed incorrect data"
+    exit 1
+fi
+
+./bin/binary-repository mark-deleted --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first  integration-test-temp-files/ebak-data/matt_first
+
+# For a while it would adding delete commits
+./bin/binary-repository mark-deleted --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first  integration-test-temp-files/ebak-data/matt_first
+
+if [ $(find integration-test-temp-files/ebak-config/matt_first/pending-commit -type f | wc -l) -ne 1 ]; then
+    echo "Was expecting one matt_first pending-commit for mark-deleted"
+    exit 1
+fi
 
 
 if [ $(find  integration-test-temp-files/ebak-config/*/tmp/ -type f | wc -l) -ne 0 ]; then
     echo "Mess left in tmp files"
     exit 1
 fi
+
+./bin/binary-repository push --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first
+
+./bin/binary-repository fetch --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/jim_leach integration-test-temp-files/ebak-data/jim_leach
+
+./bin/binary-repository download --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/jim_leach integration-test-temp-files/ebak-data/jim_leach
+
+if [ $(find integration-test-temp-files/ebak-data/jim_leach/my-projects -type f | wc -l | grep dissoc | wc -l ) -ne 0 ]; then
+    echo "t-fp-dissoc.md should have not been here"
+    exit 1
+fi
+
+echo "Tests Passed."
 
