@@ -1,4 +1,4 @@
-import { CommitId, NotificationHandler, RemotePendingCommitDownloadedRecord, RemotePendingCommitDownloaded, GpgKey, Callback, AbsoluteDirectoryPath, AbsoluteFilePath } from './Types';
+import { Operation, CommitId, NotificationHandler, RemotePendingCommitDownloadedRecord, RemotePendingCommitDownloaded, GpgKey, Callback, AbsoluteDirectoryPath, AbsoluteFilePath } from './Types';
 import Client from './Client';
 import { MapFunc } from 'streamdash';
 import { streamDataCollector } from 'streamdash';
@@ -199,7 +199,17 @@ export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, dec
     }
 
     function process(commitId: CommitId, rec: RemotePendingCommitDownloadedRecord, next: Callback<RemotePendingCommitDownloadedRecord>) {
-        let tasks = [
+
+        if (rec.proceed && (rec.operation == Operation.Delete)) {
+            notify(rec.path, 'Deleting');
+            return myUnlink(unlink, generateFinalFilename(rec), (e) => {
+                if (e) { return next(e, rec); }
+                notify(rec.path, 'Deleted');
+                next(null, rec);
+            });
+        }
+
+        let downloadTasks = [
             (innerNext) => {
                 if (!rec.proceed) {
                     return next(null, rec);
@@ -211,7 +221,7 @@ export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, dec
             doCopy,
             doUtimes,
         ];
-        waterfall(tasks, next);
+        waterfall(downloadTasks, next);
     }
 
     function finalize(a: RemotePendingCommitDownloaded, next) {
@@ -243,6 +253,9 @@ export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, dec
 
     return function(a: RemotePendingCommitDownloaded, next: Callback<RemotePendingCommitDownloaded>) {
         let du = (rec, cb: Callback<RemotePendingCommitDownloadedRecord>) => {
+            if (rec.operation == Operation.Delete) {
+                return cb(null, rec);
+            }
             doUnlink(a.commitId, rec, cb);
         };
         let p = (rec, cb: Callback<RemotePendingCommitDownloadedRecord>) => {

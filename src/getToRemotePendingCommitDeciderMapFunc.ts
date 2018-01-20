@@ -93,6 +93,9 @@ export default function getToRemotePendingCommitDeciderMapFunc(d: Dependencies):
                     );
                 }
 
+                // If it is locally modified since the local commit and the file
+                // sizes dont match a SHA would not have been generated but we
+                // must block
                 if (
                     (rec.stat.modifiedDate.getTime() > rec.local.modifiedDate.getTime()) &&
                     (rec.stat.fileByteCount != rec.local.fileByteCount)

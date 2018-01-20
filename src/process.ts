@@ -759,10 +759,12 @@ export function download(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
             Skipping: 3,
             Downloaded: 4,
             Decrypting: 5,
+            Deleting: 5,
             Decrypted: 6,
             Copying: 7,
             Copied: 8,
             Finished: 9,
+            Deleted: 9,
         }
         if (!statuses.hasOwnProperty(status)) {
             throw new Error("notificationHandler: Could not find status '" + status + "'");
@@ -852,7 +854,7 @@ function deletedFileList(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDire
     return locallyDeletedFilesRightAfterLeft;
 }
 
-export function listMarkDeleted(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath, { quiet }) {
+export function listMarkDeleted(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath) {
 
     let lister = deletedFileList(rootDir, configDir);
 

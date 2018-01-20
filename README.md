@@ -84,11 +84,10 @@ To re-import the keys do something like the following:
  * [7] Allow view of Database
  * [8] Present at LNUG
  * [9] GPG Key name is used as part of S3Object name, Force to be key id?
- * [15] List removed files
+ * [15] Add the ability to remove files
 
 ### In Progress
 
- * [15] Add the ability to remove files
 
 ### To do
 

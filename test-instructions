@@ -5,7 +5,7 @@ IFS=$'\n\t'
 GPGKEY_COMMIT='ebak'
 REMOTE="s3://${GPGKEY_COMMIT}-$(date +%F)"
 REMOTE="file://integration-test-temp-files/${GPGKEY_COMMIT}-repo" # Comment this line for AWS testing
-QUIET="false"
+QUIET="true"
 export BINARY_REPOSITORY_USE_DEV_THRESHOLDS=1 # Warning, only for testing
 
 GPGKEY_FILEPART1='ebak-fp1'
@@ -101,9 +101,6 @@ if [ $(echo "$REMOTE" | grep '^file' | wc -c) -gt 0 ]; then
     fi
 fi
 
-# echo "=================="
-# rm -rf integration-test-temp-files/ebak-data/jim_leach integration-test-temp-files/ebak-config/jim_leach
-# mkdir integration-test-temp-files/ebak-data/jim_leach
 ./bin/binary-repository init --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/jim_leach --client-id jimleach --gpg-key "$GPGKEY_COMMIT" --remote "$REMOTE" integration-test-temp-files/ebak-data/jim_leach
 
 if [ $(find integration-test-temp-files/ebak-config/jim_leach -type f | wc -l) -ne 1 ]; then
@@ -213,6 +210,17 @@ fi
 
 if [ $(find  integration-test-temp-files/ebak-config/*/tmp/ -type f | wc -l) -ne 0 ]; then
     echo "Mess left in tmp files"
+    exit 1
+fi
+
+./bin/binary-repository push --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first integration-test-temp-files/ebak-data/matt_first
+
+./bin/binary-repository fetch --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/jim_leach integration-test-temp-files/ebak-data/jim_leach
+
+./bin/binary-repository download --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/jim_leach integration-test-temp-files/ebak-data/jim_leach
+
+if [ $(find integration-test-temp-files/ebak-data/jim_leach/my-projects -type f | wc -l | grep dissoc | wc -l ) -ne 0 ]; then
+    echo "t-fp-dissoc.md should have not been here"
     exit 1
 fi
 
