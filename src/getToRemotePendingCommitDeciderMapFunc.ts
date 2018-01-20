@@ -22,6 +22,7 @@ export default function getToRemotePendingCommitDeciderMapFunc(d: Dependencies):
         let work: RemotePendingCommitStatRecordDecidedX[] = map(
             (rec: RemotePendingCommitStatRecord) => {
 
+                // If we don't have the first part, don't do anything
                 if (rec.part[0] != rec.part[1]) {
                     return merge(
                         rec,
@@ -32,6 +33,10 @@ export default function getToRemotePendingCommitDeciderMapFunc(d: Dependencies):
                     );
                 }
 
+                // Proceed:
+                //   Without a file in the filesystem
+                //   Without a local commit
+                //   If the local commit is older than then the one in the backup
                 let proceed = !!(
                     (!rec.stat) ||
                     (!rec.local) ||
@@ -46,7 +51,10 @@ export default function getToRemotePendingCommitDeciderMapFunc(d: Dependencies):
                     );
                 }
 
-                // If there is stat, but it is not local (commit), if different from repo.
+                // If there is no local commit then
+                //   > skip processing if the file contents are the same as what
+                //     we will write anyway
+                //   > else block
                 if (rec.local === null) {
                     if (rec.sha256 == rec.stat.sha256) {
                         return merge(
@@ -60,10 +68,10 @@ export default function getToRemotePendingCommitDeciderMapFunc(d: Dependencies):
                     );
                 }
 
-                // If the stat is less thn the local commit then... filesystem/clock untrustworth?
+                // If the stat is less than the local commit then... filesystem/clock untrustworth?
                 if (rec.stat.modifiedDate.getTime() < rec.local.modifiedDate.getTime()) {
                     let e = new DeciderUserError(
-                        'Local file modified before commit ' + JSON.stringify(rec),
+                        'Local file modified before local commit ' + JSON.stringify(rec),
                         UserErrorCode.FILE_MODIFIED_BEFORE_LOCAL_COMMIT,
                         [rec.path]
                     );
@@ -83,6 +91,13 @@ export default function getToRemotePendingCommitDeciderMapFunc(d: Dependencies):
                         rec,
                         { block: false, proceed }
                     );
+                }
+
+                if (
+                    (rec.stat.modifiedDate.getTime() > rec.local.modifiedDate.getTime()) &&
+                    (rec.stat.fileByteCount != rec.local.fileByteCount)
+                ) {
+                    return merge(rec, { block: true, proceed });
                 }
 
                 // If the stat is modified later the stat SHA must exist
