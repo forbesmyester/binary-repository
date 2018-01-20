@@ -6,7 +6,7 @@ import { dirname, join } from 'path';
 import { MapFunc } from 'streamdash';
 import throat = require('throat');
 import { range, assoc, map } from 'ramda';
-import { CommitId, NotificationHandler, GpgKey, RemoteType, S3Object, S3Location, RemotePendingCommitStatRecordDecided, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, ByteCount } from './Types';
+import { Operation, CommitId, NotificationHandler, GpgKey, RemoteType, S3Object, S3Location, RemotePendingCommitStatRecordDecided, AbsoluteFilePath, AbsoluteDirectoryPath, RemotePendingCommitStat, Callback, S3BucketName, ByteCount } from './Types';
 import * as mkdirp from 'mkdirp';
 import RepositoryLocalfiles from './repository/RepositoryLocalfiles';
 import RepositoryS3 from './repository/RepositoryS3';
@@ -179,7 +179,7 @@ export default function getToDownloadedParts({ constructFilepartLocalLocation, c
 
     return function(input: RemotePendingCommitStat, next) {
         mapLimit(
-            input.record,
+            input.record.filter(r => r.operation == Operation.Create),
             1,
             process.bind(null, input.commitId),
             (e: Error|null) => { next(e, input); }

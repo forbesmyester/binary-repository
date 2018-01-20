@@ -29,11 +29,14 @@ function constructFilepartFilename(sha256: Sha256, filePartIndex: FilePartIndex,
                 '.ebak';
 }
 
+let zeroShaSum = "0000000000000000000000000000000000000000000000000000000000000000";
+
 class NotCommitFileError extends Error {}
 
 let tlIdEncoderDecoder = getTlIdEncoderDecoder(BASE_TLID_TIMESTAMP, BASE_TLID_UNIQUENESS);
 
 export default {
+    zeroShaSum,
     constructFilepartFilename,
     constructFilepartLocalLocation: (configDir: AbsoluteDirectoryPath, gpgKey: GpgKey, commitId: CommitId, rec: RemotePendingCommitStatRecordDecided): AbsoluteFilePath => {
         return join(
@@ -89,7 +92,6 @@ export default {
 
         let cmdSpawner = CmdRunner.getCmdSpawner();
 
-            console.log(join(getBashRoot(__dirname), 'decrypt'));
         let cmdRunner = new CmdRunner(
             { cmdSpawner },
             Object.assign({}, process.env, getEnv(gpgKey, src, dst)),

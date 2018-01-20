@@ -31,28 +31,41 @@
 ## Plan on how to use Asciinema for part of presemtatiom
 
 export AWS_PROFILE=keyboardwritescode
-mkdir "LNUG Binary Repository Demo"
+aws s3 --force rb "s3://lnug-binary-repository-demo"
+rm -rf "LNUG Binary Repository Demo"
+rm -rf "Matt Has Awesome Music"
+
+
 aws s3 mb "s3://lnug-binary-repository-demo"
-./bin/binary-repository init --client-id matt --gpg-key ebak --remote "s3://lnug-binary-repository-demo"  "LNUG Binary Repository Demo"
-find ~/Music
+
+
+mkdir "LNUG Binary Repository Demo"
+binary-repository init --client-id matt --gpg-key ebak --remote "s3://lnug-binary-repository-demo"  "LNUG Binary Repository Demo"
 cp -R ~/Music/* "LNUG Binary Repository Demo"
-find "LNUG Binary Repository Demo"
 binary-repository list-upload "LNUG Binary Repository Demo"
 binary-repository upload "LNUG Binary Repository Demo"
 aws s3 ls "s3://lnug-binary-repository-demo"
-aws s3 cp  "s3://lnug-binary-repository-demo/f-53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3-1-64MB-ebak.ebak" - | gpg -d
+cat Track LNUG\ Binary\ Repository\ Demo/.binary-repository/pending-commit/* | grep Track
+aws s3 cp  "s3://lnug-binary-repository-demo/f-4f564f60a1a267f019789195f5f1c67aac21e6d503fe15f1b142c68a92f40b9d-1-64MB-ebak.ebak" - | gpg -d
 binary-repository push "LNUG Binary Repository Demo"
-aws s3 ls "s3://lnug-binary-repository-demo"
+
+##########################################
 
 mkdir "Matt Has Awesome Music"
-./bin/binary-repository init --client-id joe --gpg-key ebak --remote "s3://lnug-binary-repository-demo"  "Matt Has Awesome Music"
+binary-repository init --client-id joe --gpg-key ebak --remote "s3://lnug-binary-repository-demo"  "Matt Has Awesome Music"
 binary-repository fetch "Matt Has Awesome Music"
 binary-repository download "Matt Has Awesome Music"
-# Tracklisting is wrong... upload new version
+# Tracklisting is wrong... I need to edit!
+nvim "Matt Has Awesome Music/Vangelis/Blade Runner - Music From The Original Soundtrack/Track Listing.txt"
+# Done editing... Push a new version
 binary-repository list-upload "Matt Has Awesome Music"
 # The tracklisting will change
 binary-repository upload "Matt Has Awesome Music"
 binary-repository push "Matt Has Awesome Music"
-binary-repository list-existing "Matt Has Awesome Music"
 
+# ==============================================
 
+binary-repository fetch "LNUG Binary Repository Demo"
+binary-repository list-download "LNUG Binary Repository Demo"
+binary-repository download "LNUG Binary Repository Demo"
+cat "Matt Has Awesome Music/Vangelis/Blade Runner - Music From The Original Soundtrack/Track Listing.txt"

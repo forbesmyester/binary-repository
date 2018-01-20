@@ -59,7 +59,7 @@ test.cb("If the stat is modified later the stat SHA must exist", (tst) => {
         'remoteSha',
         new Date("2017-09-09T17:27:22.730Z"),
         { modifiedDate:  new Date("2016-09-09T17:27:22.730Z"), fileByteCount: 3832, sha256: "sha" },
-        { modifiedDate: new Date("2016-10-09T17:27:22.730Z"), fileByteCount: 200 }
+        { modifiedDate: new Date("2016-10-09T17:27:22.730Z"), fileByteCount: 3832 }
     );
 
     mapFunc(input, (err: null|DeciderUserError) => {
@@ -80,7 +80,7 @@ test.cb("If the stat is less thn the local commit then... filesystem/clock untru
 
     mapFunc(input, (err: null|DeciderUserError) => {
         tst.true(err instanceof DeciderUserError);
-        tst.regex((<Error>err).message, /^Local file modified before commit /);
+        tst.regex((<Error>err).message, /^Local file modified before local commit /);
         tst.end();
     });
 });
@@ -91,7 +91,7 @@ test.cb("If not the last part then skip", (tst) => {
         'remoteSha',
         new Date("2017-09-09T17:27:22.730Z"),
         { modifiedDate:  new Date("2016-09-09T17:27:22.730Z"), fileByteCount: 3832, sha256: "sha" },
-        { modifiedDate: new Date("2016-10-09T17:27:22.730Z"), fileByteCount: 200, sha256: "edited-since"},
+        { modifiedDate: new Date("2016-10-09T17:27:22.730Z"), fileByteCount: 200, sha256: "edited-since-skip"},
         2
     );
 
@@ -117,17 +117,35 @@ test.cb("If not the last part then skip", (tst) => {
     });
 });
 
-test.cb("If stat is modified later than local and is a different file", (tst) => {
+test.cb("If the stat is later and different to locally committed, do not allow overwrite", (tst) => {
 
     let input = getInput(
         'remoteSha',
         new Date("2017-09-09T17:27:22.730Z"),
         { modifiedDate:  new Date("2016-09-09T17:27:22.730Z"), fileByteCount: 3832, sha256: "sha" },
-        { modifiedDate: new Date("2016-10-09T17:27:22.730Z"), fileByteCount: 200, sha256: "edited-since"}
+        { modifiedDate: new Date("2016-10-09T17:27:23.730Z"), fileByteCount: 200 }
     );
 
     mapFunc(input, (err: null|DeciderUserError) => {
         tst.true(err instanceof DeciderUserError);
+        tst.regex((<Error>err).message, /Blocked by file/);
+        tst.is(err ? err.code : -1, UserErrorCode.BLOCKED_BY_FILE);
+        tst.end();
+    });
+});
+
+test.cb("If stat is modified later than local and is a different file", (tst) => {
+
+    let input = getInput(
+        'remoteSha',
+        new Date("2017-09-09T17:27:22.000Z"),
+        { modifiedDate:  new Date("2016-09-09T17:27:22.000Z"), fileByteCount: 3832, sha256: "sha" },
+        { modifiedDate: new Date("2016-10-09T17:27:22.000Z"), fileByteCount: 200, sha256: "edited-since"}
+    );
+
+    mapFunc(input, (err: null|DeciderUserError) => {
+        tst.true(err instanceof DeciderUserError);
+        tst.regex((<Error>err).message, /^Blocked/);
         tst.is(err ? err.code : -1, UserErrorCode.BLOCKED_BY_FILE);
         tst.end();
     });
@@ -195,7 +213,7 @@ test.cb("Stat modified later then local, but Sha256 proove same as local then co
         'remoteSha',
         new Date("2015-09-09T17:27:22.730Z"),
         { modifiedDate:  new Date("2016-09-09T17:27:22.730Z"), fileByteCount: 3832, sha256: "sha" },
-        { modifiedDate: new Date("2016-10-09T17:27:22.730Z"), fileByteCount: 200, sha256: "sha"}
+        { modifiedDate: new Date("2016-10-09T18:27:22.730Z"), fileByteCount: 3832, sha256: "sha"}
     );
 
     mapFunc(input, (err, result) => {

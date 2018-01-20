@@ -13,19 +13,34 @@ function getInput(path: RelativeFilePath, part: FilePartIndex, proceed: boolean 
         clientId: 'notme',
         createdAt: d,
         commitId: 'cid',
-        record: [{
-            gpgKey: 'my-gpg-key',
-            filePartByteCountThreshold: 1024,
-            sha256: 'sha',
-            operation: Operation.Create,
-            fileByteCount: 200,
-            modifiedDate: d,
-            path: 'def.txt',
-            part: part,
-            local: null,
-            stat: null,
-            proceed
-        }]
+        record: [
+            {
+                gpgKey: 'my-gpg-key', // This whole object will be skipped.
+                filePartByteCountThreshold: 1024,
+                sha256: 'ZZZZZZZZZZZZZ',
+                operation: Operation.Delete,
+                fileByteCount: 200,
+                modifiedDate: d,
+                path: 'def.txt',
+                part: part,
+                local: null,
+                stat: null,
+                proceed
+            },
+            {
+                gpgKey: 'my-gpg-key',
+                filePartByteCountThreshold: 1024,
+                sha256: 'sha',
+                operation: Operation.Create,
+                fileByteCount: 200,
+                modifiedDate: d,
+                path: 'def.txt',
+                part: part,
+                local: null,
+                stat: null,
+                proceed
+            }
+        ]
     };
 
 }

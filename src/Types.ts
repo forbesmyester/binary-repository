@@ -100,9 +100,7 @@ export interface BackupRecord { // Rename CommitRecord
  */
 export enum Operation {
     Create = 1,
-    // Modify = 2, // I am not sure that this is a thing yet... enum reserved
-    //             // incase it becomes so (as I like nice sequential numbers!
-    Delete = 3
+    Delete = 2
 }
 
 /**
