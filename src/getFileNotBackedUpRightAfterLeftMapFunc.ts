@@ -10,7 +10,7 @@ function viaDb(left: BackupCheckDatabase, right: File) {
     );
 }
 
-export default function(dependencies: {}): RightAfterLeftMapFunc<BackupCheckDatabase, File, File> {
+export default function getFileNotBackedUpRightAfterLeftMapFunc(dependencies: {}): RightAfterLeftMapFunc<BackupCheckDatabase, File, File> {
     return (lefts, right) => {
         for (let i = 0; i < lefts.length; i++) {
             if (viaDb(lefts[i], right)) {
