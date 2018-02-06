@@ -381,7 +381,7 @@ function getThresholds() {
     return {
         filePartByteCountThreshold: 1024 * 1024 * 64, // 64MB
         commitFileByteCountThreshold: 1024 * 1024 * 256, // 256MB
-        commitMaxTimeThreshold: 1000 * 60
+        commitMaxTimeThreshold: 1000 * 60 * 15 // 15 mins
     };
 }
 
