@@ -84,6 +84,13 @@ if [ $(diff integration-test-temp-files/the_files integration-test-temp-files/ex
     exit 1
 fi
 
+./bin/binary-repository list-existing --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first --file-filter 'my-projects/t-' integration-test-temp-files/ebak-data/matt_first > integration-test-temp-files/existing-filtered
+
+if [ $(cat integration-test-temp-files/existing-filtered | wc -l) -ne $(cat integration-test-temp-files/existing-filtered | grep '^my-projects/t-' | wc -l) ]; then
+    echo "List should have been filtered"
+    exit 1
+fi
+
 if [ $(find integration-test-temp-files/ebak-config/matt_first/pending-commit -type f | wc -l) -ne 0 ]; then
     echo "Was expecting zero matt_first pending-commit"
     exit 1

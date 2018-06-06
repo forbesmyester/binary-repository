@@ -20,7 +20,7 @@ function validateEbakConfigurationPath(path) {
 }
 
 function resolve(performLcCheck, opts) {
-    let {_: [command], detail, quiet, local, 'local-config': lc, 'filepart-gpg-key': fpGpgKey, 'gpg-key': gpgKey} = opts;
+    let {_: [command], detail, quiet, local, 'local-config': lc, 'filepart-gpg-key': fpGpgKey, 'gpg-key': gpgKey, 'file-filter': ff} = opts;
 
     let path = local;
     if (!validateEbakConfigurationPath(path)) {
@@ -39,7 +39,8 @@ function resolve(performLcCheck, opts) {
         quiet,
         command,
         local,
-        'local-config': lc
+        'local-config': lc,
+        'file-filter': ff
     };
 }
 
@@ -69,6 +70,11 @@ yargs.usage('$0 <cmd> [args]')
     .option('quiet', {
         describe: 'Whether to run silently or not',
         type: 'boolean',
+        default: false
+    })
+    .option('file-filter', {
+        describe: 'Filter files',
+        type: 'string',
         default: false
     })
     .option('detail', {
@@ -162,11 +168,11 @@ yargs.usage('$0 <cmd> [args]')
     )
     .command(
         'list-existing [local]', 'Lists what is known to be stored.',
-        { local: { require: true }, detail: {} },
+        { local: { require: true }, detail: {}, 'file-filter': {} },
         function (args) {
             try {
-                let { local, 'local-config': localConfiguration, detail } = resolve(true, args);
-                listExisting(local, localConfiguration, { detail });
+                let { local, 'local-config': localConfiguration, detail, 'file-filter': fileFilter } = resolve(true, args);
+                listExisting(local, localConfiguration, { detail, fileFilter });
             } catch (e) { console.log(e.message); process.exit(1) }
         }
     )

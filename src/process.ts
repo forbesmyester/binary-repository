@@ -40,6 +40,8 @@ import getRepositoryCommitToRemoteCommitMapFunc from './getRepositoryCommitToRem
 import { getDependencies as getRepositoryCommitToRemoteCommitMapFuncDependencies } from './getRepositoryCommitToRemoteCommitMapFunc';
 import getNotInLeft from './getNotInLeftRightAfterLeftMapFunc';
 import { S3 } from 'aws-sdk';
+import { getFilenameFilter } from '../src/getMapBackupCheckDatabaseByFilenameFilter';
+import getMapBackupCheckDatabaseByFilenameFilter from '../src/getMapBackupCheckDatabaseByFilenameFilter';
 
 
 const stdPipeOptions = { objectMode: true, highWaterMark: 1};
@@ -666,7 +668,7 @@ export function listDownloadImpl(rootDir: AbsoluteDirectoryPath, configDir: Abso
 
 }
 
-export function listExisting(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath, { detail }) {
+export function listExisting(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath, { detail, fileFilter }) {
 
     let commitStream = getCommitStream(
         configDir,
@@ -678,9 +680,18 @@ export function listExisting(rootDir: AbsoluteDirectoryPath, configDir: Absolute
         stdPipeOptions
     ));
 
+    let toFilteredBackupCheckDatabaseMap = preparePipe(new MapTransform(
+        getMapBackupCheckDatabaseByFilenameFilter(
+            {},
+            getFilenameFilter(fileFilter || '')
+        ),
+        stdPipeOptions
+    ))
+
     commitStream
         .pipe(toBackupCheckDatabaseScan)
         .pipe(new FinalDuplex(stdPipeOptions))
+        .pipe(toFilteredBackupCheckDatabaseMap)
         .pipe(new ConsoleWritable(
             { out: (n, o: BackupCheckDatabase) => {
                 let outs = map(
