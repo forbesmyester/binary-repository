@@ -4,7 +4,7 @@ let { realpathSync, existsSync, writeFileSync } = require('fs');
 let { join } = require('path');
 let { pathOr } = require('ramda');
 let { ConfigFile, BASE_TLID_TIMESTAMP } = require('../dist/src/Types');
-let { markDeleted, listMarkDeleted, listExisting, listDownload, listUpload, upload, download, fetch, push } = require('../dist/src/process');
+let { getFile, markDeleted, listMarkDeleted, listExisting, listDownload, listUpload, upload, download, fetch, push } = require('../dist/src/process');
 
 let yargs = require('yargs');
 let mkdirp = require('mkdirp');
@@ -163,6 +163,16 @@ yargs.usage('$0 <cmd> [args]')
             try {
                 let { local, 'local-config': localConfiguration, quiet } = resolve(true, args);
                 markDeleted(local, localConfiguration, { quiet });
+            } catch (e) { console.log(e.message); process.exit(1) }
+        }
+    )
+    .command(
+        'get-file [local]', 'Downloads individual files',
+        { local: { require: true }, detail: {}, 'file-filter': { required: true} },
+        function (args) {
+            try {
+                let { quiet, local, 'local-config': localConfiguration, detail, 'file-filter': fileFilter } = resolve(true, args);
+                getFile(local, localConfiguration, { quiet, detail, fileFilter });
             } catch (e) { console.log(e.message); process.exit(1) }
         }
     )

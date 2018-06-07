@@ -7,42 +7,63 @@ test("Can initialize", (tst) => {
 
     let database: BackupCheckDatabase = {
         "my-projects/getTLIdEncoderDecoder.md": [{
+            filePartByteCountThreshold: 1,
+            gpgKey: 'a',
+            part: [1, 1],
             commitId: 'a',
             modifiedDate : new Date("2017-09-09T17:27:22.730Z"),
             fileByteCount: 1816,
             sha256: "def"
         }],
         "my-projects/stronger-typed-streams.md": [{
+            filePartByteCountThreshold: 1,
+            gpgKey: 'a',
+            part: [1, 1],
             commitId: 'a',
             modifiedDate:  new Date("2017-09-09T17:27:22.730Z"),
             fileByteCount: 3832,
             sha256: "8d2"
         }],
         "my-projects/t-fp-assoc.md": [{
+            filePartByteCountThreshold: 1,
+            gpgKey: 'a',
+            part: [1, 1],
             commitId: 'a',
             modifiedDate:  new Date("2017-09-09T17:27:22.730Z"),
             fileByteCount: 1247,
             sha256: "e42"
         }],
         "my-projects/t-fp-dissoc.md": [{
+            filePartByteCountThreshold: 1,
+            gpgKey: 'a',
+            part: [1, 1],
             commitId: 'a',
             modifiedDate:  new Date("2017-09-09T17:27:22.730Z"),
             fileByteCount: 821,
             sha256: "472"
         }],
         "my-projects/t-fp-merge.md": [{
+            filePartByteCountThreshold: 1,
+            gpgKey: 'a',
+            part: [1, 1],
             commitId: 'a',
             modifiedDate:  new Date("2017-09-09T17:27:22.730Z"),
             fileByteCount: 401,
             sha256: "806"
         }],
         "my-projects/t-fp-to-pairs.md": [{
+            filePartByteCountThreshold: 1,
+            gpgKey: 'a',
+            part: [1, 1 ],
             commitId: 'a',
             modifiedDate:  new Date("2017-09-09T17:27:22.730Z"),
             fileByteCount: 363,
             sha256: "a4f"
         }],
         "my-projects/t-fp-from-pairs.md": [{
+            filePartByteCountThreshold: 1,
+            gpgKey: 'a',
+            part: [1, 1],
             commitId: 'a',
             modifiedDate:  new Date("2017-09-09T17:27:22.730Z"),
             fileByteCount: 359,

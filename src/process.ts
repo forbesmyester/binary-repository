@@ -42,6 +42,7 @@ import getNotInLeft from './getNotInLeftRightAfterLeftMapFunc';
 import { S3 } from 'aws-sdk';
 import { getFilenameFilter } from '../src/getMapBackupCheckDatabaseByFilenameFilter';
 import getMapBackupCheckDatabaseByFilenameFilter from '../src/getMapBackupCheckDatabaseByFilenameFilter';
+import getBackupCheckDatabaseToRemotePendingCommitStat from './getBackupCheckDatabaseToRemotePendingCommitStat';
 
 
 const stdPipeOptions = { objectMode: true, highWaterMark: 1};
@@ -668,7 +669,84 @@ export function listDownloadImpl(rootDir: AbsoluteDirectoryPath, configDir: Abso
 
 }
 
+export function getFile(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath, { quiet, detail, fileFilter }) {
+
+    let config: ConfigFile = readConfig(configDir);
+
+    let commitStream = getCommitStream(
+        configDir,
+        ['remote-pending-commit']
+    );
+    let toBackupCheckDatabaseScan = preparePipe(new ScanTransform(
+        getCommitToBackupCheckDatabaseScanFunc({}),
+        {},
+        stdPipeOptions
+    ));
+
+    let toFilteredBackupCheckDatabaseMap = preparePipe(new MapTransform(
+        getMapBackupCheckDatabaseByFilenameFilter(
+            {},
+            getFilenameFilter(fileFilter || '')
+        ),
+        stdPipeOptions
+    ));
+
+    let backupCheckDatabaseToRemotePendingCommitStat = preparePipe(new MapTransform(
+        getBackupCheckDatabaseToRemotePendingCommitStat(
+            config,
+            new Date()
+        ),
+        stdPipeOptions
+    ));
+
+
+    function notificationHandler(id, status) { return; }
+    let remoteType = getRemoteType(config.remote);
+
+    let toDownloadedParts = preparePipe(new MapTransform(
+        getToDownloadedPartsMapFunc(
+            getToDownloadedPartsMapFuncDependencies(remoteType),
+            configDir,
+            removeProtocol(config.remote),
+            notificationHandler
+        ),
+        stdPipeOptions
+    ));
+
+    let toFile = preparePipe(new MapTransform(
+        getToFileMapFunc(
+            getToFileMapFuncDependencies(),
+            configDir,
+            rootDir,
+            notificationHandler,
+            false
+        ),
+        stdPipeOptions
+    ));
+
+    commitStream
+        .pipe(toBackupCheckDatabaseScan)
+        .pipe(new FinalDuplex(stdPipeOptions))
+        .pipe(toFilteredBackupCheckDatabaseMap)
+        .pipe(backupCheckDatabaseToRemotePendingCommitStat)
+        .pipe(toDownloadedParts)
+        .pipe(toFile)
+        .pipe(new ConsoleWritable(
+            { out: (n, o) => {
+                if (!quiet) {
+                    console.log(
+                        "Got Files:\n  " +
+                        joinArray("\n  ", o.record.map(r => r.path))
+                    );
+                }
+            } },
+            "Error: "
+        ));
+}
+
 export function listExisting(rootDir: AbsoluteDirectoryPath, configDir: AbsoluteDirectoryPath, { detail, fileFilter }) {
+
+    // let config: ConfigFile = readConfig(configDir);
 
     let commitStream = getCommitStream(
         configDir,

@@ -30,11 +30,11 @@ test.cb("Can buildCheckDatabase", (tst) => {
         },
         expected: BackupCheckDatabase = {
             'error_command': [
-                { commitId: 'rusdc000', sha256: 'ef2', modifiedDate: new Date('2017-06-24T10:46:12.432Z'), fileByteCount: 58 },
-                { commitId: 'rutaa000', sha256: 'ef3', modifiedDate: new Date('2017-06-24T10:52:31.432Z'), fileByteCount: 116 },
+                { filePartByteCountThreshold: 1024, gpgKey: 'g', part: [1, 1], commitId: 'rusdc000', sha256: 'ef2', modifiedDate: new Date('2017-06-24T10:46:12.432Z'), fileByteCount: 58 },
+                { filePartByteCountThreshold: 1024, gpgKey: 'g', part: [1, 1], commitId: 'rutaa000', sha256: 'ef3', modifiedDate: new Date('2017-06-24T10:52:31.432Z'), fileByteCount: 116 },
             ],
-            'hello_command': [{ commitId: 'rusdc000', sha256: '8cf', modifiedDate: new Date('2017-06-25T14:47:13.856Z'), fileByteCount: 29 }],
-            'my-projects/getTLIdEncoderDecoder.md': [{ commitId: 'rusdc000', sha256: 'def', modifiedDate: new Date('2017-06-19T06:20:05.168Z'), fileByteCount: 1816 }]
+            'hello_command': [{ filePartByteCountThreshold: 1024, gpgKey: 'g', part: [3, 3], commitId: 'rusdc000', sha256: '8cf', modifiedDate: new Date('2017-06-25T14:47:13.856Z'), fileByteCount: 29 }],
+            'my-projects/getTLIdEncoderDecoder.md': [{ filePartByteCountThreshold: 1024, gpgKey: 'g', part: [1, 1], commitId: 'rusdc000', sha256: 'def', modifiedDate: new Date('2017-06-19T06:20:05.168Z'), fileByteCount: 1816 }]
         };
 
     let scanFunc = getCommitToBackupCheckDatabaseScanFunc({});
