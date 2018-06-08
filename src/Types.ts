@@ -177,7 +177,16 @@ export interface UploadedS3FilePart extends Sha256FilePart {
 export const BASE_TLID_TIMESTAMP = new Date('2017-07-22T08:54:05.274Z').getTime();
 export const BASE_TLID_UNIQUENESS = 3;
 
-export interface BackupCheckDatabaseValue { commitId: CommitId, sha256: Sha256; fileByteCount: ByteCount; modifiedDate: Date; }
+export interface BackupCheckDatabaseValue {
+    commitId: CommitId;
+    sha256: Sha256;
+    fileByteCount: ByteCount;
+    modifiedDate: Date;
+    part: FilePartIndex;
+    gpgKey: GpgKey;
+    filePartByteCountThreshold: number;
+}
+
 export interface BackupCheckDatabase {
     [k: string /* RelativeFilePath */]: BackupCheckDatabaseValue[];
 }

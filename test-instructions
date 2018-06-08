@@ -84,6 +84,13 @@ if [ $(diff integration-test-temp-files/the_files integration-test-temp-files/ex
     exit 1
 fi
 
+./bin/binary-repository list-existing --quiet=$QUIET --local-config=integration-test-temp-files/ebak-config/matt_first --file-filter 'my-projects/t-' integration-test-temp-files/ebak-data/matt_first > integration-test-temp-files/existing-filtered
+
+if [ $(cat integration-test-temp-files/existing-filtered | wc -l) -ne $(cat integration-test-temp-files/existing-filtered | grep '^my-projects/t-' | wc -l) ]; then
+    echo "List should have been filtered"
+    exit 1
+fi
+
 if [ $(find integration-test-temp-files/ebak-config/matt_first/pending-commit -type f | wc -l) -ne 0 ]; then
     echo "Was expecting zero matt_first pending-commit"
     exit 1
@@ -179,9 +186,11 @@ if [ $(cat integration-test-temp-files/new-commit integration-test-temp-files/ol
 fi
 
 
-if [ $(cat $(ls integration-test-temp-files/ebak-repo/f-806666aa36f2d65362a85fb19578babfc271ddcff6ef36265223dc0562d53f14-1-*-ebak--fp1.ebak) | gpg -d | head -n1) != '# t-fp-merge' ]; then
-    echo "t-fp-merge README.md was expected to be in f-806666aa36f2d65362a85fb19578babfc271ddcff6ef36265223dc0562d53f14-1-64MB-ebak--fp1.ebak but it was not"
-    exit 1
+if [ $(echo "$REMOTE" | grep '^file' | wc -c) -gt 0 ]; then
+    if [ $(cat $(ls integration-test-temp-files/ebak-repo/f-806666aa36f2d65362a85fb19578babfc271ddcff6ef36265223dc0562d53f14-1-*-ebak--fp1.ebak) | gpg -d | head -n1) != '# t-fp-merge' ]; then
+        echo "t-fp-merge README.md was expected to be in f-806666aa36f2d65362a85fb19578babfc271ddcff6ef36265223dc0562d53f14-1-64MB-ebak--fp1.ebak but it was not"
+        exit 1
+    fi
 fi
 
 rm integration-test-temp-files/ebak-data/matt_first/my-projects/t-fp-dissoc.md
@@ -221,6 +230,25 @@ fi
 
 if [ $(find integration-test-temp-files/ebak-data/jim_leach/my-projects -type f | wc -l | grep dissoc | wc -l ) -ne 0 ]; then
     echo "t-fp-dissoc.md should have not been here"
+    exit 1
+fi
+
+mkdir -p integration-test-temp-files/ebak-full/sam_snail
+
+./bin/binary-repository init --quiet=$QUIET --client-id sam_snail --gpg-key "$GPGKEY_COMMIT" --remote "$REMOTE" integration-test-temp-files/ebak-full/sam_snail
+
+./bin/binary-repository  --quiet=$QUIET fetch integration-test-temp-files/ebak-full/sam_snail
+
+./bin/binary-repository get-file  --quiet=$QUIET --file-filter my-projects/g integration-test-temp-files/ebak-full/sam_snail
+
+if [ $(ls integration-test-temp-files/ebak-full/sam_snail/my-projects | wc -l) -ne 1 ]; then
+    echo "More files than expected!"
+    exit 1
+fi
+
+SHA=$(cat integration-test-temp-files/ebak-full/sam_snail/my-projects/getTLIdEncoderDecoder.md | sha256sum | sed 's/ .*//')
+if [ "$SHA" != 'def8c702e06f7f6ac6576e0d4bbd830303aaa7d6857ee6c81c6d6a1b0a6c3bdf' ]; then
+    echo "File contents wrong"
     exit 1
 fi
 

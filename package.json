@@ -1,6 +1,6 @@
 {
   "name": "binary-repository",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "Encrypted backups on AWS (or other)",
   "directories": {
     "src": "src",
@@ -49,7 +49,7 @@
     "pretty-bytes": "^4.0.2",
     "progress": "^2.0.0",
     "ramda": "^0.24.1",
-    "streamdash": "^0.11.1",
+    "streamdash": "^0.12.2",
     "stronger-typed-streams": "^0.1.0",
     "throat": "^4.1.0",
     "yargs": "^8.0.2"

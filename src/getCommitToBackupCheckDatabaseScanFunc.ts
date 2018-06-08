@@ -7,6 +7,9 @@ export interface Dependencies {
 
 function recordToBackupCheckDatabaseValue(a: Commit, r: BackupRecord): BackupCheckDatabaseValue {
     return {
+        filePartByteCountThreshold: r.filePartByteCountThreshold,
+        gpgKey: r.gpgKey,
+        part: r.part,
         modifiedDate: r.modifiedDate,
         fileByteCount: r.fileByteCount,
         sha256: r.sha256,

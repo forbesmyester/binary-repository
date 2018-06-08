@@ -4,7 +4,7 @@ let { realpathSync, existsSync, writeFileSync } = require('fs');
 let { join } = require('path');
 let { pathOr } = require('ramda');
 let { ConfigFile, BASE_TLID_TIMESTAMP } = require('../dist/src/Types');
-let { markDeleted, listMarkDeleted, listExisting, listDownload, listUpload, upload, download, fetch, push } = require('../dist/src/process');
+let { getFile, markDeleted, listMarkDeleted, listExisting, listDownload, listUpload, upload, download, fetch, push } = require('../dist/src/process');
 
 let yargs = require('yargs');
 let mkdirp = require('mkdirp');
@@ -20,7 +20,7 @@ function validateEbakConfigurationPath(path) {
 }
 
 function resolve(performLcCheck, opts) {
-    let {_: [command], detail, quiet, local, 'local-config': lc, 'filepart-gpg-key': fpGpgKey, 'gpg-key': gpgKey} = opts;
+    let {_: [command], detail, quiet, local, 'local-config': lc, 'filepart-gpg-key': fpGpgKey, 'gpg-key': gpgKey, 'file-filter': ff} = opts;
 
     let path = local;
     if (!validateEbakConfigurationPath(path)) {
@@ -39,7 +39,8 @@ function resolve(performLcCheck, opts) {
         quiet,
         command,
         local,
-        'local-config': lc
+        'local-config': lc,
+        'file-filter': ff
     };
 }
 
@@ -69,6 +70,11 @@ yargs.usage('$0 <cmd> [args]')
     .option('quiet', {
         describe: 'Whether to run silently or not',
         type: 'boolean',
+        default: false
+    })
+    .option('file-filter', {
+        describe: 'Filter files',
+        type: 'string',
         default: false
     })
     .option('detail', {
@@ -161,12 +167,22 @@ yargs.usage('$0 <cmd> [args]')
         }
     )
     .command(
-        'list-existing [local]', 'Lists what is known to be stored.',
-        { local: { require: true }, detail: {} },
+        'get-file [local]', 'Downloads individual files',
+        { local: { require: true }, detail: {}, 'file-filter': { required: true} },
         function (args) {
             try {
-                let { local, 'local-config': localConfiguration, detail } = resolve(true, args);
-                listExisting(local, localConfiguration, { detail });
+                let { quiet, local, 'local-config': localConfiguration, detail, 'file-filter': fileFilter } = resolve(true, args);
+                getFile(local, localConfiguration, { quiet, detail, fileFilter });
+            } catch (e) { console.log(e.message); process.exit(1) }
+        }
+    )
+    .command(
+        'list-existing [local]', 'Lists what is known to be stored.',
+        { local: { require: true }, detail: {}, 'file-filter': {} },
+        function (args) {
+            try {
+                let { local, 'local-config': localConfiguration, detail, 'file-filter': fileFilter } = resolve(true, args);
+                listExisting(local, localConfiguration, { detail, fileFilter });
             } catch (e) { console.log(e.message); process.exit(1) }
         }
     )

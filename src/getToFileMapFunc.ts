@@ -94,7 +94,7 @@ let myUnlink = (realUnlink, f, next) => {
     });
 };
 
-export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, decrypt}: Dependencies, configDir: AbsoluteDirectoryPath, rootDir: AbsoluteDirectoryPath, notificationHandler?: NotificationHandler): MapFunc<RemotePendingCommitDownloaded, RemotePendingCommitDownloaded> {
+export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, decrypt}: Dependencies, configDir: AbsoluteDirectoryPath, rootDir: AbsoluteDirectoryPath, notificationHandler?: NotificationHandler, moveCommitFile: boolean = true): MapFunc<RemotePendingCommitDownloaded, RemotePendingCommitDownloaded> {
 
     function notify(id, status) {
         if (notificationHandler) {
@@ -225,6 +225,7 @@ export default function getToFile({copyFile, utimes, rename, mkdirp, unlink, dec
     }
 
     function finalize(a: RemotePendingCommitDownloaded, next) {
+        if (!moveCommitFile) { return next(null, a); }
         let oldFilename = join(
             configDir,
             'remote-pending-commit',

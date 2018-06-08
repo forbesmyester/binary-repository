@@ -8,6 +8,9 @@ export interface Dependencies {}
 function excl(i: BackupCheckDatabaseValue) {
     let r = Object.assign({}, i);
     delete r.commitId;
+    delete r.part;
+    delete r.gpgKey;
+    delete r.filePartByteCountThreshold;
     return r;
 }
 

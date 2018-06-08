@@ -1,12 +1,7 @@
-import { BASE_TLID_UNIQUENESS, BASE_TLID_TIMESTAMP, BackupRecord, Commit, GpgKey, Operation, UploadedS3FilePart } from './Types';
+import { BackupRecord, Commit, GpgKey, Operation, UploadedS3FilePart } from './Types';
 import { Transform } from 'streamdash';
 import { reduce } from 'ramda';
-import * as getTlidEncoderDecoder from 'get_tlid_encoder_decoder';
-
-let tLIdEncoderDecoder = getTlidEncoderDecoder(
-    BASE_TLID_TIMESTAMP,
-    BASE_TLID_UNIQUENESS
-);
+import commitIdGenerator from './commitIdGenerator';
 
 export interface Dependencies {
     getDate: () => Date;
@@ -37,9 +32,7 @@ export class UploadedS3FilePartsToCommit extends Transform<UploadedS3FilePart, C
     static getDependencies() {
         return {
             getDate: () => { return new Date(); },
-            commitIdGenerator: (d: Date) => {
-                return tLIdEncoderDecoder.encode(d.getTime());
-            }
+            commitIdGenerator
         };
     }
 
