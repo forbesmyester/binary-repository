@@ -1,6 +1,6 @@
 pipeline:
   backend:
-    image: node:10
+    image: node:lts
     commands:
       - npm install
       - npm test
