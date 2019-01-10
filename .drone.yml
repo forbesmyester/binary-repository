@@ -8,3 +8,4 @@ pipeline:
 trigger:
   branch:
   - master
+
