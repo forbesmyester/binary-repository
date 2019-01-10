@@ -4,3 +4,7 @@ pipeline:
     commands:
       - npm install
       - npm test
+
+trigger:
+  branch:
+  - master
